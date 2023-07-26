@@ -1,7 +1,8 @@
 local telescope = require("telescope")
 local remote_ssh = require("remote-nvim-ssh.ssh")
-local remote_ssh_runner = require("remote-nvim-ssh.ssh.runner")
+local RemoteNvimSession = require("remote-nvim-ssh.session")
 local previewers = require("telescope.previewers")
+local previewer_utils = require("telescope.previewers.utils")
 local conf = require("telescope.config").values
 local pickers = require("telescope.pickers")
 local finders = require("telescope.finders")
@@ -33,7 +34,7 @@ local function select_ssh_host_from_ssh_config(opts)
     define_preview = function(self, entry)
       local lines = build_preview_host(entry.value)
       vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-      require("telescope.previewers.utils").highlighter(self.state.bufnr, "sshconfig")
+      previewer_utils.highlighter(self.state.bufnr, "sshconfig")
     end
   }
 
@@ -55,7 +56,7 @@ local function select_ssh_host_from_ssh_config(opts)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
         local selection = action_state.get_selected_entry()
-        remote_ssh_runner.run_ssh_command(selection.value["Host"])
+        RemoteNvimSession:new(selection.value["Host"]):launch()
       end)
       return true
     end
@@ -102,7 +103,7 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
         end
       end
       vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-      require("telescope.previewers.utils").highlighter(self.state.bufnr, "markdown")
+      previewer_utils.highlighter(self.state.bufnr, "markdown")
     end
   }
 
@@ -129,7 +130,7 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
           select_ssh_host_from_ssh_config(opts)
         elseif selection.value == "manual-ssh-input" then
           local ssh_args = vim.fn.input("ssh ")
-          remote_ssh_runner.run_ssh_command(ssh_args)
+          RemoteNvimSession:new(ssh_args):launch()
         end
       end)
       return true

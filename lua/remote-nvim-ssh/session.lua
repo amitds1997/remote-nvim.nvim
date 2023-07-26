@@ -1,10 +1,10 @@
 local remote_nvim_ssh = require("remote-nvim-ssh")
 local SSHJob = require("remote-nvim-ssh.ssh.job")
 
-local SSHSession = {}
-SSHSession.__index = SSHSession
+local RemoteNvimSession = {}
+RemoteNvimSession.__index = RemoteNvimSession
 
-function SSHSession:new(ssh_options)
+function RemoteNvimSession:new(ssh_options)
   local instance = {
     ssh_binary = remote_nvim_ssh.ssh_binary,
     ssh_prompts = remote_nvim_ssh.ssh_prompts,
@@ -16,12 +16,20 @@ function SSHSession:new(ssh_options)
     instance.ssh_options = ssh_options
   end
 
-  setmetatable(instance, SSHSession)
+  setmetatable(instance, RemoteNvimSession)
   return instance
 end
 
-function SSHSession:verify_successful_connection()
+function RemoteNvimSession:verify_successful_connection()
   return SSHJob:new(self.ssh_options):verify_successful_connection()
 end
 
-return SSHSession
+function RemoteNvimSession:launch()
+  if self:verify_successful_connection() then
+    vim.notify("Connected to remote host successfully.")
+  else
+    vim.notify("Failed to connect to the remote host.")
+  end
+end
+
+return RemoteNvimSession
