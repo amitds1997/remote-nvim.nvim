@@ -1,11 +1,12 @@
 local telescope = require("telescope")
 local remote_ssh = require("remote-nvim-ssh.ssh")
+local remote_ssh_runner = require("remote-nvim-ssh.ssh.runner")
 local previewers = require("telescope.previewers")
 local conf = require("telescope.config").values
 local pickers = require("telescope.pickers")
 local finders = require("telescope.finders")
 local actions = require("telescope.actions")
-local action_state = require "telescope.actions.state"
+local action_state = require("telescope.actions.state")
 
 -- Build host file from parsed hosts from plugin
 local function build_preview_host(host)
@@ -54,15 +55,11 @@ local function select_ssh_host_from_ssh_config(opts)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
         local selection = action_state.get_selected_entry()
-        vim.notify(vim.inspect(selection.value))
+        remote_ssh_runner.run_ssh_command(selection.value["Host"])
       end)
       return true
     end
   }):find()
-end
-
-local function handle_ssh_manual_command(opts)
-  opts = opts or {}
 end
 
 local function select_ssh_input_method(opts)
@@ -131,7 +128,8 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
         if selection.value == "ssh-config" then
           select_ssh_host_from_ssh_config(opts)
         elseif selection.value == "manual-ssh-input" then
-          vim.notify("Bold move. Going for manual input")
+          local ssh_args = vim.fn.input("ssh ")
+          remote_ssh_runner.run_ssh_command(ssh_args)
         end
       end)
       return true

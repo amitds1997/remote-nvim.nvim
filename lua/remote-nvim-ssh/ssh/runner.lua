@@ -4,6 +4,8 @@ M = {}
 local function handle_ssh_exit(job_id, exit_code, _)
   if exit_code ~= 0 then
     vim.notify("Job ID " .. job_id .. " failed. Please check.")
+  else
+    vim.notify("Job ID " .. job_id .. " completed.")
   end
 end
 
@@ -23,24 +25,30 @@ local function handle_ssh_stdout(job_id, data, _)
   end
 end
 
-local function handle_sss_stderr(job_id, data, _)
+local function handle_ssh_stderr(job_id, data, _)
   handle_ssh_stdout(job_id, data, _)
 end
 
-function M.run_ssh_command(ssh_args)
+function M.run_ssh_command(ssh_args, cmd)
   -- Create SSH connection string
-  local cmd_args
+  local ssh_dest_and_options
   if type(ssh_args) == "table" then
-    cmd_args = table.concat(ssh_args, " ")
+    ssh_dest_and_options = table.concat(ssh_args, " ")
+  else
+    ssh_dest_and_options = ssh_args
   end
-  local cmd = remote_nvim_ssh.ssh_binary .. cmd_args
 
-  return vim.fn.jobstart(cmd, {
+  -- If nothing, just run exit
+  local cmd_on_remote = cmd or "exit"
+  local ssh_cmd = table.concat({ remote_nvim_ssh.ssh_binary, ssh_dest_and_options, cmd_on_remote }, " ")
+
+  local job_id = vim.fn.jobstart(ssh_cmd, {
     pty = true, -- Important because SSH commands can be interactive e.g. password authentication
     on_stdout = handle_ssh_stdout,
-    on_stderr = handle_sss_stderr,
+    on_stderr = handle_ssh_stderr,
     on_exit = handle_ssh_exit,
   })
+  return job_id
 end
 
 return M
