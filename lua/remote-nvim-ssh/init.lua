@@ -1,4 +1,4 @@
-local util = require "remote-nvim-ssh.utils"
+local util = require("remote-nvim-ssh.utils")
 local M = {}
 
 local default_opts = {

@@ -1,4 +1,4 @@
-local config_parse = require("remote-nvim-ssh.ssh.config.parse")
+local config_parse = require("remote-nvim-ssh.ssh.parse")
 
 local M = {}
 local hosts, ssh_configs
