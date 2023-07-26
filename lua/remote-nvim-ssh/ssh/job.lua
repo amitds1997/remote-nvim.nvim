@@ -128,7 +128,7 @@ end
 function SSHJob:verify_successful_connection()
   self:run_command("echo 'Test connection'")
 
-  if self:wait_for_completion() == 0 and self:stdout() == "Test connection" then
+  if self:wait_for_completion() == 0 and self:stdout():match("[^\n]*$") == "Test connection" then
     return true
   end
   return false
