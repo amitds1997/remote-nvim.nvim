@@ -1,0 +1,11 @@
+{
+  "workspace.library": [
+    "/usr/local/Cellar/neovim/0.9.1/share/nvim/runtime/lua",
+    "/Users/amitsingh/personal/nvim-plugins/nvim-remote-ssh.nvim/lua",
+    "${XDG_DATA_HOME}/nvim/lazy/neodev.nvim/types/stable",
+    "${XDG_DATA_HOME}/nvim/lazy/plenary.nvim/lua",
+    "${XDG_DATA_HOME}/nvim/lazy/telescope.nvim/lua",
+    "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim/lua"
+  ],
+  "workspace.checkThirdParty": false
+}
