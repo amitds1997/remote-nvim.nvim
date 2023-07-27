@@ -95,7 +95,7 @@ end
 function SSHJob:_generate_ssh_command(cmd)
   self.remote_cmd = cmd or self.default_remote_cmd
 
-  local complete_remote_cmd = self.default_separator_cmd .. " && " .. self.remote_cmd
+  local complete_remote_cmd = vim.fn.shellescape(self.default_separator_cmd .. " && " .. self.remote_cmd)
   self.ssh_complete_cmd = table.concat({ self.ssh_base_cmd, complete_remote_cmd }, " ")
   return self.ssh_complete_cmd
 end
