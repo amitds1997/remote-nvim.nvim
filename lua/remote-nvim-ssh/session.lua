@@ -15,6 +15,7 @@ function RemoteNvimSession:new(ssh_options)
   else
     instance.ssh_options = ssh_options
   end
+  instance.ssh_options = instance.ssh_options:gsub("^%s*ssh%s*", "")
 
   setmetatable(instance, RemoteNvimSession)
   return instance

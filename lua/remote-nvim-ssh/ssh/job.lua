@@ -27,6 +27,7 @@ function SSHJob:new(ssh_options)
   else
     instance.ssh_options = ssh_options
   end
+  instance.ssh_options = instance.ssh_options:gsub("^%s*ssh%s*", "")
 
   instance.ssh_base_cmd = table.concat({ instance.ssh_binary, instance.ssh_options }, " ")
   instance.default_separator_cmd = "echo '" .. instance._remote_cmd_output_separator .. "'"
