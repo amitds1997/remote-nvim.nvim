@@ -1,4 +1,4 @@
-local utils = require("remote-nvim-ssh.utils")
+local utils = require("remote-nvim.utils")
 
 local M = {}
 

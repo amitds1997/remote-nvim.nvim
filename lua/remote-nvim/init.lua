@@ -1,4 +1,4 @@
-local util = require("remote-nvim-ssh.utils")
+local util = require("remote-nvim.utils")
 local M = {}
 
 local default_opts = {
@@ -21,12 +21,12 @@ M.setup_commands = function()
     if M.ssh_binary == nil then
       error("OpenSSH client not found. Cannot proceed further.")
     end
-    require("telescope").extensions["remote-nvim-ssh"].connect()
+    require("telescope").extensions["remote-nvim"].connect()
   end, {})
 end
 
 M.setup_keymaps = function()
-  vim.api.nvim_set_keymap('n', ',p', ':Lazy reload remote-nvim-ssh.nvim<CR>', {})
+  vim.api.nvim_set_keymap('n', ',p', ':Lazy reload remote-nvim.nvim<CR>', {})
 end
 
 M.setup = function(args)
@@ -37,7 +37,7 @@ M.setup = function(args)
   M.install_script = opts.install_script or util.path_join(util.get_package_root(), "scripts", "neovim_install.sh")
   M.remote_nvim_home = opts.remote_nvim_home or util.path_join("~", ".remote-nvim")
 
-  require("remote-nvim-ssh.ssh").setup(opts)
+  require("remote-nvim.ssh").setup(opts)
 
   M.setup_commands()
   M.setup_keymaps()

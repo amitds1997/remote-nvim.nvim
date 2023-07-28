@@ -1,4 +1,4 @@
-local remote_nvim_ssh = require("remote-nvim-ssh")
+local remote_nvim_ssh = require("remote-nvim")
 
 local SSHJob = {}
 SSHJob.__index = SSHJob
@@ -17,7 +17,7 @@ function SSHJob:new(ssh_host, ssh_options)
     ssh_complete_cmd = nil,
     job_id = nil,
     _is_job_complete = false,
-    _remote_cmd_output_separator = "===START-OF-REMOTE-NVIM-SSH-OUTPUT===",
+    _remote_cmd_output_separator = "===START-OF-remote-nvim-OUTPUT===",
     _stdout_lines = {},
     _stderr_lines = {},
     _stdout_last_prompt_index = 1,

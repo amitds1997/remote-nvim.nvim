@@ -1,5 +1,5 @@
-local remote_nvim_ssh = require("remote-nvim-ssh")
-local SSHJob = require("remote-nvim-ssh.ssh.job")
+local remote_nvim_ssh = require("remote-nvim")
+local SSHJob = require("remote-nvim.ssh.job")
 
 local RemoteNvimSession = {}
 

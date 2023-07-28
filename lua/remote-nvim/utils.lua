@@ -34,7 +34,7 @@ end
 function M.get_package_root()
   local root_dir
   for dir in vim.fs.parents(debug.getinfo(1).source:sub(2)) do
-    if vim.fn.isdirectory(M.path_join(dir, "lua", "remote-nvim-ssh")) == 1 then
+    if vim.fn.isdirectory(M.path_join(dir, "lua", "remote-nvim")) == 1 then
       root_dir = dir
     end
   end
