@@ -7,6 +7,7 @@ function SSHJob:new(ssh_host, ssh_options)
   local instance = {
     ssh_host = ssh_host,
     ssh_binary = remote_nvim_ssh.ssh_binary,
+    scp_binary = remote_nvim_ssh.scp_binary,
     ssh_prompts = remote_nvim_ssh.ssh_prompts,
     default_remote_cmd = "echo OK",
     remote_cmd = nil,
@@ -32,9 +33,9 @@ function SSHJob:new(ssh_host, ssh_options)
   -- Actual options would only contain options and not the hostname so we filter that out
   -- We also have to escape each non-alphanumeric character because some are treated specially
   -- by Lua.
-  instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), ""):gsub("%s+", " "):gsub("^%s", "")
+  instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), ""):gsub("%s+", " "):gsub(
+    "^%s", "")
 
-  instance.ssh_base_cmd = table.concat({ instance.ssh_binary, instance.ssh_options }, " ")
   instance.default_separator_cmd = "echo '" .. instance._remote_cmd_output_separator .. "'"
 
   setmetatable(instance, SSHJob)
@@ -102,14 +103,18 @@ function SSHJob:_generate_ssh_command(cmd)
   self.remote_cmd = cmd or self.default_remote_cmd
 
   local complete_remote_cmd = vim.fn.shellescape(self.default_separator_cmd .. " && " .. self.remote_cmd)
-  self.ssh_complete_cmd = table.concat({ self.ssh_base_cmd, self.ssh_host, complete_remote_cmd }, " ")
-  return self.ssh_complete_cmd
+  self._complete_cmd = table.concat({ self.ssh_binary, self.ssh_options, self.ssh_host, complete_remote_cmd }, " ")
+  return self._complete_cmd
 end
 
-function SSHJob:run_command(cmd)
-  local ssh_cmd = self:_generate_ssh_command(cmd)
+function SSHJob:_generate_scp_command(from_uri, to_uri, recursive)
+  local recursive_flag = recursive and "-r" or ""
+  self._complete_cmd = table.concat({ self.scp_binary, self.ssh_options, recursive_flag, from_uri, to_uri }, " ")
+  return self._complete_cmd
+end
 
-  self.job_id = vim.fn.jobstart(ssh_cmd, {
+function SSHJob:_run_command(cmd)
+  self.job_id = vim.fn.jobstart(cmd, {
     pty = true, -- Important because SSH commands can be interactive e.g. password authentication
     on_stdout = function(_, data)
       self:_handle_stdout(data)
@@ -123,6 +128,14 @@ function SSHJob:run_command(cmd)
   })
 
   return self
+end
+
+function SSHJob:run_scp_command(local_path, remote_path, recursive)
+  return self:_run_command(self:_generate_scp_command(local_path, remote_path, recursive))
+end
+
+function SSHJob:run_ssh_command(cmd)
+  return self:_run_command(self:_generate_ssh_command(cmd))
 end
 
 function SSHJob:wait_for_completion(timeout)

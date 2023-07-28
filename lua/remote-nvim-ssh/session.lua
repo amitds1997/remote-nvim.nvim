@@ -8,6 +8,8 @@ function RemoteNvimSession:new(ssh_host, ssh_options)
     ssh_host = ssh_host,
     ssh_binary = remote_nvim_ssh.ssh_binary,
     ssh_prompts = remote_nvim_ssh.ssh_prompts,
+    install_script = remote_nvim_ssh.install_script,
+    remote_nvim_home = remote_nvim_ssh.remote_nvim_home,
   }
   assert(ssh_host ~= nil, "Host name cannot be nil")
   assert(ssh_options ~= nil, "SSH details have to be provided.")
@@ -25,8 +27,12 @@ function RemoteNvimSession:new(ssh_host, ssh_options)
   return instance
 end
 
+function RemoteNvimSession:create_ssh_job()
+  return SSHJob:new(self.ssh_host, self.ssh_options)
+end
+
 function RemoteNvimSession:verify_successful_connection()
-  local job = SSHJob:new(self.ssh_host, self.ssh_options):run_command("echo 'Test connection'")
+  local job = self:create_ssh_job():run_ssh_command("echo 'Test connection'")
 
   if job:wait_for_completion() == 0 and job.exit_code == 0 then
     return true
@@ -38,7 +44,7 @@ function RemoteNvimSession:launch()
   if self:verify_successful_connection() then
     vim.notify("Connected to remote host '" .. self.ssh_host .. "' successfully.")
   else
-    vim.notify("Failed to connect to host '".. self.ssh_host.."'")
+    vim.notify("Failed to connect to host '" .. self.ssh_host .. "'")
   end
 end
 
