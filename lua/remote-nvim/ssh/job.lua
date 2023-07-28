@@ -33,8 +33,9 @@ function SSHJob:new(ssh_host, ssh_options)
   -- Actual options would only contain options and not the hostname so we filter that out
   -- We also have to escape each non-alphanumeric character because some are treated specially
   -- by Lua.
-  instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), ""):gsub("%s+", " "):gsub(
-    "^%s", "")
+  instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), "")
+  -- We remove "-N" from SSH options if it exists; we remove extra spaces
+  instance.ssh_options = instance.ssh_options:gsub("%-N", ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
 
   instance.default_separator_cmd = "echo '" .. instance._remote_cmd_output_separator .. "'"
 
@@ -109,7 +110,10 @@ end
 
 function SSHJob:_generate_scp_command(from_uri, to_uri, recursive)
   local recursive_flag = recursive and "-r" or ""
-  self._complete_cmd = table.concat({ self.scp_binary, self.ssh_options, recursive_flag, from_uri, to_uri }, " ")
+  -- SSH's -p for port conflicts with -p used in scp to preserve timestampts so change that to -P
+  local ssh_options = self.ssh_options:gsub("%-p", "-P")
+
+  self._complete_cmd = table.concat({ self.scp_binary, ssh_options, recursive_flag, from_uri, to_uri }, " ")
   return self._complete_cmd
 end
 
