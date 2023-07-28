@@ -56,7 +56,7 @@ local function select_ssh_host_from_ssh_config(opts)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
         local selection = action_state.get_selected_entry()
-        RemoteNvimSession:new(selection.value["Host"]):launch()
+        RemoteNvimSession:new(selection.value["Host"], selection.value["Host"]):launch()
       end)
       return true
     end
@@ -130,7 +130,11 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
           select_ssh_host_from_ssh_config(opts)
         elseif selection.value == "manual-ssh-input" then
           local ssh_args = vim.fn.input("ssh ")
-          RemoteNvimSession:new(ssh_args):launch()
+          local ssh_host = ssh_args:match("%S+@%S+")
+          if ssh_host == nil then
+            ssh_host = vim.fn.input("Please provide host name: ")
+          end
+          RemoteNvimSession:new(ssh_host, ssh_args):launch()
         end
       end)
       return true

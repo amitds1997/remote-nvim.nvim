@@ -3,8 +3,9 @@ local remote_nvim_ssh = require("remote-nvim-ssh")
 local SSHJob = {}
 SSHJob.__index = SSHJob
 
-function SSHJob:new(ssh_options)
+function SSHJob:new(ssh_host, ssh_options)
   local instance = {
+    ssh_host = ssh_host,
     ssh_binary = remote_nvim_ssh.ssh_binary,
     ssh_prompts = remote_nvim_ssh.ssh_prompts,
     default_remote_cmd = "echo OK",
@@ -27,7 +28,11 @@ function SSHJob:new(ssh_options)
   else
     instance.ssh_options = ssh_options
   end
-  instance.ssh_options = instance.ssh_options:gsub("^%s*ssh%s*", "")
+
+  -- Actual options would only contain options and not the hostname so we filter that out
+  -- We also have to escape each non-alphanumeric character because some are treated specially
+  -- by Lua.
+  instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), ""):gsub("%s+", " "):gsub("^%s", "")
 
   instance.ssh_base_cmd = table.concat({ instance.ssh_binary, instance.ssh_options }, " ")
   instance.default_separator_cmd = "echo '" .. instance._remote_cmd_output_separator .. "'"
@@ -85,9 +90,10 @@ function SSHJob:_handle_exit(exit_code)
 end
 
 function SSHJob:_filter_result(data)
-  local start_index, end_index = (data or ""):find(self._remote_cmd_output_separator .. "\n", 1, true)
-  if start_index then
-    return data:sub(end_index + 1):gsub("\n$", ""):gsub("^\n", "")
+  local matchPattern = "\n" .. self._remote_cmd_output_separator .. "\n"
+  local start_index, end_index = (data or ""):find(matchPattern, 1, true)
+  if start_index and end_index then
+    return data:sub(end_index + 1):gsub("[\n]+$", "")
   end
   return nil
 end
@@ -96,7 +102,7 @@ function SSHJob:_generate_ssh_command(cmd)
   self.remote_cmd = cmd or self.default_remote_cmd
 
   local complete_remote_cmd = vim.fn.shellescape(self.default_separator_cmd .. " && " .. self.remote_cmd)
-  self.ssh_complete_cmd = table.concat({ self.ssh_base_cmd, complete_remote_cmd }, " ")
+  self.ssh_complete_cmd = table.concat({ self.ssh_base_cmd, self.ssh_host, complete_remote_cmd }, " ")
   return self.ssh_complete_cmd
 end
 
@@ -124,15 +130,6 @@ function SSHJob:wait_for_completion(timeout)
     return self.exit_code
   end
   return vim.fn.jobwait({ self.job_id }, timeout or -1)[1]
-end
-
-function SSHJob:verify_successful_connection()
-  self:run_command("echo 'Test connection'")
-
-  if self:wait_for_completion() == 0 and self:stdout():match("[^\n]*$") == "Test connection" then
-    return true
-  end
-  return false
 end
 
 function SSHJob:stdout()
