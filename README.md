@@ -10,6 +10,10 @@ It aims to bring near feature-parity with [Remote development using SSH - VS Cod
 
 * Neovim >= 0.8.0
 
+## Caveats
+
+- We change the XDG_CONFIG_HOME env variable (only for the launched Neovim server) so any XDG_CONFIG_HOME based stuff you do from inside Neovim would have to be adjusted accordingly.
+
 ## Future goals
 
 - [ ] Add support for remote development directly within a docker container
