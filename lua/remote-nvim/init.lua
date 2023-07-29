@@ -12,7 +12,7 @@ local default_opts = {
       input_prompt = "Enter password: "
     }
   },
-  install_script = nil, -- default path is set during setup() call, if not provided
+  install_script = nil,   -- default path is set during setup() call, if not provided
   remote_nvim_home = nil, -- default path is set during setup() call, if not provided
 }
 
