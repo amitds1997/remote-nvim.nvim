@@ -14,7 +14,7 @@ function SSHJob:new(ssh_host, ssh_options)
     exit_code = nil,
     stdout_data = "",
     stderr_data = "",
-    ssh_complete_cmd = nil,
+    complete_cmd = nil,
     job_id = nil,
     _is_job_complete = false,
     _remote_cmd_output_separator = "===START-OF-remote-nvim-OUTPUT===",
@@ -88,6 +88,8 @@ function SSHJob:_handle_exit(exit_code)
   self.exit_code = exit_code
   if exit_code ~= 0 then
     vim.notify("Remote command: " .. self.remote_cmd .. " failed.")
+  else
+    vim.notify("Remote command: " .. self.remote_cmd .. " succeeded.")
   end
 end
 
@@ -100,25 +102,27 @@ function SSHJob:_filter_result(data)
   return nil
 end
 
-function SSHJob:_generate_ssh_command(cmd)
+function SSHJob:set_ssh_command(cmd)
   self.remote_cmd = cmd or self.default_remote_cmd
 
   local complete_remote_cmd = vim.fn.shellescape(self.default_separator_cmd .. " && " .. self.remote_cmd)
-  self._complete_cmd = table.concat({ self.ssh_binary, self.ssh_options, self.ssh_host, complete_remote_cmd }, " ")
-  return self._complete_cmd
+  self.complete_cmd = table.concat({ self.ssh_binary, self.ssh_options, self.ssh_host, complete_remote_cmd }, " ")
+  return self
 end
 
-function SSHJob:_generate_scp_command(from_uri, to_uri, recursive)
+function SSHJob:set_scp_command(from_uri, to_uri, recursive)
   local recursive_flag = recursive and "-r" or ""
   -- SSH's -p for port conflicts with -p used in scp to preserve timestampts so change that to -P
   local ssh_options = self.ssh_options:gsub("%-p", "-P")
+  self.remote_cmd = "scp " .. from_uri .. " " .. to_uri
 
-  self._complete_cmd = table.concat({ self.scp_binary, ssh_options, recursive_flag, from_uri, to_uri }, " ")
-  return self._complete_cmd
+  self.complete_cmd = table.concat({ self.scp_binary, ssh_options, recursive_flag, from_uri, to_uri }, " ")
+  return self
 end
 
-function SSHJob:_run_command(cmd)
-  self.job_id = vim.fn.jobstart(cmd, {
+function SSHJob:run(co)
+  assert(self.complete_cmd ~= nil, "Set run command using set_ssh_command() or set_scp_command()")
+  self.job_id = vim.fn.jobstart(self.complete_cmd, {
     pty = true, -- Important because SSH commands can be interactive e.g. password authentication
     on_stdout = function(_, data)
       self:_handle_stdout(data)
@@ -128,18 +132,20 @@ function SSHJob:_run_command(cmd)
     end,
     on_exit = function(_, exit_code)
       self:_handle_exit(exit_code)
+      if co ~= nil then
+        coroutine.resume(co)
+      end
     end
   })
 
   return self
 end
 
-function SSHJob:run_scp_command(local_path, remote_path, recursive)
-  return self:_run_command(self:_generate_scp_command(local_path, remote_path, recursive))
-end
-
-function SSHJob:run_ssh_command(cmd)
-  return self:_run_command(self:_generate_ssh_command(cmd))
+function SSHJob:async_wait_for_completion()
+  while not vim.fn.jobwait({ self.job_id }, 0) do
+    -- vim.notify("Waiting for the job for another 5 seconds..."..os.date('%H:%M:%S'))
+    vim.wait(5000, function() return true end)
+  end
 end
 
 function SSHJob:wait_for_completion(timeout)
