@@ -42,17 +42,29 @@ function M.get_package_root()
 end
 
 function M.generate_random_string(length)
-    local charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    math.randomseed(os.time()) -- Seed the random number generator with the current time
-    local random_string = ""
+  local charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  math.randomseed(os.time()) -- Seed the random number generator with the current time
+  local random_string = ""
 
-    for _ = 1, length do
-        local rand_index = math.random(1, #charset)
-        random_string = random_string .. string.sub(charset, rand_index, rand_index)
-    end
+  for _ = 1, length do
+    local rand_index = math.random(1, #charset)
+    random_string = random_string .. string.sub(charset, rand_index, rand_index)
+  end
 
-    return random_string
+  return random_string
 end
 
+function M.find_free_port()
+  local socket = vim.loop.new_tcp()
+
+  socket:bind("127.0.0.1", 0)
+  local success = socket.getsockname(socket)
+  if not success then
+    print("Error getting socket name:", port_or_err)
+  end
+
+  socket:close()
+  return success["port"]
+end
 
 return M

@@ -94,7 +94,7 @@ function SSHJob:_handle_exit(exit_code)
 end
 
 function SSHJob:_filter_result(data)
-  local matchPattern = "\n" .. self._remote_cmd_output_separator .. "\n"
+  local matchPattern = self._remote_cmd_output_separator .. "\n"
   local start_index, end_index = (data or ""):find(matchPattern, 1, true)
   if start_index and end_index then
     return data:sub(end_index + 1):gsub("[\n]+$", "")
@@ -139,13 +139,6 @@ function SSHJob:run(co)
   })
 
   return self
-end
-
-function SSHJob:async_wait_for_completion()
-  while not vim.fn.jobwait({ self.job_id }, 0) do
-    -- vim.notify("Waiting for the job for another 5 seconds..."..os.date('%H:%M:%S'))
-    vim.wait(5000, function() return true end)
-  end
 end
 
 function SSHJob:wait_for_completion(timeout)
