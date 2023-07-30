@@ -148,6 +148,10 @@ function SSHJob:wait_for_completion(timeout)
   return vim.fn.jobwait({ self.job_id }, timeout or -1)[1]
 end
 
+function SSHJob:has_completed()
+  return self._is_job_complete
+end
+
 function SSHJob:stdout()
   return self:_filter_result(self.stdout_data)
 end

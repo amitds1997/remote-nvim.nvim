@@ -1,4 +1,5 @@
 local util = require("remote-nvim.utils")
+local RemoteHostWorkspaceConfig = require("remote-nvim.config")
 local M = {}
 
 local default_opts = {
@@ -14,10 +15,11 @@ local default_opts = {
   },
   install_script = nil,   -- default path is set during setup() call, if not provided
   remote_nvim_home = nil, -- default path is set during setup() call, if not provided
+  local_neovim_config_path = nil,
 }
 
 M.setup_commands = function()
-  vim.api.nvim_create_user_command("RemoteNvimConnect", function()
+  vim.api.nvim_create_user_command("RemoteNvimLaunch", function()
     if M.ssh_binary == nil then
       error("OpenSSH client not found. Cannot proceed further.")
     end
@@ -36,6 +38,8 @@ M.setup = function(args)
   M.ssh_prompts = opts.ssh_prompts
   M.install_script = opts.install_script or util.path_join(util.get_package_root(), "scripts", "neovim_install.sh")
   M.remote_nvim_home = opts.remote_nvim_home or util.path_join("~", ".remote-nvim")
+  M.local_neovim_config_path = opts.local_neovim_config_path or vim.fn.stdpath('config')
+  M.remote_nvim_host_config = RemoteHostWorkspaceConfig:new()
 
   require("remote-nvim.ssh").setup(opts)
 
