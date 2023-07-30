@@ -9,6 +9,7 @@ It aims to bring near feature-parity with [Remote development using SSH - VS Cod
 ## Prerequisites
 
 * Neovim >= 0.8.0
+* `curl`/`wget` on the remote server you wish to develop on
 
 ## Caveats
 
