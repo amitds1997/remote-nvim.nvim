@@ -141,13 +141,6 @@ function SSHJob:run(co)
   return self
 end
 
-function SSHJob:async_wait_for_completion()
-  while not vim.fn.jobwait({ self.job_id }, 0) do
-    -- vim.notify("Waiting for the job for another 5 seconds..."..os.date('%H:%M:%S'))
-    vim.wait(5000, function() return true end)
-  end
-end
-
 function SSHJob:wait_for_completion(timeout)
   if self._is_job_complete then
     return self.exit_code
