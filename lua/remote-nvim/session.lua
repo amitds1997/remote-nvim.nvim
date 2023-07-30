@@ -34,29 +34,6 @@ function RemoteNvimSession:new(ssh_host, ssh_options)
       instance.host_config_identifier = instance.host_config_identifier .. ":" .. port
     end
   end
-  if not remote_nvim_ssh.remote_nvim_host_config:host_exists(instance.host_config_identifier) then
-    remote_nvim_ssh.remote_nvim_host_config:add_host_config(instance.host_config_identifier, {
-      workspace_id = util.generate_random_string(10),
-      connection_options = instance.ssh_options,
-      remote_nvim_home = remote_nvim_ssh.remote_nvim_home,
-    })
-  end
-  instance.remote_host_config = remote_nvim_ssh.remote_nvim_host_config:get_workspace_config(instance
-    .host_config_identifier)
-
-  -- Workspace related configurations
-  instance.workspace_id = instance.remote_host_config.workspace_id
-  instance.ssh_options = instance.ssh_options or instance.remote_host_config.connection_options
-  instance.remote_nvim_home = instance.remote_host_config.remote_nvim_home
-  instance.remote_nvim_workspaces = util.path_join(instance.remote_nvim_home, "workspaces")
-  instance.remote_nvim_scripts_path = util.path_join(instance.remote_nvim_home, "scripts")
-  instance.remote_install_script_location = util.path_join(instance.remote_nvim_scripts_path,
-    vim.fn.fnamemodify(instance.install_script, ":t"))
-  instance.workspace_path = util.path_join(instance.remote_nvim_workspaces, instance.workspace_id)
-  instance.workspace_xdg_config_path = util.path_join(instance.workspace_path, ".config")
-  instance.workspace_neovim_config_uri = instance.ssh_host ..
-  ":" .. util.path_join(instance.workspace_xdg_config_path, "nvim")
-
   -- Track jobs executed during the session
   instance.ssh_jobs = {}
   instance.pending_ssh_jobs = {}
@@ -78,6 +55,31 @@ function RemoteNvimSession:add_ssh_job(cmd, ssh_options)
   return self
 end
 
+function RemoteNvimSession:setup_workspace_config()
+  if not remote_nvim_ssh.remote_nvim_host_config:host_exists(self.host_config_identifier) then
+    remote_nvim_ssh.remote_nvim_host_config:add_host_config(self.host_config_identifier, {
+      workspace_id = util.generate_random_string(10),
+      connection_options = self.ssh_options,
+      remote_nvim_home = remote_nvim_ssh.remote_nvim_home,
+    })
+  end
+  self.remote_host_config = remote_nvim_ssh.remote_nvim_host_config:get_workspace_config(self
+    .host_config_identifier)
+
+  -- Workspace related configurations
+  self.workspace_id = self.remote_host_config.workspace_id
+  self.ssh_options = self.ssh_options or self.remote_host_config.connection_options
+  self.remote_nvim_home = self.remote_host_config.remote_nvim_home
+  self.remote_nvim_workspaces = util.path_join(self.remote_nvim_home, "workspaces")
+  self.remote_nvim_scripts_path = util.path_join(self.remote_nvim_home, "scripts")
+  self.remote_install_script_location = util.path_join(self.remote_nvim_scripts_path,
+    vim.fn.fnamemodify(self.install_script, ":t"))
+  self.workspace_path = util.path_join(self.remote_nvim_workspaces, self.workspace_id)
+  self.workspace_xdg_config_path = util.path_join(self.workspace_path, ".config")
+  self.workspace_neovim_config_uri = self.ssh_host ..
+      ":" .. util.path_join(self.workspace_xdg_config_path, "nvim")
+end
+
 function RemoteNvimSession:run()
   local co = coroutine.create(function()
     while #self.pending_ssh_jobs ~= 0 do
@@ -95,6 +97,8 @@ function RemoteNvimSession:verify_successful_connection()
   self:add_ssh_job("echo 'Test connection'"):run()
 
   if self.ssh_jobs[1]:wait_for_completion() == 0 then
+    -- Connection was successfully; we can generate and save a workspace config for this server
+    self:setup_workspace_config()
     return true
   end
   return false
