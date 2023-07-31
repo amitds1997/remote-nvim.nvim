@@ -1,5 +1,7 @@
 M = {}
 
+M.PLUGIN_NAME = 'remote-nvim.nvim'
+
 function M.find_binary(binary)
   if type(binary) == "string" and vim.fn.executable(binary) == 1 then
     return binary

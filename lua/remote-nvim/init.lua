@@ -18,6 +18,7 @@ local default_opts = {
   install_script = nil,   -- default path is set during setup() call, if not provided
   remote_nvim_home = nil, -- default path is set during setup() call, if not provided
   local_neovim_config_path = nil,
+  log_level = "info",
 }
 
 M.setup_commands = function()
@@ -42,6 +43,7 @@ M.setup = function(args)
   M.remote_nvim_home = opts.remote_nvim_home or util.path_join("~", ".remote-nvim")
   M.local_neovim_config_path = opts.local_neovim_config_path or vim.fn.stdpath('config')
   M.remote_nvim_host_config = RemoteHostWorkspaceConfig:new()
+  M.log_level = opts.log_level
   M.remote_sessions = {}
 
   require("remote-nvim.ssh").setup(opts)
