@@ -134,7 +134,7 @@ function SSHJob:run(co)
     end,
     on_exit = function(_, exit_code)
       self:_handle_exit(exit_code)
-      if co ~= nil then
+      if co ~= nil and exit_code == 0 then
         coroutine.resume(co)
       end
     end
