@@ -40,6 +40,7 @@ M.setup = function(args)
   M.remote_nvim_home = opts.remote_nvim_home or util.path_join("~", ".remote-nvim")
   M.local_neovim_config_path = opts.local_neovim_config_path or vim.fn.stdpath('config')
   M.remote_nvim_host_config = RemoteHostWorkspaceConfig:new()
+  M.remote_sessions = {}
 
   require("remote-nvim.ssh").setup(opts)
 

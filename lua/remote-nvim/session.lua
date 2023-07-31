@@ -23,17 +23,12 @@ function RemoteNvimSession:new(ssh_host, ssh_options)
     -- The prefix `ssh` is not an option so we filter that out, if present
     instance.ssh_options = instance.ssh_options:gsub("^%s*ssh%s*", "")
   else
-    instance.ssh_options = nil
+    instance.ssh_options = ""
   end
 
   -- Determine identifier for the host in the workspace.json file
-  instance.host_config_identifier = ssh_host
-  if instance.ssh_options ~= nil then
-    local port = instance.ssh_options:match("-p%s*(%d+)")
-    if port ~= nil then
-      instance.host_config_identifier = instance.host_config_identifier .. ":" .. port
-    end
-  end
+  instance.host_config_identifier = util.get_host_identifier(instance.ssh_host, instance.ssh_options)
+
   -- Track jobs executed during the session
   instance.ssh_jobs = {}
   instance.pending_ssh_jobs = {}
@@ -82,11 +77,13 @@ end
 
 function RemoteNvimSession:run()
   local co = coroutine.create(function()
+    local job = nil
     while #self.pending_ssh_jobs ~= 0 do
-      local job = table.remove(self.pending_ssh_jobs, 1)
+      job = table.remove(self.pending_ssh_jobs, 1)
       coroutine.yield(job:run(coroutine.running()))
       if job.exit_code ~= 0 then
         vim.notify("Job " .. job.remote_cmd .. " failed!")
+        break
       end
     end
   end)
@@ -105,15 +102,17 @@ function RemoteNvimSession:verify_successful_connection()
 end
 
 function RemoteNvimSession:launch()
-  if self:verify_successful_connection() then
-    vim.notify("Connected to remote host '" .. self.ssh_host .. "' successfully.")
-  else
+  if not self:verify_successful_connection() then
     vim.notify("Failed to connect to host '" .. self.ssh_host .. "'")
+    return nil
   end
-  self:setup()
+  self:add_setup_steps()
+  self:add_launch_remote_neovim_server_step()
+  self:run()
+  self:launch_local_neovim_client()
 end
 
-function RemoteNvimSession:setup()
+function RemoteNvimSession:add_setup_steps()
   self
       :add_ssh_job("mkdir -p " .. self.remote_nvim_workspaces)                                 -- Create neovim workspace directory
       :add_ssh_job("mkdir -p " .. self.remote_nvim_scripts_path)                               -- Create neovim scripts directory
@@ -125,69 +124,73 @@ function RemoteNvimSession:setup()
         " -v " .. self:get_neovim_version() .. " -d " .. self.remote_nvim_home)                -- Install Neovim
       :add_ssh_job("mkdir -p " .. self.workspace_xdg_config_path)                              -- Create Neovim configuration directory
       :add_scp_job(self.local_nvim_config_path, self.workspace_neovim_config_uri, true)        -- Copy over Neovim configuration directory
-      :run()
-  -- vim.cmd('sleep 15')
-  -- self:launch_remote_neovim_server()
-  -- self:_launch_local_neovim_server()
 end
 
 function RemoteNvimSession:get_neovim_version()
   return "stable"
 end
 
-function RemoteNvimSession:_launch_local_neovim_server()
-  local cmd = { "nvim", "--server", "localhost:" .. self.free_port, "--remote-ui" }
-  require("lazy.util").float_term(cmd, {
-    interactive = true,
-    on_exit_handler = function(_, exit_code)
-      if exit_code ~= 0 then
-        vim.notify("Local Neovim server failed")
-      else
-        vim.notify("Local Neovim server exited successfully")
-      end
+function RemoteNvimSession:launch_local_neovim_client()
+  local neovim_client_not_started = true
 
-      vim.fn.jobstop(self.remote_nvim_starting_and_forwarding_job.job_id)
-    end,
-  })
-  vim.notify("Neovim started: " .. table.concat(cmd, " "))
+  local function _launch_neovim_client()
+    if self.remote_nvim_starting_and_forwarding_job ~= nil and self.remote_nvim_starting_and_forwarding_job.job_id ~= nil and self.remote_nvim_starting_and_forwarding_job:wait_for_completion(0) == -1 and neovim_client_not_started and self.remote_nvim_starting_and_forwarding_job:stdout() ~= nil then
+      local cmd = { "nvim", "--server", "localhost:" .. self.free_port, "--remote-ui" }
+      require("lazy.util").float_term(cmd, {
+        interactive = true,
+        on_exit_handler = function(_, exit_code)
+          if exit_code ~= 0 then
+            vim.notify("Local Neovim server " .. table.concat(cmd, " ") .. " failed")
+          end
+
+          vim.fn.jobstop(self.remote_nvim_starting_and_forwarding_job.job_id)
+        end,
+      })
+      neovim_client_not_started = false
+    else
+      vim.defer_fn(_launch_neovim_client, 0)
+    end
+  end
+  vim.defer_fn(_launch_neovim_client, 0)
 end
 
 function RemoteNvimSession:_get_remote_nvim_binary_path()
   return util.path_join(self.remote_nvim_home, "nvim-downloads", self:get_neovim_version(), "bin", "nvim")
 end
 
-function RemoteNvimSession:launch_remote_neovim_server()
-  -- Find a local free port
-  self.free_port = util.find_free_port()
+function RemoteNvimSession:add_launch_remote_neovim_server_step()
+  if self.remote_nvim_starting_and_forwarding_job ~= nil and not self.remote_nvim_starting_and_forwarding_job:has_completed() then
+    return
+  else
+    -- Find a local free port
+    self.free_port = util.find_free_port()
 
-  -- Find a remote free port
-  local free_remote_port_job = SSHJob:new(self.ssh_host, self.ssh_options):set_ssh_command(self
-        :_get_remote_nvim_binary_path() ..
-        " -l " .. util.path_join(self.remote_nvim_scripts_path, "free_port_finder.lua"))
-      :run()
-  free_remote_port_job:wait_for_completion()
-  self.remote_free_port = free_remote_port_job:stdout()
+    -- Find a remote free port
+    local free_remote_port_job = SSHJob:new(self.ssh_host, self.ssh_options):set_ssh_command(self
+          :_get_remote_nvim_binary_path() ..
+          " -l " .. util.path_join(self.remote_nvim_scripts_path, "free_port_finder.lua"))
+        :run()
+    free_remote_port_job:wait_for_completion()
+    self.remote_free_port = free_remote_port_job:stdout()
 
-  -- Set up SSH port forwarding from local to remote
-  -- We add "-t" to make sure that the command terminates when we exit from Neovim
-  local ssh_options = self.ssh_options .. " -t -L " .. self.free_port .. ":localhost:" .. self.remote_free_port
-  local remote_nvim_server_cmd = "XDG_CONFIG_HOME=" ..
-      self.workspace_xdg_config_path ..
-      " " .. self:_get_remote_nvim_binary_path() .. " --listen 0.0.0.0:" .. self.remote_free_port .. " --headless"
+    -- Set up SSH port forwarding from local to remote
+    -- We add "-t" to make sure that the command terminates when we exit from Neovim
+    local ssh_options = self.ssh_options .. " -t -L " .. self.free_port .. ":localhost:" .. self.remote_free_port
+    local remote_nvim_server_cmd = "XDG_CONFIG_HOME=" ..
+        self.workspace_xdg_config_path ..
+        " " .. self:_get_remote_nvim_binary_path() .. " --listen 0.0.0.0:" .. self.remote_free_port .. " --headless"
 
-  self.remote_nvim_starting_and_forwarding_job = SSHJob:new(self.ssh_host, ssh_options):set_ssh_command(
-    remote_nvim_server_cmd)
-  self.remote_nvim_starting_and_forwarding_job:run()
-  table.insert(self.ssh_jobs, self.remote_nvim_starting_and_forwarding_job)
+    self:add_ssh_job(remote_nvim_server_cmd, ssh_options)
+    self.remote_nvim_starting_and_forwarding_job = self.ssh_jobs[#self.ssh_jobs]
 
-
-  -- Kill the remote forwarding job if we exit through Neovim
-  vim.api.nvim_create_autocmd({ "VimLeave" }, {
-    pattern = { "*" },
-    callback = function()
-      vim.fn.jobstop(self.remote_nvim_starting_and_forwarding_job.job_id)
-    end
-  })
+    -- Kill the remote forwarding job if we exit through Neovim
+    vim.api.nvim_create_autocmd({ "VimLeave" }, {
+      pattern = { "*" },
+      callback = function()
+        vim.fn.jobstop(self.remote_nvim_starting_and_forwarding_job.job_id)
+      end
+    })
+  end
 end
 
 return RemoteNvimSession

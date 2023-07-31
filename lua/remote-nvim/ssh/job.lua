@@ -24,18 +24,22 @@ function SSHJob:new(ssh_host, ssh_options)
     _stderr_last_prompt_index = 1,
   }
 
-  if type(ssh_options) == "table" then
-    instance.ssh_options = table.concat(ssh_options, " ")
-  else
-    instance.ssh_options = ssh_options
-  end
+  if ssh_options ~= nil then
+    if type(ssh_options) == "table" then
+      instance.ssh_options = table.concat(ssh_options, " ")
+    else
+      instance.ssh_options = ssh_options
+    end
 
-  -- Actual options would only contain options and not the hostname so we filter that out
-  -- We also have to escape each non-alphanumeric character because some are treated specially
-  -- by Lua.
-  instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), "")
-  -- We remove "-N" from SSH options if it exists; we remove extra spaces
-  instance.ssh_options = instance.ssh_options:gsub("%-N", ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+    -- Actual options would only contain options and not the hostname so we filter that out
+    -- We also have to escape each non-alphanumeric character because some are treated specially
+    -- by Lua.
+    instance.ssh_options = instance.ssh_options:gsub(instance.ssh_host:gsub("([^%w])", "%%%1"), "")
+    -- We remove "-N" from SSH options if it exists; we remove extra spaces
+    instance.ssh_options = instance.ssh_options:gsub("%-N", ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+  else
+    instance.ssh_options = ""
+  end
 
   instance.default_separator_cmd = "echo '" .. instance._remote_cmd_output_separator .. "'"
 
@@ -88,8 +92,6 @@ function SSHJob:_handle_exit(exit_code)
   self.exit_code = exit_code
   if exit_code ~= 0 then
     vim.notify("Remote command: " .. self.remote_cmd .. " failed.")
-  else
-    vim.notify("Remote command: " .. self.remote_cmd .. " succeeded.")
   end
 end
 

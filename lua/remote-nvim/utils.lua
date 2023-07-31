@@ -67,4 +67,15 @@ function M.find_free_port()
   return success["port"]
 end
 
+function M.get_host_identifier(ssh_host, ssh_options)
+  local host_config_identifier = ssh_host
+  if ssh_options ~= nil then
+    local port = ssh_options:match("-p%s*(%d+)")
+    if port ~= nil then
+      host_config_identifier = host_config_identifier .. ":" .. port
+    end
+  end
+  return host_config_identifier
+end
+
 return M

@@ -1,4 +1,5 @@
 local telescope = require("telescope")
+local remote_nvim = require("remote-nvim")
 local remote_ssh = require("remote-nvim.ssh")
 local RemoteNvimSession = require("remote-nvim.session")
 local previewers = require("telescope.previewers")
@@ -56,7 +57,9 @@ local function select_ssh_host_from_ssh_config(opts)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
         local selection = action_state.get_selected_entry()
-        RemoteNvimSession:new(selection.value["Host"], selection.value["Host"]):launch()
+        local host = selection.value["Host"]
+        remote_nvim.remote_sessions[host] = remote_nvim.remote_sessions[host] or RemoteNvimSession:new(host)
+        remote_nvim.remote_sessions[host]:launch()
       end)
       return true
     end
