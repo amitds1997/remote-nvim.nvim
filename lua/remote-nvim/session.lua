@@ -33,19 +33,23 @@ function RemoteNvimSession:new(ssh_host, ssh_options)
   instance.ssh_jobs = {}
   instance.pending_ssh_jobs = {}
 
+  -- Track saved values for session
+  instance.ssh_prompt_values = {}
+
   self.__index = self
   setmetatable(instance, self)
   return instance
 end
 
 function RemoteNvimSession:add_scp_job(from_uri, to_uri, recursive)
-  table.insert(self.ssh_jobs, SSHJob:new(self.ssh_host, self.ssh_options):set_scp_command(from_uri, to_uri, recursive))
+  table.insert(self.ssh_jobs,
+    SSHJob:new(self.ssh_host, self.ssh_options, self):set_scp_command(from_uri, to_uri, recursive))
   table.insert(self.pending_ssh_jobs, self.ssh_jobs[#self.ssh_jobs])
   return self
 end
 
 function RemoteNvimSession:add_ssh_job(cmd, ssh_options)
-  table.insert(self.ssh_jobs, SSHJob:new(self.ssh_host, ssh_options or self.ssh_options):set_ssh_command(cmd))
+  table.insert(self.ssh_jobs, SSHJob:new(self.ssh_host, ssh_options or self.ssh_options, self):set_ssh_command(cmd))
   table.insert(self.pending_ssh_jobs, self.ssh_jobs[#self.ssh_jobs])
   return self
 end
@@ -84,8 +88,6 @@ function RemoteNvimSession:run()
       if job.exit_code ~= 0 then
         vim.notify("Job " .. job.remote_cmd .. " failed!")
         break
-      else
-        vim.notify("Job " .. job.remote_cmd .. " succeeded!")
       end
     end
   end)
@@ -175,7 +177,7 @@ function RemoteNvimSession:launch_remote_neovim_server()
         self.free_port = util.find_free_port()
 
         -- Find a remote free port
-        local free_remote_port_job = SSHJob:new(self.ssh_host, self.ssh_options):set_ssh_command(self
+        local free_remote_port_job = SSHJob:new(self.ssh_host, self.ssh_options, self):set_ssh_command(self
               :_get_remote_nvim_binary_path() ..
               " -l " .. util.path_join(self.remote_nvim_scripts_path, "free_port_finder.lua"))
             :run()

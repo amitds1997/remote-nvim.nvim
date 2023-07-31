@@ -3,9 +3,10 @@ local remote_nvim_ssh = require("remote-nvim")
 local SSHJob = {}
 SSHJob.__index = SSHJob
 
-function SSHJob:new(ssh_host, ssh_options)
+function SSHJob:new(ssh_host, ssh_options, session)
   local instance = {
     ssh_host = ssh_host,
+    session = session,
     ssh_binary = remote_nvim_ssh.ssh_binary,
     scp_binary = remote_nvim_ssh.scp_binary,
     ssh_prompts = remote_nvim_ssh.ssh_prompts,
@@ -65,11 +66,23 @@ function SSHJob:_handle_stdout(data)
       local prompt_label = prompt.input_prompt or ("Enter " .. prompt.match .. " ")
 
       local prompt_response
-      -- TODO: Switch away from vim.fn.inputsecret since it is a blocking call
-      if prompt.type == "secret" then
-        prompt_response = vim.fn.inputsecret(prompt_label)
+
+      if prompt.value_type == "static" and self.session.ssh_prompt_values[prompt.match] ~= nil and self.session.ssh_prompt_values[prompt.match].job_id ~= nil and self.session.ssh_prompt_values[prompt.match].job_id ~= self.job_id then
+        prompt_response = self.session.ssh_prompt_values[prompt.match].value
       else
-        prompt_response = vim.fn.input(prompt_label)
+        -- TODO: Switch away from vim.fn.inputsecret since it is a blocking call
+        if prompt.type == "secret" then
+          prompt_response = vim.fn.inputsecret(prompt_label)
+        else
+          prompt_response = vim.fn.input(prompt_label)
+        end
+
+        if prompt.value_type == "static" then
+          self.session.ssh_prompt_values[prompt.match] = {
+            job_id = self.job_id,
+            value = prompt_response
+          }
+        end
       end
 
       vim.api.nvim_chan_send(self.job_id, prompt_response .. "\n")

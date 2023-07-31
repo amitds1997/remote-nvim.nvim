@@ -10,7 +10,9 @@ local default_opts = {
     {
       match = "password:",
       type = "secret",
-      input_prompt = "Enter password: "
+      input_prompt = "Enter password: ",
+      value_type = "static",
+      value = nil,
     }
   },
   install_script = nil,   -- default path is set during setup() call, if not provided
