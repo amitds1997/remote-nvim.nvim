@@ -8,3 +8,5 @@
 - [ ] Add progress bar notification
 - [ ] Add tutorial videos
 - [ ] Fix remote system path style detection code
+- [ ] Make testing SSH connection async
+- [ ] Add a command `:RemoteNvimCloseTUI` to just close the current instance without closing the server
