@@ -60,7 +60,7 @@ function SSHJob:_handle_stdout(data)
   local search_field = table.concat({ unpack(self._stdout_lines, self._stdout_last_prompt_index + 1) }, "")
 
   for _, prompt in ipairs(self.ssh_prompts) do
-    if search_field:find(prompt.match) then
+    if search_field:find(prompt.match, 1, true) then
       -- We found a match so all strings until now are done for
       self._stdout_last_prompt_index = #self._stdout_lines
       local prompt_label = prompt.input_prompt or ("Enter " .. prompt.match .. " ")

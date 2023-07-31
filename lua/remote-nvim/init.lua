@@ -13,6 +13,13 @@ local default_opts = {
       input_prompt = "Enter password: ",
       value_type = "static",
       value = nil,
+    },
+    {
+      match = "continue connecting (yes/no/[fingerprint])?",
+      type = "plain",
+      input_prompt = "Do you want to continue connection (yes/no)? ",
+      value_type = "static",
+      value = nil,
     }
   },
   install_script = nil,   -- default path is set during setup() call, if not provided
