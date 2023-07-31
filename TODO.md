@@ -9,5 +9,13 @@
 - [ ] Add tutorial videos
 - [ ] Fix remote system path style detection code
 - [ ] Make testing SSH connection async
-- [ ] Add a command `:RemoteNvimCloseTUI` to just close the current instance without closing the server
 - [ ] Add EmmyLua annotations
+- [ ] Handle Neovim already exists on remote machine scenario
+- [ ] If there are additional saved hosts and workspaces, show them too
+- [ ] If the neovim version was downloaded and setup more than a month back, re-install it.
+- Add more commands
+    - [ ] `:RemoteNvimCloseTUI` to close current running TUI without closing the server
+    - [ ] `:RemoteNvimInfo` to get information about active sessions
+    - [ ] `:RemoteNvimCloseSession` to close a chosen host's session
+    - [ ] `:RemoteNvimCleanUpHost` to clean up everything installed so far by us
+    - [ ] `:RemoteNvimSwitch` should switch b/w active sessions
