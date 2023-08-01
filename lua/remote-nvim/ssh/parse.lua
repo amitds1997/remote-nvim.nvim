@@ -45,7 +45,7 @@ local function parse_config_file(ssh_config_path, parsed_config)
           local directive, option = line:match("^(%S+)%s+(.+)")
           if directive and option then
             -- Remove double quotes if present
-            option = option:gsub("^\"(.+)\"$", "%1")
+            option = option:gsub('^"(.+)"$', "%1")
             config[current_host][directive] = option
           end
         end

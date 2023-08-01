@@ -15,7 +15,7 @@ function WorkspaceConfig.new()
   self.plugin_name = "remote-nvim.nvim"
 
   -- Create the plugin dir, if it does not exist
-  local plugin_dir = utils.path_join(vim.fn.stdpath('data'), 'remote-nvim.nvim')
+  local plugin_dir = utils.path_join(vim.fn.stdpath("data"), "remote-nvim.nvim")
   if not vim.loop.fs_stat(plugin_dir) then
     local success, err = vim.loop.fs_mkdir(plugin_dir, 493) -- 493 is the permission mode for directories (0755 in octal)
     if not success then
@@ -23,7 +23,7 @@ function WorkspaceConfig.new()
     end
   end
 
-  self.file_path = utils.path_join(plugin_dir, 'workspace.json')
+  self.file_path = utils.path_join(plugin_dir, "workspace.json")
   create_file_if_not_exists(self.file_path)
   self.data = self:read_file() or {}
   return self
