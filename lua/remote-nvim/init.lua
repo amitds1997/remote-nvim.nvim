@@ -1,5 +1,5 @@
-local util = require("remote-nvim.utils")
 local RemoteHostWorkspaceConfig = require("remote-nvim.config")
+local util = require("remote-nvim.utils")
 local M = {}
 
 local default_opts = {
@@ -20,9 +20,9 @@ local default_opts = {
       input_prompt = "Do you want to continue connection (yes/no)? ",
       value_type = "static",
       value = nil,
-    }
+    },
   },
-  install_script = nil,   -- default path is set during setup() call, if not provided
+  install_script = nil, -- default path is set during setup() call, if not provided
   remote_nvim_home = nil, -- default path is set during setup() call, if not provided
   local_neovim_config_path = nil,
   log_level = "info",
@@ -38,7 +38,7 @@ M.setup_commands = function()
 end
 
 M.setup_keymaps = function()
-  vim.api.nvim_set_keymap('n', ',p', ':Lazy reload remote-nvim.nvim<CR>', {})
+  vim.api.nvim_set_keymap("n", ",p", ":Lazy reload remote-nvim.nvim<CR>", {})
 end
 
 M.setup = function(args)
@@ -48,7 +48,7 @@ M.setup = function(args)
   M.ssh_prompts = opts.ssh_prompts
   M.install_script = opts.install_script or util.path_join(util.get_package_root(), "scripts", "neovim_install.sh")
   M.remote_nvim_home = opts.remote_nvim_home or util.path_join("~", ".remote-nvim")
-  M.local_neovim_config_path = opts.local_neovim_config_path or vim.fn.stdpath('config')
+  M.local_neovim_config_path = opts.local_neovim_config_path or vim.fn.stdpath("config")
   M.remote_nvim_host_config = RemoteHostWorkspaceConfig:new()
   M.log_level = opts.log_level
   M.remote_sessions = {}
@@ -58,6 +58,5 @@ M.setup = function(args)
   M.setup_commands()
   M.setup_keymaps()
 end
-
 
 return M

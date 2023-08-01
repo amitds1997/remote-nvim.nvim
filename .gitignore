@@ -1,5 +1,3 @@
-# Created by https://www.toptal.com/developers/gitignore/api/lua
-
 ### Lua ###
 # Compiled Lua sources
 luac.out
@@ -41,5 +39,3 @@ luac.out
 *.i*86
 *.x86_64
 *.hex
-
-# End of https://www.toptal.com/developers/gitignore/api/lua

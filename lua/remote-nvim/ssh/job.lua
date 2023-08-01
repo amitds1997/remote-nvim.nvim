@@ -67,7 +67,12 @@ function SSHJob:_handle_stdout(data)
 
       local prompt_response
 
-      if prompt.value_type == "static" and self.session.ssh_prompt_values[prompt.match] ~= nil and self.session.ssh_prompt_values[prompt.match].job_id ~= nil and self.session.ssh_prompt_values[prompt.match].job_id ~= self.job_id then
+      if
+        prompt.value_type == "static"
+        and self.session.ssh_prompt_values[prompt.match] ~= nil
+        and self.session.ssh_prompt_values[prompt.match].job_id ~= nil
+        and self.session.ssh_prompt_values[prompt.match].job_id ~= self.job_id
+      then
         prompt_response = self.session.ssh_prompt_values[prompt.match].value
       else
         -- TODO: Switch away from vim.fn.inputsecret since it is a blocking call
@@ -80,7 +85,7 @@ function SSHJob:_handle_stdout(data)
         if prompt.value_type == "static" then
           self.session.ssh_prompt_values[prompt.match] = {
             job_id = self.job_id,
-            value = prompt_response
+            value = prompt_response,
           }
         end
       end
@@ -150,7 +155,7 @@ function SSHJob:run(co)
       if co ~= nil and exit_code == 0 then
         coroutine.resume(co)
       end
-    end
+    end,
   })
 
   return self

@@ -1,8 +1,8 @@
-M = {}
+local utils = {}
 
-M.PLUGIN_NAME = 'remote-nvim.nvim'
+utils.PLUGIN_NAME = "remote-nvim.nvim"
 
-function M.find_binary(binary)
+function utils.find_binary(binary)
   if type(binary) == "string" and vim.fn.executable(binary) == 1 then
     return binary
   elseif type(binary) == "table" and vim.fn.executable(binary[1]) then
@@ -11,7 +11,7 @@ function M.find_binary(binary)
   return nil
 end
 
-function M.merge_tables(t1, t2)
+function utils.merge_tables(t1, t2)
   local merged_table = {}
 
   for key, value in pairs(t1) do
@@ -28,22 +28,22 @@ function M.merge_tables(t1, t2)
   return merged_table
 end
 
-function M.path_join(...)
+function utils.path_join(...)
   local parts = { ... }
   return table.concat(parts, vim.loop.os_uname().sysname == "Windows" and "\\" or "/")
 end
 
-function M.get_package_root()
+function utils.get_package_root()
   local root_dir
   for dir in vim.fs.parents(debug.getinfo(1).source:sub(2)) do
-    if vim.fn.isdirectory(M.path_join(dir, "lua", "remote-nvim")) == 1 then
+    if vim.fn.isdirectory(utils.path_join(dir, "lua", "remote-nvim")) == 1 then
       root_dir = dir
     end
   end
   return root_dir
 end
 
-function M.generate_random_string(length)
+function utils.generate_random_string(length)
   local charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   math.randomseed(os.time()) -- Seed the random number generator with the current time
   local random_string = ""
@@ -56,20 +56,22 @@ function M.generate_random_string(length)
   return random_string
 end
 
-function M.find_free_port()
+function utils.find_free_port()
   local socket = vim.loop.new_tcp()
 
   socket:bind("127.0.0.1", 0)
-  local success = socket.getsockname(socket)
-  if not success then
-    print("Error getting socket name:", port_or_err)
+  local result = socket.getsockname(socket)
+  socket:close()
+
+  if not result then
+    print("Failed to find a free port")
+    return
   end
 
-  socket:close()
-  return success["port"]
+  return result["port"]
 end
 
-function M.get_host_identifier(ssh_host, ssh_options)
+function utils.get_host_identifier(ssh_host, ssh_options)
   local host_config_identifier = ssh_host
   if ssh_options ~= nil then
     local port = ssh_options:match("-p%s*(%d+)")
@@ -80,4 +82,4 @@ function M.get_host_identifier(ssh_host, ssh_options)
   return host_config_identifier
 end
 
-return M
+return utils

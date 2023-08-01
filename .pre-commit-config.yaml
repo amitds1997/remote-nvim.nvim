@@ -1,0 +1,47 @@
+---
+default_install_hook_types: [pre-commit]
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+      - id: check-case-conflict
+      - id: check-added-large-files
+      - id: check-shebang-scripts-are-executable
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: sort-simple-yaml
+      - id: pretty-format-json
+        args: [--autofix]
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.7.0-1
+    hooks:
+      - id: shfmt  # native (requires/installs Go to build)
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.9.0
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.35.0
+    hooks:
+      - id: markdownlint
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: v0.18.1
+    hooks:
+      - id: stylua
+  - repo: https://github.com/lyz-code/yamlfix/
+    rev: 1.13.0
+    hooks:
+      - id: yamlfix
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.32.0
+    hooks:
+      - id: yamllint
+        args: [--strict]
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: 3.6.0
+    hooks:
+      - id: commitizen
