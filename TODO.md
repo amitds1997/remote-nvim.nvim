@@ -8,7 +8,6 @@
 - [ ] Add tutorial videos
 - [ ] Fix remote system path style detection code
 - [ ] Make testing SSH connection async
-- [ ] Add EmmyLua annotations
 - [ ] Handle Neovim already exists on remote machine scenario
 - [ ] If there are additional saved hosts and workspaces, show them too
 - [ ] If the neovim version was downloaded and setup more than

@@ -8,7 +8,7 @@ function RemoteNvimSession:new(ssh_host, ssh_options)
   local instance = {
     ssh_binary = remote_nvim_ssh.ssh_binary,
     ssh_prompts = remote_nvim_ssh.ssh_prompts,
-    install_script = remote_nvim_ssh.install_script,
+    install_script = remote_nvim_ssh.neovim_install_script_path,
     local_nvim_config_path = remote_nvim_ssh.local_neovim_config_path,
   }
   assert(ssh_host ~= nil, "Host name cannot be nil")
@@ -57,14 +57,14 @@ function RemoteNvimSession:add_ssh_job(cmd, ssh_options)
 end
 
 function RemoteNvimSession:setup_workspace_config()
-  if not remote_nvim_ssh.remote_nvim_host_config:host_exists(self.host_config_identifier) then
-    remote_nvim_ssh.remote_nvim_host_config:add_host_config(self.host_config_identifier, {
+  if not remote_nvim_ssh.remote_neovim_host_config:host_exists(self.host_config_identifier) then
+    remote_nvim_ssh.remote_neovim_host_config:add_host_config(self.host_config_identifier, {
       workspace_id = util.generate_random_string(10),
       connection_options = self.ssh_options,
-      remote_nvim_home = remote_nvim_ssh.remote_nvim_home,
+      remote_nvim_home = remote_nvim_ssh.remote_neovim_install_home,
     })
   end
-  self.remote_host_config = remote_nvim_ssh.remote_nvim_host_config:get_workspace_config(self.host_config_identifier)
+  self.remote_host_config = remote_nvim_ssh.remote_neovim_host_config:get_workspace_config(self.host_config_identifier)
 
   -- Workspace related configurations
   self.workspace_id = self.remote_host_config.workspace_id

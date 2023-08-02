@@ -59,8 +59,8 @@ local function select_ssh_host_from_ssh_config(opts)
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
           local host = selection.value["Host"]
-          remote_nvim.remote_sessions[host] = remote_nvim.remote_sessions[host] or RemoteNvimSession:new(host)
-          remote_nvim.remote_sessions[host]:launch()
+          remote_nvim.sessions[host] = remote_nvim.sessions[host] or RemoteNvimSession:new(host)
+          remote_nvim.sessions[host]:launch()
         end)
         return true
       end,

@@ -59,7 +59,7 @@ function M.parse_ssh_configs(ssh_config_files)
   local parsed_ssh_config = {}
 
   for _, ssh_config_file in ipairs(ssh_config_files) do
-    parsed_ssh_config = utils.merge_tables(parsed_ssh_config, parse_config_file(ssh_config_file, {}))
+    parsed_ssh_config = vim.tbl_extend("keep", parse_config_file(ssh_config_file, {}))
   end
 
   -- We filter out any regular expression based configurations
