@@ -1,12 +1,14 @@
 local M = {}
 
--- Name of the plugin
+---Name of the plugin
 M.PLUGIN_NAME = "remote-nvim.nvim"
+---Minimum Neovim version for the plugin
 M.MIN_NEOVIM_VERSION = "v0.8.0"
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 
+---Find if provided binary exists or not
 ---@param binary string|string[] Name of the binary to search on the runtime path
 ---@return string binary Returns back the binary; error if not found
 function M.find_binary(binary)
@@ -18,6 +20,7 @@ function M.find_binary(binary)
   error("Binary " .. binary .. " not found.")
 end
 
+---Get the root path of the plugin
 ---@return string root_dir Returns the path to the plugin's root
 function M.get_package_root()
   local root_dir
@@ -29,6 +32,7 @@ function M.get_package_root()
   return root_dir
 end
 
+---Generate a random string of given length
 ---@param length integer Length of the string to be generated
 ---@return string random_string Random string of the given length
 function M.generate_random_string(length)
@@ -44,7 +48,8 @@ function M.generate_random_string(length)
   return random_string
 end
 
----@return integer|nil port A free ephemeral port available for TCP connections
+---Get an ephemeral free port on the local machine
+---@return string port A free ephemeral port available for TCP connections
 function M.find_free_port()
   local socket = vim.loop.new_tcp()
 
@@ -56,16 +61,17 @@ function M.find_free_port()
     error("Failed to find a free port")
   end
 
-  return result["port"]
+  return tostring(result["port"])
 end
 
----@param ssh_host string Host name to be connected to
----@param ssh_options string Connection options required for connecting to host
+---Generate an identifier for a host given name and connection options
+---@param host string Host name to be connected to
+---@param conn_options string Connection options required for connecting to host
 ---@return string host_identifier Unique identifier created by combining host and port information
-function M.get_host_identifier(ssh_host, ssh_options)
-  local host_config_identifier = ssh_host
-  if ssh_options ~= nil then
-    local port = ssh_options:match("-p%s*(%d+)")
+function M.get_host_identifier(host, conn_options)
+  local host_config_identifier = host
+  if conn_options ~= nil then
+    local port = conn_options:match("-p%s*(%d+)")
     if port ~= nil then
       host_config_identifier = host_config_identifier .. ":" .. port
     end
@@ -118,6 +124,7 @@ M.path_join = function(is_windows, ...)
   return table.concat(all_parts, path_separator)
 end
 
+---Get Neovim versions that satisfy the minimum neovim version constraint
 M.get_neovim_versions = function()
   local res = require("plenary.curl").get("https://api.github.com/repos/neovim/neovim/releases", {
     headers = {
@@ -125,6 +132,7 @@ M.get_neovim_versions = function()
     },
   })
   local available_versions = { "stable" }
+  ---@diagnostic disable-next-line: param-type-mismatch
   for _, version_info in ipairs(vim.fn.json_decode(res.body)) do
     local version = version_info["tag_name"]
 
@@ -153,7 +161,7 @@ M.get_neovim_versions = function()
   return available_versions
 end
 
---- Get async input from the user
+---Get async input from the user
 ---@param choices string[] Options to be presented to the user
 ---@param input_opts table Input options, same as one given to @see vim.ui.select
 ---@param cb function Callback to call once choice has been made
@@ -170,6 +178,21 @@ M.get_user_selection = function(choices, input_opts, cb)
   end)
   if co then
     coroutine.yield()
+  end
+end
+
+---Run code in a coroutine
+---@param fn function Function to run inside the coroutine
+---@param err_fn? function Error handling function
+M.run_code_in_coroutine = function(fn, err_fn)
+  local co = coroutine.create(fn)
+  local success, err = coroutine.resume(co)
+  if not success then
+    if err_fn ~= nil then
+      err_fn(err)
+    else
+      error("Coroutine failed with error " .. err)
+    end
   end
 end
 

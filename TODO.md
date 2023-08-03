@@ -10,6 +10,7 @@
 - [ ] If the neovim version was downloaded and setup more than
 a month back, re-install it.
 - [ ] Add CHANGELOG
+- [ ] Find why there are extra whitespaces in commands run in SSH
 - [ ] Add check to ensure that minimum neovim version is there
 - [ ] Add [selene](https://github.com/Kampfkarren/selene/pull/541) check
 in pre-commit once it's available

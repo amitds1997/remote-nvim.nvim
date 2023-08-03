@@ -1,8 +1,7 @@
-local ExecutorInterface = require("remote-nvim.providers.executor_interface")
-local RemoteNeovimConfig = require("remote-nvim")
-local SSHUtils = require("remote-nvim.providers.ssh.ssh_utils")
+local remote_neovim = require("remote-nvim")
+local ssh_utils = require("remote-nvim.providers.ssh.ssh_utils")
 
----@class SSHRemoteExecutor: ExecutorInterface
+---@class SSHRemoteExecutor
 ---@field remote_host string Host name of the remote host
 ---@field ssh_connection_options string Connection options to run SSH to remote host
 ---@field scp_connection_options string Connection options to run SCP to remote host
@@ -22,12 +21,13 @@ local SSHRemoteExecutor = {}
 SSHRemoteExecutor.__index = SSHRemoteExecutor
 
 setmetatable(SSHRemoteExecutor, {
-  __index = ExecutorInterface,
+  __index = SSHRemoteExecutor,
   __call = function(cls, ...)
     return cls.new(...)
   end,
 })
 
+---Get a new instance of SSH Executor
 ---@param host string Host on which the remote executor would work
 ---@param connection_options string Connection options needed to work with remote host
 ---@return SSHRemoteExecutor
@@ -40,9 +40,9 @@ function SSHRemoteExecutor:new(host, connection_options)
   instance.scp_connection_options = connection_options:gsub("%-p", "-P") .. " -r "
 
   -- Configurations passed into plugin
-  instance.ssh_binary = RemoteNeovimConfig.config.ssh_config.ssh_binary
-  instance.scp_binary = RemoteNeovimConfig.config.ssh_config.scp_binary
-  instance.ssh_prompts = vim.deepcopy(RemoteNeovimConfig.config.ssh_config.ssh_prompts)
+  instance.ssh_binary = remote_neovim.config.ssh_config.ssh_binary
+  instance.scp_binary = remote_neovim.config.ssh_config.scp_binary
+  instance.ssh_prompts = vim.deepcopy(remote_neovim.config.ssh_config.ssh_prompts)
 
   -- Internal state management params
   instance.job_id = nil
@@ -59,9 +59,9 @@ function SSHRemoteExecutor:new(host, connection_options)
   return instance
 end
 
----Reset the state of the executor
 ---@private
-function SSHRemoteExecutor:resetState()
+---Reset the state of the executor
+function SSHRemoteExecutor:reset()
   -- If the job is running, cancel it
   if self.job_id then
     self:cancel()
@@ -82,23 +82,23 @@ end
 ---Upload file/directory from local to remote host
 ---@param localPath string Local path where it is to be downloaded
 ---@param remotePath string Path on the remote host
----@return SSHRemoteExecutor
+---@return SSHRemoteExecutor executor Executor on which the command is running
 function SSHRemoteExecutor:upload(localPath, remotePath)
   local remotePathURI = self.remote_host .. ":" .. remotePath
   local cmd = localPath .. " " .. remotePathURI
 
-  return self:setRemoteCommand(cmd, self.scp_binary, self.scp_connection_options):runJob()
+  return self:set_command(cmd, self.scp_binary, self.scp_connection_options):run_job()
 end
 
 ---Download file/directory from remote host to local machine
 ---@param remotePath string Path on the remote host
 ---@param localPath string Local path where it is to be downloaded
----@return SSHRemoteExecutor
+---@return SSHRemoteExecutor executor Executor on which the command is running
 function SSHRemoteExecutor:download(remotePath, localPath)
   local remotePathURI = self.remote_host .. ":" .. remotePath
   local cmd = remotePathURI .. " " .. localPath
 
-  return self:setRemoteCommand(cmd, self.scp_binary, self.scp_connection_options):runJob()
+  return self:set_command(cmd, self.scp_binary, self.scp_connection_options):run_job()
 end
 
 ---@private
@@ -106,10 +106,10 @@ end
 ---@param command string Command to run on the remote server
 ---@param binary? string Binary to use for running this operation
 ---@param connection_options? string Connection options to use for the operation
----@return SSHRemoteExecutor
-function SSHRemoteExecutor:setRemoteCommand(command, binary, connection_options)
+---@return SSHRemoteExecutor executor Executor on which the command is running
+function SSHRemoteExecutor:set_command(command, binary, connection_options)
   -- Reset the state of the executor
-  self:resetState()
+  self:reset()
 
   -- By default, we use the SSH binary and connection options
   self.job_binary = binary or self.ssh_binary
@@ -129,26 +129,26 @@ end
 ---SSH command to run over the remote host
 ---@param command string Command to run on the remote host
 ---@param connection_options? string Connection operations for the command to be run
----@return SSHRemoteExecutor
-function SSHRemoteExecutor:runCommand(command, connection_options)
-  return self:setRemoteCommand(command, self.ssh_binary, connection_options):runJob()
+---@return SSHRemoteExecutor executor Executor on which the command is running
+function SSHRemoteExecutor:run_command(command, connection_options)
+  return self:set_command(command, self.ssh_binary, connection_options):run_job()
 end
 
 ---@private
 ---Run job specified by command over the SSHExecutor
 ---@return SSHRemoteExecutor executor The executor on which the job is executing
-function SSHRemoteExecutor:runJob()
+function SSHRemoteExecutor:run_job()
   local co = coroutine.running()
   self.job_id = vim.fn.jobstart(self.complete_cmd, {
     pty = true,
     on_stdout = function(_, data)
-      self:handleStdout(data)
+      self:handle_stdout(data)
     end,
     on_stderr = function(_, data)
-      self:handleStderr(data)
+      self:handle_stderr(data)
     end,
     on_exit = function(_, exit_code)
-      self:handleExit(exit_code)
+      self:handle_exit(exit_code)
       if co ~= nil then
         coroutine.resume(co)
       end
@@ -164,8 +164,8 @@ end
 
 ---@private
 ---@param data string[] Data string array produced by the running job
-function SSHRemoteExecutor:handleStdout(data)
-  SSHUtils.appendTTYDataToBuffer(self.stdout_bufr, data)
+function SSHRemoteExecutor:handle_stdout(data)
+  ssh_utils.append_tty_data_to_buffer(self.stdout_bufr, data)
 
   -- Check for existence of any prompt matches which indicate SSH is waiting for an input
   local search_string = table.concat({ unpack(self.stdout_bufr, self.last_stdout_processed_idx + 1) }, "")
@@ -179,7 +179,7 @@ function SSHRemoteExecutor:handleStdout(data)
         prompt_value = prompt.value
       else
         local prompt_label = prompt.input_prompt or ("Enter " .. prompt.match .. " ")
-        prompt_value = self:handleInput(prompt_label, prompt.type)
+        prompt_value = self:handle_input(prompt_label, prompt.type)
 
         -- If there was a need to get input, cache it to be used in future jobs for "static" prompts, second part of this logic runs in the exit handler
         ---@see SSHRemoteExecutor.handleExit
@@ -194,13 +194,13 @@ end
 
 ---@private
 ---@param data string[] Error string array produced by the running job
-function SSHRemoteExecutor:handleStderr(data)
-  SSHUtils.appendTTYDataToBuffer(self.stderr_bufr, data)
+function SSHRemoteExecutor:handle_stderr(data)
+  ssh_utils.append_tty_data_to_buffer(self.stderr_bufr, data)
 end
 
 ---@private
 ---@param exit_code number Exit code of the job that was just running on the executor
-function SSHRemoteExecutor:handleExit(exit_code)
+function SSHRemoteExecutor:handle_exit(exit_code)
   self.exit_code = exit_code
   self.is_job_complete = true
 
@@ -218,14 +218,14 @@ end
 
 ---A way for executor to send progress report about the status of job
 ---@param callback function Callback function to call that will provide status of the job
-function SSHRemoteExecutor:monitorProgress(callback)
+function SSHRemoteExecutor:get_progress(callback)
   --TODO: Implement monotoring progress
   callback()
 end
 
 ---Get status of the currently running job
----@see vim.fn.jobwait
-function SSHRemoteExecutor:getStatus()
+---@see vim.fn.jobwait for output info
+function SSHRemoteExecutor:get_status()
   if self.is_job_complete then
     return self.exit_code
   end
@@ -233,16 +233,19 @@ function SSHRemoteExecutor:getStatus()
 end
 
 ---Get if the job running on the executor was successful
-function SSHRemoteExecutor:isSuccessful()
+---@return boolean job_successful Flag indicating if the last running job succeeded
+function SSHRemoteExecutor:is_successful()
   return (self.exit_code or -1) == 0
 end
 
 ---Get if the job running on the executor has completed
-function SSHRemoteExecutor:isCompleted()
+---@return boolean job_completed Flag indicating if the last running job completed
+function SSHRemoteExecutor:is_completed()
   return self.is_job_complete
 end
 
 ---Cancel the currently running job on the executor
+---@return number status Returns 1 for valid job id, 0 for invalid id, including jobs have exited or stopped.
 function SSHRemoteExecutor:cancel()
   return vim.fn.jobstop(self.job_id)
 end
@@ -251,7 +254,7 @@ end
 ---@param prompt_label string Prompt label to be shown
 ---@param input_type? prompt_type Type of value that would be input
 ---@return string input_response collected from the user
-function SSHRemoteExecutor:handleInput(prompt_label, input_type)
+function SSHRemoteExecutor:handle_input(prompt_label, input_type)
   ---@type prompt_type
   local prompt_type = input_type or "plain"
 
@@ -264,7 +267,7 @@ end
 
 ---Get standard output generated by the job on the executor
 ---@return string[] stdout Returns stdout as an array of lines where each line is one line of stdout
-function SSHRemoteExecutor:getStdout()
+function SSHRemoteExecutor:get_stdout()
   local lines = {}
   for line in table.concat(self.stdout_bufr, ""):gmatch("([^\r\n]+)[\r\n]*") do
     lines[#lines + 1] = line
@@ -274,7 +277,7 @@ end
 
 ---Get standard error generated by the job on the executor
 ---@return string[] stderr Returns stderr as an array of lines where each line is one stderr line
-function SSHRemoteExecutor:getStderr()
+function SSHRemoteExecutor:get_stderr()
   local lines = {}
   for line in table.concat(self.stderr_bufr, ""):gmatch("([^\r\n]+)[\r\n]*") do
     lines[#lines + 1] = line
