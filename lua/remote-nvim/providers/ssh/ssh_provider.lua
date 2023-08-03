@@ -187,8 +187,100 @@ function NeovimSSHProvider:copyOverNeovimConfig()
   end
 end
 
+function NeovimSSHProvider:getRemoteNeovimBinaryPath()
+  return utils.path_join(
+    self.is_remote_windows,
+    self.remote_neovim_home,
+    "nvim-downloads",
+    self.remote_neovim_version,
+    "bin",
+    "nvim"
+  )
+end
+
+function NeovimSSHProvider:launchRemotePortForwardingNeovimServer()
+  -- Find free port on the remote server
+  local free_port_cmd = self:getRemoteNeovimBinaryPath()
+    .. " -l "
+    .. utils.path_join(self.is_remote_windows, self.remote_scripts_path, "free_port_finder.lua")
+  self.ssh_executor:runCommand(free_port_cmd)
+  local free_port_output = self.ssh_executor:getStdout()
+  self.remote_free_port = free_port_output[#free_port_output]
+
+  -- Find free port on our local server
+  self.local_free_port = utils.find_free_port()
+
+  -- Setup SSH port forwarding from local to remote
+  local port_forwarding_ssh_options = self.connection_options
+    .. " -t -L "
+    .. self.local_free_port
+    .. ":localhost:"
+    .. self.remote_free_port
+  local remote_port_forwarding_cmd = "XDG_CONFIG_HOME="
+    .. self.remote_xdg_config_path
+    .. " "
+    .. self:getRemoteNeovimBinaryPath()
+    .. " --listen 0.0.0.0:"
+    .. self.remote_free_port
+    .. " --headless"
+  local p = coroutine.create(function()
+    self.ssh_executor:runCommand(remote_port_forwarding_cmd, port_forwarding_ssh_options)
+  end)
+  local success, err = coroutine.resume(p)
+  if not success then
+    print("Coroutine failed because " .. err)
+  else
+    self.port_forwarding_job_id = self.ssh_executor.job_id
+    vim.api.nvim_create_autocmd({ "VimLeave" }, {
+      pattern = { "*" },
+      callback = function()
+        vim.fn.jobstop(self.port_forwarding_job_id)
+      end,
+    })
+    self:launchLocalNeovimServer()
+  end
+  return self
+end
+
+function NeovimSSHProvider:launchLocalNeovimServer()
+  utils.get_user_selection({ "Yes", "No" }, {
+    prompt = "Start Neovim client here?",
+  }, function(choice)
+    local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
+    if choice == "Yes" then
+      require("lazy.util").float_term(cmd, {
+        interactive = true,
+        on_exit_handler = function(_, exit_code)
+          if exit_code ~= 0 then
+            vim.notify("Local Neovim server " .. table.concat(cmd, " ") .. " failed")
+          end
+
+          vim.fn.jobstop(self.port_forwarding_job_id)
+        end,
+      })
+    else
+      vim.notify("You can connect to the remote server using " .. table.concat(cmd, " "))
+    end
+  end)
+end
+
+function NeovimSSHProvider:cleanUpRemoteHost()
+  local co = coroutine.create(function()
+    -- Delete remote neovim directory
+    self.ssh_executor:runCommand("rm -rf " .. self.remote_neovim_home)
+    -- Remove record of the workspace
+    RemoteNeovimConfig.host_workspace_config:delete_workspace(self.unique_host_identifier)
+  end)
+
+  local success, err = coroutine.resume(co)
+  if not success then
+    print("Coroutine failed because " .. err)
+  end
+  return self
+end
+
 function NeovimSSHProvider:setupRemote()
-  local thread = coroutine.create(function()
+  local co = coroutine.create(function()
     self:testConnection()
     self:setUpWorkspaceConfig()
 
@@ -213,9 +305,12 @@ function NeovimSSHProvider:setupRemote()
     -- Time to copy over Neovim configuration (if needed)
     self.ssh_executor:runCommand("mkdir -p " .. self.remote_xdg_config_path)
     self:copyOverNeovimConfig()
+
+    -- Start port forwarding job
+    self:launchRemotePortForwardingNeovimServer()
   end)
 
-  local success, err = coroutine.resume(thread)
+  local success, err = coroutine.resume(co)
   if not success then
     print("Coroutine failed because " .. err)
   end

@@ -128,9 +128,10 @@ end
 
 ---SSH command to run over the remote host
 ---@param command string Command to run on the remote host
+---@param connection_options? string Connection operations for the command to be run
 ---@return SSHRemoteExecutor
-function SSHRemoteExecutor:runCommand(command)
-  return self:setRemoteCommand(command):runJob()
+function SSHRemoteExecutor:runCommand(command, connection_options)
+  return self:setRemoteCommand(command, self.ssh_binary, connection_options):runJob()
 end
 
 ---@private
