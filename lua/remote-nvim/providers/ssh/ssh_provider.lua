@@ -11,7 +11,7 @@ local utils = require("remote-nvim.utils")
 ---@field ssh_executor SSHRemoteExecutor Executor over which jobs will be executed
 ---@field remote_neovim_home string Remote path on which remote neovim will install things
 ---@field unique_host_identifier string Unique identifier for the host
----@field host_workspace_config WorkspaceConfig Workspace config for remote host
+---@field workspace_config WorkspaceConfig Workspace config for remote host
 ---@field local_nvim_install_script_path string Local path where Neovim installation script is stored
 ---@field local_nvim_user_config_path string Local path where Neovim configuration files are stored
 ---@field local_nvim_scripts_path string Local path where Remote Neovim scripts are stored
@@ -67,7 +67,7 @@ function NeovimSSHProvider:new(host, connection_options)
   instance.remote_os = nil
   instance.remote_neovim_version = nil
   instance.remote_is_windows = nil
-  instance.host_workspace_config = nil
+  instance.workspace_config = nil
   instance.remote_workspace_id = nil
   instance.remote_workspaces_path = nil
   instance.remote_scripts_path = nil
@@ -89,6 +89,7 @@ function NeovimSSHProvider:detect_remote_os()
   local stdout_lines = self.ssh_executor:get_stdout()
   local remote_os = stdout_lines[#stdout_lines]
 
+  -- If we know the OS, we set it
   if remote_os == "Linux" then
     self.remote_os = "Linux"
   elseif remote_os == "Darwin" then
@@ -112,7 +113,6 @@ function NeovimSSHProvider:detect_remote_os()
     end)
   end
 
-  self.is_remote_windows = self.remote_os == "Windows" and true or false
   return self.remote_os
 end
 
@@ -150,6 +150,8 @@ function NeovimSSHProvider:setup_workspace_config_vars()
   if not RemoteNeovimConfig.host_workspace_config:host_record_exists(self.unique_host_identifier) then
     local remote_os = self:detect_remote_os()
     local neovim_version = self:determine_remote_neovim_version()
+
+    -- Save host configuration to config file
     RemoteNeovimConfig.host_workspace_config:add_host_config(self.unique_host_identifier, {
       provider = "ssh",
       connection_options = self.connection_options,
@@ -159,30 +161,33 @@ function NeovimSSHProvider:setup_workspace_config_vars()
       workspace_id = utils.generate_random_string(10),
     })
   end
-  self.host_workspace_config =
-    RemoteNeovimConfig.host_workspace_config:get_workspace_config(self.unique_host_identifier)
+  self.workspace_config = RemoteNeovimConfig.host_workspace_config:get_workspace_config(self.unique_host_identifier)
 
-  -- Set OS and Neovim versions to recorded versions
-  self.remote_os = self.host_workspace_config.os
-  self.remote_neovim_version = self.host_workspace_config.neovim_version
+  -- Set variables to their recorded values
+  self.remote_os = self.workspace_config.os
+  self.remote_is_windows = self.remote_os == "Windows" and true or false
+  self.remote_neovim_version = self.workspace_config.neovim_version
+  self.connection_options = self.connection_options or self.workspace_config.connection_options
 
-  local install_script_path_components = utils.split(self.local_nvim_install_script_path, utils.is_windows)
-
-  -- Setup workspace configurations
-  self.workspace_id = self.host_workspace_config.workspace_id
-  self.connection_options = self.connection_options or self.host_workspace_config.connection_options
-  self.remote_neovim_home = self.host_workspace_config.remote_neovim_home
-  self.remote_workspaces_path = utils.path_join(self.is_remote_windows, self.remote_neovim_home, "workspaces")
-  self.remote_scripts_path = utils.path_join(self.is_remote_windows, self.remote_neovim_home, "scripts")
-  self.remote_workspace_id_path =
-    utils.path_join(self.is_remote_windows, self.remote_workspaces_path, self.workspace_id)
-  self.remote_xdg_config_path = utils.path_join(self.is_remote_windows, self.remote_workspace_id_path, ".config")
-  self.remote_neovim_config_path = utils.path_join(self.is_remote_windows, self.remote_xdg_config_path, "nvim")
+  -- Setup remote host path variables
+  self.remote_neovim_home = self.workspace_config.remote_neovim_home
+  self.remote_workspaces_path = utils.path_join(self.remote_is_windows, self.remote_neovim_home, "workspaces")
+  self.remote_scripts_path = utils.path_join(self.remote_is_windows, self.remote_neovim_home, "scripts")
   self.remote_neovim_install_script_path = utils.path_join(
-    self.is_remote_windows,
+    self.remote_is_windows,
     self.remote_scripts_path,
-    install_script_path_components[#install_script_path_components]
+    (function()
+      local install_script_path_components = utils.split(self.local_nvim_install_script_path, utils.is_windows)
+      return install_script_path_components[#install_script_path_components]
+    end)()
   )
+
+  -- Setup workspace path variables
+  self.remote_workspace_id = self.workspace_config.workspace_id
+  self.remote_workspace_id_path =
+    utils.path_join(self.remote_is_windows, self.remote_workspaces_path, self.remote_workspace_id)
+  self.remote_xdg_config_path = utils.path_join(self.remote_is_windows, self.remote_workspace_id_path, ".config")
+  self.remote_neovim_config_path = utils.path_join(self.remote_is_windows, self.remote_xdg_config_path, "nvim")
 end
 
 ---Verify if we can connect to the remote host
@@ -213,7 +218,7 @@ end
 ---@return string nvim_bin_path Path to the remote neovim binary
 function NeovimSSHProvider:get_remote_neovim_binary_path()
   return utils.path_join(
-    self.is_remote_windows,
+    self.remote_is_windows,
     self.remote_neovim_home,
     "nvim-downloads",
     self.remote_neovim_version,
@@ -229,7 +234,7 @@ function NeovimSSHProvider:handle_launching_remote_neovim_server()
   -- Find free port on the remote server
   local free_port_cmd = self:get_remote_neovim_binary_path()
     .. " -l "
-    .. utils.path_join(self.is_remote_windows, self.remote_scripts_path, "free_port_finder.lua")
+    .. utils.path_join(self.remote_is_windows, self.remote_scripts_path, "free_port_finder.lua")
   self.ssh_executor:run_command(free_port_cmd)
   local free_port_output = self.ssh_executor:get_stdout()
   self.remote_free_port = free_port_output[#free_port_output]

@@ -55,12 +55,11 @@ end
 ---@private
 ---Reset the state of the executor
 function SSHRemoteExecutor:reset()
-  -- If the job is running, cancel it
+  -- If the job is running, cancel it??
   if self.job_id then
     self:cancel()
   end
 
-  self.job_id = nil
   self.job_id = nil
   self.complete_cmd = nil
   self.job_binary = nil

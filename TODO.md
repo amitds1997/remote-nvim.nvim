@@ -13,6 +13,7 @@ a month back, re-install it.
 - [ ] Find why there are extra whitespaces in commands run in SSH
 - [ ] Add check to ensure that minimum neovim version is there
 - [ ] Fix issue where launching too soon makes the TUI crash
+- [ ] Check if the cancel last job is needed on the executor
 - [ ] Add [selene](https://github.com/Kampfkarren/selene/pull/541) check
 in pre-commit once it's available
 - Add templates for (example: [Noice.nvim](https://github.com/folke/noice.nvim/tree/main/.github/ISSUE_TEMPLATE))
