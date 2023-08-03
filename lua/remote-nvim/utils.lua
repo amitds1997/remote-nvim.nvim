@@ -2,6 +2,7 @@ local M = {}
 
 -- Name of the plugin
 M.PLUGIN_NAME = "remote-nvim.nvim"
+M.MIN_NEOVIM_VERSION = "v0.8.0"
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
@@ -21,7 +22,7 @@ end
 function M.get_package_root()
   local root_dir
   for dir in vim.fs.parents(debug.getinfo(1).source:sub(2)) do
-    if vim.fn.isdirectory(M.path_join(dir, "lua", "remote-nvim")) == 1 then
+    if vim.fn.isdirectory(M.path_join(M.is_windows, dir, "lua", "remote-nvim")) == 1 then
       root_dir = dir
     end
   end
@@ -114,6 +115,61 @@ M.path_join = function(is_windows, ...)
     end
   end
   return table.concat(all_parts, path_separator)
+end
+
+M.get_neovim_versions = function()
+  local res = require("plenary.curl").get("https://api.github.com/repos/neovim/neovim/releases", {
+    headers = {
+      accept = "application/vnd.github+json",
+    },
+  })
+  local available_versions = { "stable" }
+  for _, version_info in ipairs(vim.fn.json_decode(res.body)) do
+    local version = version_info["tag_name"]
+
+    if version ~= "stable" and version ~= "nightly" then
+      local major, minor, patch = version:match("v(%d+)%.(%d+)%.(%d+)")
+      local target_major, target_minor, target_patch = M.MIN_NEOVIM_VERSION:match("v(%d+)%.(%d+)%.(%d+)")
+
+      major = tonumber(major)
+      minor = tonumber(minor)
+      patch = tonumber(patch)
+
+      target_major = tonumber(target_major)
+      target_minor = tonumber(target_minor)
+      target_patch = tonumber(target_patch)
+
+      if
+        major > target_major
+        or (major == target_major and minor > target_minor)
+        or (major == target_major and minor == target_minor and patch >= target_patch)
+      then
+        table.insert(available_versions, version)
+      end
+    end
+  end
+  table.insert(available_versions, "nightly")
+  return available_versions
+end
+
+--- Get async input from the user
+---@param choices string[] Options to be presented to the user
+---@param input_opts table Input options, same as one given to @see vim.ui.select
+---@param cb function Callback to call once choice has been made
+M.get_user_selection = function(choices, input_opts, cb)
+  local co = coroutine.running()
+  vim.ui.select(choices, input_opts, function(choice)
+    if choice == nil then
+      return
+    end
+    cb(choice)
+    if co then
+      coroutine.resume(co)
+    end
+  end)
+  if co then
+    coroutine.yield()
+  end
 end
 
 return M

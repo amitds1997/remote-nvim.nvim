@@ -83,7 +83,7 @@ end
 ---@param localPath string Local path where it is to be downloaded
 ---@param remotePath string Path on the remote host
 ---@return SSHRemoteExecutor
-function SSHRemoteExecutor:uploadFile(localPath, remotePath)
+function SSHRemoteExecutor:upload(localPath, remotePath)
   local remotePathURI = self.remote_host .. ":" .. remotePath
   local cmd = localPath .. " " .. remotePathURI
 
@@ -94,7 +94,7 @@ end
 ---@param remotePath string Path on the remote host
 ---@param localPath string Local path where it is to be downloaded
 ---@return SSHRemoteExecutor
-function SSHRemoteExecutor:downloadFile(remotePath, localPath)
+function SSHRemoteExecutor:download(remotePath, localPath)
   local remotePathURI = self.remote_host .. ":" .. remotePath
   local cmd = remotePathURI .. " " .. localPath
 

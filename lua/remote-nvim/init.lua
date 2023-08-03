@@ -74,7 +74,7 @@ M.setup = function(args)
   M.config.ssh_config.ssh_binary = util.find_binary(M.config.ssh_config.ssh_binary)
   M.config.ssh_config.scp_binary = util.find_binary(M.config.ssh_config.scp_binary)
 
-  M.remote_neovim_host_config = RemoteHostWorkspaceConfig:new()
+  M.host_workspace_config = RemoteHostWorkspaceConfig:new()
   M.sessions = {}
 
   -- require("remote-nvim.ssh").setup(M.config)

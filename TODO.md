@@ -3,16 +3,14 @@
 - [ ] Add Neovim documentation
 - [ ] Add unit tests
 - [ ] Add logging
-- [ ] Rectify path detection logic
 - [ ] Add progress bar notification
 - [ ] Add tutorial videos
-- [ ] Fix remote system path style detection code
-- [ ] Make testing SSH connection async
 - [ ] Handle Neovim already exists on remote machine scenario
 - [ ] If there are additional saved hosts and workspaces, show them too
 - [ ] If the neovim version was downloaded and setup more than
 a month back, re-install it.
 - [ ] Add CHANGELOG
+- [ ] Add check to ensure that minimum neovim version is there
 - [ ] Add [selene](https://github.com/Kampfkarren/selene/pull/541) check
 in pre-commit once it's available
 - Add templates for (example: [Noice.nvim](https://github.com/folke/noice.nvim/tree/main/.github/ISSUE_TEMPLATE))
