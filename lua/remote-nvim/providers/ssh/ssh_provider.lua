@@ -144,9 +144,11 @@ function NeovimSSHProvider:setUpWorkspaceConfig()
   self.host_workspace_config =
     RemoteNeovimConfig.host_workspace_config:get_workspace_config(self.unique_host_identifier)
 
-  -- Set OS to recorded OS
+  -- Set OS and Neovim versions to recorded versions
   self.remote_os = self.host_workspace_config.os
   self.remote_neovim_version = self.host_workspace_config.neovim_version
+
+  local install_script_path_components = utils.split(self.local_nvim_install_script_path, utils.is_windows)
 
   -- Setup workspace configurations
   self.workspace_id = self.host_workspace_config.workspace_id
@@ -158,12 +160,30 @@ function NeovimSSHProvider:setUpWorkspaceConfig()
     utils.path_join(self.is_remote_windows, self.remote_workspaces_path, self.workspace_id)
   self.remote_xdg_config_path = utils.path_join(self.is_remote_windows, self.remote_workspace_id_path, ".config")
   self.remote_neovim_config_path = utils.path_join(self.is_remote_windows, self.remote_xdg_config_path, "nvim")
+  self.remote_neovim_install_script_path = utils.path_join(
+    self.is_remote_windows,
+    self.remote_scripts_path,
+    install_script_path_components[#install_script_path_components]
+  )
 end
 
 function NeovimSSHProvider:testConnection()
   self.ssh_executor:runCommand('echo "OK"')
   if self.ssh_executor.exit_code ~= 0 then
     error("Could not connect to the remote host: " .. self.unique_host_identifier)
+  end
+end
+
+function NeovimSSHProvider:copyOverNeovimConfig()
+  local should_copy_over_config = false
+  utils.get_user_selection({ "Yes", "No" }, {
+    prompt = "Copy Neovim config at " .. self.local_nvim_user_config_path .. " ?",
+  }, function(choice)
+    should_copy_over_config = choice == "Yes" and true or false
+  end)
+
+  if should_copy_over_config then
+    self.ssh_executor:upload(self.local_nvim_user_config_path, self.remote_neovim_config_path)
   end
 end
 
@@ -181,6 +201,18 @@ function NeovimSSHProvider:setupRemote()
     self.ssh_executor:upload(self.local_nvim_install_script_path, self.remote_scripts_path)
 
     -- Make the installation script executable and run it to install the specified version of Neovim
+    self.ssh_executor:runCommand("chmod +x " .. self.remote_neovim_install_script_path)
+    self.ssh_executor:runCommand(
+      self.remote_neovim_install_script_path
+        .. " -v "
+        .. self.remote_neovim_version
+        .. " -d "
+        .. self.remote_neovim_home
+    )
+
+    -- Time to copy over Neovim configuration (if needed)
+    self.ssh_executor:runCommand("mkdir -p " .. self.remote_xdg_config_path)
+    self:copyOverNeovimConfig()
   end)
 
   local success, err = coroutine.resume(thread)

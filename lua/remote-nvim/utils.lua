@@ -76,9 +76,10 @@ end
 ---Split string into a table of strings using a separator.
 ---Credits: https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/utils.lua#L776-L789
 ---@param inputString string The string to split.
----@param sep string The separator to use.
+---@param is_windows boolean Is the remote systems a windows machine
 ---@return table table A table of strings.
-M.split = function(inputString, sep)
+M.split = function(inputString, is_windows)
+  local sep = is_windows and "\\" or "/"
   local fields = {}
 
   local pattern = string.format("([^%s]+)", sep)
@@ -110,7 +111,7 @@ M.path_join = function(is_windows, ...)
     if arg == "" and #all_parts == 0 and not is_windows then
       all_parts = { "" }
     else
-      local arg_parts = M.split(arg, path_separator)
+      local arg_parts = M.split(arg, is_windows)
       vim.list_extend(all_parts, arg_parts)
     end
   end
