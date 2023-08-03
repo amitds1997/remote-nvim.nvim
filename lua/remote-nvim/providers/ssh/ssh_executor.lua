@@ -20,13 +20,6 @@ local ssh_utils = require("remote-nvim.providers.ssh.ssh_utils")
 local SSHRemoteExecutor = {}
 SSHRemoteExecutor.__index = SSHRemoteExecutor
 
-setmetatable(SSHRemoteExecutor, {
-  __index = SSHRemoteExecutor,
-  __call = function(cls, ...)
-    return cls.new(...)
-  end,
-})
-
 ---Get a new instance of SSH Executor
 ---@param host string Host on which the remote executor would work
 ---@param connection_options string Connection options needed to work with remote host

@@ -31,13 +31,6 @@ local utils = require("remote-nvim.utils")
 local NeovimSSHProvider = {}
 NeovimSSHProvider.__index = NeovimSSHProvider
 
-setmetatable(NeovimSSHProvider, {
-  __index = NeovimSSHProvider,
-  __call = function(cls, ...)
-    return cls.new(...)
-  end,
-})
-
 ---Generate a new instance of NeovimSSHProvider
 ---@param host string Remote host name
 ---@param connection_options? string|table Connection options to connect with the host
