@@ -33,14 +33,14 @@ If we should cancel, why does the current logic not work with port forwarding jo
 
 ## Planned
 
-- [ ] Fix telescope things
+- [ ] If there are additional saved hosts and workspaces, show them too
 - [ ] Add logging
 - [ ] Add scripts to do checks
 - [ ] Add progress bar notification
-- [ ] If there are additional saved hosts and workspaces, show them too
 - [ ] Handle Neovim already exists on remote machine scenario (just
 symlink the right version)
+- [ ] Fix issue where launching too soon makes the TUI crash
 
 ## In progress
 
-- [ ] Fix issue where launching too soon makes the TUI crash
+- [ ] Fix telescope things

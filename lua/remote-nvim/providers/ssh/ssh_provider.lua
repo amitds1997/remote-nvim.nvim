@@ -233,7 +233,13 @@ end
 ---Launch the remote neovim server and port forward it to a local free port
 ---@return NeovimSSHProvider provider The provider which is handling the executor running the command
 function NeovimSSHProvider:handle_remote_server_launch()
-  if self.remote_port_forwarding_job_id == nil then
+  -- We need to launch a remote server if any of these criterias are not satisfied:
+  -- 1. There is no port forwarding job running (checked by self.remote_port_forwarding_job_id)
+  -- 2. The recorded port forwarding job has died, so we need to start a new instance
+  if
+    self.remote_port_forwarding_job_id == nil
+    or not (vim.fn.jobwait({ self.remote_port_forwarding_job_id }, 0)[1] == -1)
+  then
     -- Find free port on the remote server
     local free_port_cmd = self:get_remote_neovim_binary_path()
       .. " -l "
@@ -275,22 +281,23 @@ function NeovimSSHProvider:handle_local_client_launch()
   -- Launch remote server if it is not already running
   self:handle_remote_server_launch()
 
+  local function launch_local_client(cmd)
+    require("lazy.util").float_term(cmd, {
+      interactive = true,
+      on_exit_handler = function(_, exit_code)
+        if exit_code ~= 0 then
+          vim.notify("Local Neovim server " .. table.concat(cmd, " ") .. " failed")
+        end
+      end,
+    })
+  end
+
   utils.get_user_selection({ "Yes", "No" }, {
     prompt = "Start Neovim client here?",
   }, function(choice)
     local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
     if choice == "Yes" then
-      require("lazy.util").float_term(cmd, {
-        interactive = true,
-        on_exit_handler = function(_, exit_code)
-          if exit_code ~= 0 then
-            vim.notify("Local Neovim server " .. table.concat(cmd, " ") .. " failed")
-          end
-
-          vim.fn.jobstop(self.remote_port_forwarding_job_id)
-          self.remote_port_forwarding_job_id = nil
-        end,
-      })
+      launch_local_client(cmd)
     else
       vim.notify("You can connect to the remote server using " .. table.concat(cmd, " "))
     end
