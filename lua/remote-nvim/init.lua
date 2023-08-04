@@ -56,12 +56,6 @@ local default_opts = {
   log_level = "info",
 }
 
-M.setup_commands = function()
-  vim.api.nvim_create_user_command("RemoteNvimLaunch", function()
-    require("telescope").extensions["remote-nvim"].connect()
-  end, {})
-end
-
 M.setup_keymaps = function()
   vim.api.nvim_set_keymap("n", ",p", ":Lazy reload remote-nvim.nvim<CR>", {})
 end
@@ -74,7 +68,7 @@ M.setup = function(args)
   M.host_workspace_config = RemoteHostWorkspaceConfig:new()
   M.sessions = {}
 
-  M.setup_commands()
+  require("remote-nvim.command")
   M.setup_keymaps()
 end
 

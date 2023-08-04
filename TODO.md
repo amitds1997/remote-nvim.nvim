@@ -37,11 +37,10 @@ pre-commit once it's available
 ## Planned
 
 - [ ] Add scripts to do checks
-- [ ] Add progress bar notification
 - [ ] Handle Neovim already exists on remote machine scenario (just
 symlink the right version)
 - [ ] Fix issue where launching too soon makes the TUI crash
 
 ## In progress
 
-- [ ] Add logging
+- [ ] Add progress bar notification
