@@ -201,14 +201,16 @@ end
 ---@private
 ---Decide if we want to copy over Neovim configuration to the remote or not
 function NeovimSSHProvider:handle_neovim_config_update_on_remote()
-  local should_copy_over_config = false
+  local copy_config_choice = false
+
+  --- Get user choice about copying the Neovim configuration over
   utils.get_user_selection({ "Yes", "No" }, {
     prompt = "Copy Neovim config at " .. self.local_nvim_user_config_path .. " ?",
   }, function(choice)
-    should_copy_over_config = choice == "Yes" and true or false
+    copy_config_choice = choice == "Yes" and true or false
   end)
 
-  if should_copy_over_config then
+  if copy_config_choice then
     self.ssh_executor:upload(self.local_nvim_user_config_path, self.remote_neovim_config_path)
   end
 end
@@ -301,24 +303,37 @@ end
 ---Clean up remote host information so that we can start afresh
 ---@return NeovimSSHProvider provider Provider handling the clean up of the remote host
 function NeovimSSHProvider:clean_up_remote_host()
-  local co = coroutine.create(function()
-    -- Delete remote neovim directory
-    self.ssh_executor:run_command("rm -rf " .. self.remote_neovim_home)
+  utils.run_code_in_coroutine(function()
+    -- Verify that we are able to connect with the remote server
+    self:verify_connection()
+    self:setup_workspace_config_vars()
+
+    -- Get user input about what should be deleted
+    utils.get_user_selection({
+      "Delete just my workspace (Useful if multiple people work in the same space)",
+      "Delete everything remote-neovim on remote",
+    }, {
+      prompt = "What should be cleaned up?",
+    }, function(choice)
+      if choice == "Delete just my workspace (Useful if multiple people work in the same space)" then
+        self.ssh_executor:run_command("rm -rf " .. self.remote_workspace_id_path)
+      elseif choice == "Delete everything remote-neovim on remote" then
+        self.ssh_executor:run_command("rm -rf " .. self.remote_neovim_home)
+      end
+    end)
+
     -- Remove record of the workspace
     RemoteNeovimConfig.host_workspace_config:delete_workspace(self.unique_host_identifier)
   end)
 
-  local success, err = coroutine.resume(co)
-  if not success then
-    print("Coroutine failed because " .. err)
-  end
   return self
 end
 
 ---Setup the remote host
 ---@return NeovimSSHProvider provider Provider handling setup of the remote host
 function NeovimSSHProvider:set_up_remote()
-  local co = coroutine.create(function()
+  utils.run_code_in_coroutine(function()
+    -- Verify that we are able to connect with the remote server
     self:verify_connection()
     self:setup_workspace_config_vars()
 
@@ -348,10 +363,6 @@ function NeovimSSHProvider:set_up_remote()
     self:handle_launching_remote_neovim_server()
   end)
 
-  local success, err = coroutine.resume(co)
-  if not success then
-    print("Coroutine failed because " .. err)
-  end
   return self
 end
 

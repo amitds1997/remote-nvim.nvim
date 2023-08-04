@@ -58,9 +58,6 @@ local default_opts = {
 
 M.setup_commands = function()
   vim.api.nvim_create_user_command("RemoteNvimLaunch", function()
-    if M.ssh_binary == nil then
-      error("OpenSSH client not found. Cannot proceed further.")
-    end
     require("telescope").extensions["remote-nvim"].connect()
   end, {})
 end
@@ -76,8 +73,6 @@ M.setup = function(args)
 
   M.host_workspace_config = RemoteHostWorkspaceConfig:new()
   M.sessions = {}
-
-  -- require("remote-nvim.ssh").setup(M.config)
 
   M.setup_commands()
   M.setup_keymaps()
