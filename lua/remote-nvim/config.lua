@@ -25,6 +25,7 @@ end
 ---@field provider provider Which provider is responsible for managing this workspace
 ---@field workspace_id string Unique ID for workspace
 ---@field os os_type OS running on the remote host
+---@field host string Host name to whom the workspace belongs
 ---@field neovim_version string Version of Neovim running on the remote
 ---@field connection_options string Connection options needed to connect to the remote host
 ---@field remote_neovim_home string Path on remote host where remote-neovim installs/configures things

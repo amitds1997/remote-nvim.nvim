@@ -154,6 +154,7 @@ function NeovimSSHProvider:setup_workspace_config_vars()
     -- Save host configuration to config file
     RemoteNeovimConfig.host_workspace_config:add_host_config(self.unique_host_identifier, {
       provider = "ssh",
+      host = self.remote_host,
       connection_options = self.connection_options,
       remote_neovim_home = self.remote_neovim_home,
       os = remote_os,

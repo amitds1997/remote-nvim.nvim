@@ -46,6 +46,7 @@ local function select_ssh_host_from_workspace_config(opts)
         local formatted_key = string.format("%-" .. max_key_length .. "s", key:gsub("_", " "):gsub("^%l", string.upper))
         table.insert(lines, "  " .. formatted_key .. " = " .. value)
       end
+      table.sort(lines)
 
       vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
       previewer_utils.highlighter(self.state.bufnr, "toml")
@@ -90,8 +91,9 @@ local function select_ssh_host_from_workspace_config(opts)
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
           local host_identifier = selection.value
+          local workspace_data = workspace_config:get_workspace_config_data(host_identifier)
           remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
-            or RemoteNeovimSSHProvider:new(host_identifier)
+            or RemoteNeovimSSHProvider:new(workspace_data.host, workspace_data.connection_options)
           remote_nvim.sessions[host_identifier]:set_up_remote()
         end)
         return true
