@@ -82,6 +82,7 @@ function NeovimSSHProvider:new(host, connection_options)
 end
 
 ---@private
+---@async
 ---Detect and register the OS of the remote SSH host
 ---@return os_type os_name Name of the OS running on remote host
 function NeovimSSHProvider:detect_remote_os()
@@ -117,6 +118,7 @@ function NeovimSSHProvider:detect_remote_os()
 end
 
 ---@private
+---@async
 ---Determine the neovim version to be deployed on the remote system
 ---@return string neovim_version Remote Neovim version
 function NeovimSSHProvider:determine_remote_neovim_version()
@@ -145,6 +147,7 @@ function NeovimSSHProvider:determine_remote_neovim_version()
 end
 
 ---@private
+---@async
 ---Setup workspace configuration variables
 function NeovimSSHProvider:setup_workspace_config_vars()
   if not RemoteNeovimConfig.host_workspace_config:host_record_exists(self.unique_host_identifier) then
@@ -192,6 +195,7 @@ function NeovimSSHProvider:setup_workspace_config_vars()
 end
 
 ---Verify if we can connect to the remote host
+---@async
 function NeovimSSHProvider:verify_connection()
   self.ssh_executor:run_command('echo "OK"')
   if self.ssh_executor.exit_code ~= 0 then
@@ -200,6 +204,7 @@ function NeovimSSHProvider:verify_connection()
 end
 
 ---@private
+---@async
 ---Decide if we want to copy over Neovim configuration to the remote or not
 function NeovimSSHProvider:handle_neovim_config_update_on_remote()
   local copy_config_choice = false
@@ -278,6 +283,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
 end
 
 ---Launch local Neovim client and connect to the correct port
+---@async
 function NeovimSSHProvider:handle_local_client_launch()
   -- Launch remote server if it is not already running
   self:handle_remote_server_launch()
@@ -306,6 +312,7 @@ function NeovimSSHProvider:handle_local_client_launch()
 end
 
 ---Clean up remote host information so that we can start afresh
+---@async
 ---@return NeovimSSHProvider provider Provider handling the clean up of the remote host
 function NeovimSSHProvider:clean_up_remote_host()
   utils.run_code_in_coroutine(function()
@@ -335,6 +342,7 @@ function NeovimSSHProvider:clean_up_remote_host()
 end
 
 ---Setup the remote host
+---@async
 ---@return NeovimSSHProvider provider Provider handling setup of the remote host
 function NeovimSSHProvider:set_up_remote()
   utils.run_code_in_coroutine(function()

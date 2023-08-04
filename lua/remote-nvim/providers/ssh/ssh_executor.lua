@@ -122,6 +122,7 @@ function SSHRemoteExecutor:run_command(command, connection_options)
 end
 
 ---@private
+---@async
 ---Run job specified by command over the SSHExecutor
 ---@return SSHRemoteExecutor executor The executor on which the job is executing
 function SSHRemoteExecutor:run_job()

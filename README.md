@@ -24,11 +24,12 @@ behaves just like local
 
 * Neovim >= 0.8.0
 * An `OpenSSH` client
+* Binaries: `curl`
 
 ### On remote machine
 
 * `bash` shell
-* Access to internet
+* Internet access
 * Binaries: `curl` or `wget`, `tar` (if on MacOS)
 
 ## 📦 Installation

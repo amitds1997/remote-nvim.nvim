@@ -4,9 +4,20 @@ local M = {}
 M.PLUGIN_NAME = "remote-nvim.nvim"
 ---Minimum Neovim version for the plugin
 M.MIN_NEOVIM_VERSION = "v0.8.0"
+---Log level
+M.LOG_LEVEL = vim.fn.getenv("REMOTE_NVIM_LOG_LEVEL")
+if M.LOG_LEVEL == vim.NIL then
+  M.LOG_LEVEL = "info"
+end
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+
+M.logger = require("plenary.log").new({
+  plugin = M.PLUGIN_NAME,
+  level = M.LOG_LEVEL,
+  outfile = string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "cache" }), M.PLUGIN_NAME),
+})
 
 ---Find if provided binary exists or not
 ---@param binary string|string[] Name of the binary to search on the runtime path
