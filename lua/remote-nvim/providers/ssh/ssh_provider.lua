@@ -232,53 +232,49 @@ end
 ---@private
 ---Launch the remote neovim server and port forward it to a local free port
 ---@return NeovimSSHProvider provider The provider which is handling the executor running the command
-function NeovimSSHProvider:handle_launching_remote_neovim_server()
-  -- Find free port on the remote server
-  local free_port_cmd = self:get_remote_neovim_binary_path()
-    .. " -l "
-    .. utils.path_join(self.remote_is_windows, self.remote_scripts_path, "free_port_finder.lua")
-  self.ssh_executor:run_command(free_port_cmd)
-  local free_port_output = self.ssh_executor:get_stdout()
-  self.remote_free_port = free_port_output[#free_port_output]
+function NeovimSSHProvider:handle_remote_server_launch()
+  if self.remote_port_forwarding_job_id == nil then
+    -- Find free port on the remote server
+    local free_port_cmd = self:get_remote_neovim_binary_path()
+      .. " -l "
+      .. utils.path_join(self.remote_is_windows, self.remote_scripts_path, "free_port_finder.lua")
+    self.ssh_executor:run_command(free_port_cmd)
+    local free_port_output = self.ssh_executor:get_stdout()
+    self.remote_free_port = free_port_output[#free_port_output]
 
-  -- Find free port on our local server
-  self.local_free_port = utils.find_free_port()
+    -- Find free port on our local server
+    self.local_free_port = utils.find_free_port()
 
-  -- Setup SSH port forwarding from local to remote
-  local port_forwarding_ssh_options = self.connection_options
-    .. " -t -L "
-    .. self.local_free_port
-    .. ":localhost:"
-    .. self.remote_free_port
-  local remote_port_forwarding_cmd = "XDG_CONFIG_HOME="
-    .. self.remote_xdg_config_path
-    .. " "
-    .. self:get_remote_neovim_binary_path()
-    .. " --listen 0.0.0.0:"
-    .. self.remote_free_port
-    .. " --headless"
-  local p = coroutine.create(function()
-    self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forwarding_ssh_options)
-  end)
-  local success, err = coroutine.resume(p)
-  if not success then
-    print("Coroutine failed because " .. err)
-  else
+    -- Setup SSH port forwarding connection options
+    local forwarded_ports = self.local_free_port .. ":localhost:" .. self.remote_free_port
+    local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
+
+    -- Generate remote server launch command
+    local env_vars = "XDG_CONFIG_HOME=" .. self.remote_xdg_config_path
+    local remote_port_forwarding_cmd = table.concat(
+      { env_vars, self:get_remote_neovim_binary_path(), "--listen", "0.0.0.0:" .. self.remote_free_port, "--headless" },
+      " "
+    )
+
+    -- Launch remote server and port forward to local
+    local p = coroutine.create(function()
+      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts)
+    end)
+    local success, err = coroutine.resume(p)
+    if not success then
+      print("Coroutine failed because " .. err)
+    end
     self.remote_port_forwarding_job_id = self.ssh_executor.job_id
-    vim.api.nvim_create_autocmd({ "VimLeave" }, {
-      pattern = { "*" },
-      callback = function()
-        vim.fn.jobstop(self.remote_port_forwarding_job_id)
-      end,
-    })
-    self:handle_local_client_launch()
   end
+
   return self
 end
 
----@private
 ---Launch local Neovim client and connect to the correct port
 function NeovimSSHProvider:handle_local_client_launch()
+  -- Launch remote server if it is not already running
+  self:handle_remote_server_launch()
+
   utils.get_user_selection({ "Yes", "No" }, {
     prompt = "Start Neovim client here?",
   }, function(choice)
@@ -292,6 +288,7 @@ function NeovimSSHProvider:handle_local_client_launch()
           end
 
           vim.fn.jobstop(self.remote_port_forwarding_job_id)
+          self.remote_port_forwarding_job_id = nil
         end,
       })
     else
@@ -359,8 +356,9 @@ function NeovimSSHProvider:set_up_remote()
     self.ssh_executor:run_command("mkdir -p " .. self.remote_xdg_config_path)
     self:handle_neovim_config_update_on_remote()
 
-    -- Start port forwarding job
-    self:handle_launching_remote_neovim_server()
+    -- Start remote neovim server
+    self:handle_remote_server_launch()
+    self:handle_local_client_launch()
   end)
 
   return self
