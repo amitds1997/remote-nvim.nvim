@@ -1,7 +1,9 @@
-local utils = require("remote-nvim.utils")
-
 local M = {}
 
+---Parse SSH config file and return parsed config as table
+---@param ssh_config_path string File path of the ssh_config
+---@param parsed_config table Already parsed config table
+---@return table parsed_config Parsed configuration from the file
 local function parse_config_file(ssh_config_path, parsed_config)
   local config_path = vim.fn.expand(ssh_config_path)
   parsed_config = parsed_config or {}
@@ -55,11 +57,14 @@ local function parse_config_file(ssh_config_path, parsed_config)
   return config
 end
 
+---Parse multiple ssh_config files and generate host configurations (Ignoring wild card entries)
+---@param ssh_config_files string[] Path of all the ssh_config files to be considered
+---@return table ssh_config Parsed hosts as configuration table
 function M.parse_ssh_configs(ssh_config_files)
   local parsed_ssh_config = {}
 
   for _, ssh_config_file in ipairs(ssh_config_files) do
-    parsed_ssh_config = utils.merge_tables(parsed_ssh_config, parse_config_file(ssh_config_file, {}))
+    parsed_ssh_config = vim.tbl_extend("keep", parsed_ssh_config, parse_config_file(ssh_config_file, {}))
   end
 
   -- We filter out any regular expression based configurations

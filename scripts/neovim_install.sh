@@ -141,10 +141,7 @@ function install_neovim() {
 while getopts "v:d:h:f" opt; do
 	case $opt in
 	v)
-		case "$OPTARG" in
-		stable | nightly) nvim_version="$OPTARG" ;;
-		*) nvim_version="v$OPTARG" ;;
-		esac
+		nvim_version="$OPTARG"
 		;;
 	d)
 		remote_nvim_dir="$OPTARG"
