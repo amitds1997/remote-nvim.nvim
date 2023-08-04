@@ -137,10 +137,20 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
             select_ssh_host_from_ssh_config(opts)
           elseif selection.value == "manual-ssh-input" then
             local ssh_args = vim.fn.input("ssh ")
-            local ssh_host = ssh_args:match("%S+@%S+")
-            if ssh_host == nil then
-              ssh_host = vim.fn.input("Failed to detect host name. Please provide host name: ")
+            if ssh_args == "" then
+              return
             end
+            local ssh_host = ssh_args:match("%S+@%S+")
+            if ssh_host == nil or ssh_host == "" then
+              vim.notify("Could not detect host name.")
+              ssh_host = vim.fn.input("Host name: ")
+            end
+
+            -- If no valid host name has been provided, exit
+            if ssh_host == "" then
+              return
+            end
+
             local host_identifier = remote_nvim_utils.get_host_identifier(ssh_host, ssh_args)
             remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
               or RemoteNeovimSSHProvider:new(ssh_host, ssh_args)

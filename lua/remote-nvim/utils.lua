@@ -161,10 +161,11 @@ M.get_neovim_versions = function()
   return available_versions
 end
 
----Get async input from the user
+---Get async selection from the user
 ---@param choices string[] Options to be presented to the user
----@param input_opts table Input options, same as one given to @see vim.ui.select
+---@param input_opts table Input options, same as one given to vim.ui.select
 ---@param cb function Callback to call once choice has been made
+---@see vim.ui.select
 M.get_user_selection = function(choices, input_opts, cb)
   local co = coroutine.running()
   vim.ui.select(choices, input_opts, function(choice)
@@ -172,6 +173,26 @@ M.get_user_selection = function(choices, input_opts, cb)
       return
     end
     cb(choice)
+    if co then
+      coroutine.resume(co)
+    end
+  end)
+  if co then
+    coroutine.yield()
+  end
+end
+
+---Get async input from the user
+---@param input_opts table Input options, same as one given to vim.ui.input
+---@param cb function Callback to call once input has been provided
+---@see vim.ui.input
+M.get_user_input = function(input_opts, cb)
+  local co = coroutine.running()
+  vim.ui.input(input_opts, function(input)
+    if input == nil or input == "" then
+      return
+    end
+    cb(input)
     if co then
       coroutine.resume(co)
     end
