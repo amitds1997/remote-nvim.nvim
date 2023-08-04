@@ -364,7 +364,6 @@ function NeovimSSHProvider:set_up_remote()
     self:handle_neovim_config_update_on_remote()
 
     -- Start remote neovim server
-    self:handle_remote_server_launch()
     self:handle_local_client_launch()
   end)
 

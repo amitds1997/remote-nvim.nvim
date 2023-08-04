@@ -1,14 +1,14 @@
-local RemoteNvimSession = require("remote-nvim.session")
 local previewer_utils = require("telescope.previewers.utils")
 local previewers = require("telescope.previewers")
 local remote_nvim = require("remote-nvim")
-local remote_ssh = require("remote-nvim.ssh")
 local telescope = require("telescope")
 local conf = require("telescope.config").values
+local RemoteNeovimSSHProvider = require("remote-nvim.providers.ssh.ssh_provider")
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
+local remote_nvim_utils = require("remote-nvim.utils")
 
 -- Build host file from parsed hosts from plugin
 local function build_preview_host(host)
@@ -28,7 +28,9 @@ end
 local function select_ssh_host_from_ssh_config(opts)
   opts = opts or {}
 
-  local hosts = remote_ssh.list_hosts()
+  local hosts = require("remote-nvim.providers.ssh.ssh_config_parser").parse_ssh_configs(
+    remote_nvim.config.ssh_config.ssh_config_file_paths
+  )
 
   -- Build previewer
   local previewer = previewers.new_buffer_previewer({
@@ -59,8 +61,8 @@ local function select_ssh_host_from_ssh_config(opts)
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
           local host = selection.value["Host"]
-          remote_nvim.sessions[host] = remote_nvim.sessions[host] or RemoteNvimSession:new(host)
-          remote_nvim.sessions[host]:launch()
+          remote_nvim.sessions[host] = remote_nvim.sessions[host] or RemoteNeovimSSHProvider:new(host)
+          remote_nvim.sessions[host]:set_up_remote()
         end)
         return true
       end,
@@ -137,9 +139,12 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
             local ssh_args = vim.fn.input("ssh ")
             local ssh_host = ssh_args:match("%S+@%S+")
             if ssh_host == nil then
-              ssh_host = vim.fn.input("Please provide host name: ")
+              ssh_host = vim.fn.input("Failed to detect host name. Please provide host name: ")
             end
-            RemoteNvimSession:new(ssh_host, ssh_args):launch()
+            local host_identifier = remote_nvim_utils.get_host_identifier(ssh_host, ssh_args)
+            remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
+              or RemoteNeovimSSHProvider:new(ssh_host, ssh_args)
+            remote_nvim.sessions[host_identifier]:set_up_remote()
           end
         end)
         return true
