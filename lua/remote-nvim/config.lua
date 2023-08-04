@@ -119,6 +119,10 @@ function NeovimRemoteWorkspaceConfig:add_host_config(host_id, workspace_config)
   return false
 end
 
+function NeovimRemoteWorkspaceConfig:get_workspace_config_data(host_id)
+  return self.data[host_id]
+end
+
 function NeovimRemoteWorkspaceConfig:print_workspace_config()
   print("Workspace Configuration:")
   for host_id, config in pairs(self.data) do

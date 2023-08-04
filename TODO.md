@@ -32,10 +32,10 @@ pre-commit once it's available
   - [ ] `:RemoteNvimCleanUpHost` to clean up everything installed so far by us
   - [ ] `:RemoteNvimSwitch` should switch b/w active sessions
   - [ ] `:RemoteNvimLocal` to switch to the local and hide every remote session running
+  - [ ] `:RemoteNvimLog` to show logs
 
 ## Planned
 
-- [ ] Add logging
 - [ ] Add scripts to do checks
 - [ ] Add progress bar notification
 - [ ] Handle Neovim already exists on remote machine scenario (just
@@ -44,4 +44,4 @@ symlink the right version)
 
 ## In progress
 
-- [ ] If there are additional saved hosts and workspaces, show them too
+- [ ] Add logging

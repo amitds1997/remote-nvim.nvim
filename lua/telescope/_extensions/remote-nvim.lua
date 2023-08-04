@@ -25,6 +25,81 @@ local function build_preview_host(host)
   return lines
 end
 
+local function select_ssh_host_from_workspace_config(opts)
+  opts = opts or {}
+  local workspace_config = require("remote-nvim").host_workspace_config
+
+  local previewer = previewers.new_buffer_previewer({
+    define_preview = function(self, entry)
+      local host_config = workspace_config:get_workspace_config_data(entry.value)
+      host_config["Host ID"] = entry.value
+
+      local max_key_length = 0
+
+      -- Find the longest key length
+      for key, _ in pairs(host_config) do
+        max_key_length = math.max(max_key_length, #key)
+      end
+
+      local lines = {}
+      for key, value in pairs(host_config) do
+        local formatted_key = string.format("%-" .. max_key_length .. "s", key:gsub("_", " "):gsub("^%l", string.upper))
+        table.insert(lines, "  " .. formatted_key .. " = " .. value)
+      end
+
+      vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+      previewer_utils.highlighter(self.state.bufnr, "toml")
+    end,
+  })
+
+  pickers
+    .new(opts, {
+      prompt_title = "Connect to saved workspace",
+      previewer = previewer,
+      finder = finders.new_table({
+        results = workspace_config:get_all_host_ids(),
+        entry_maker = function(entry)
+          return {
+            display = function(input)
+              local host_identifier = input.value
+              local at_position = host_identifier:find("@")
+              local colon_position = host_identifier:find(":")
+
+              local username, hostname, port
+              if at_position and colon_position then
+                username = host_identifier:sub(1, at_position - 1)
+                hostname = host_identifier:sub(at_position + 1, colon_position - 1)
+                port = host_identifier:sub(colon_position + 1)
+                return "User '" .. username .. "' at " .. hostname .. " on port " .. port
+              elseif colon_position then
+                hostname = host_identifier:sub(1, colon_position - 1)
+                port = host_identifier:sub(colon_position + 1)
+                return hostname .. " on port " .. port
+              else
+                return host_identifier
+              end
+            end,
+            ordinal = entry,
+            value = entry,
+          }
+        end,
+      }),
+      sorter = conf.generic_sorter(opts),
+      attach_mappings = function(prompt_bufnr, _)
+        actions.select_default:replace(function()
+          actions.close(prompt_bufnr)
+          local selection = action_state.get_selected_entry()
+          local host_identifier = selection.value
+          remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
+            or RemoteNeovimSSHProvider:new(host_identifier)
+          remote_nvim.sessions[host_identifier]:set_up_remote()
+        end)
+        return true
+      end,
+    })
+    :find()
+end
+
 local function select_ssh_host_from_ssh_config(opts)
   opts = opts or {}
 
@@ -74,14 +149,21 @@ local function select_ssh_input_method(opts)
   opts = opts or {}
   local possible_ssh_options = {
     {
-      name = "Remote-Neovim: Select saved SSH Host config",
+      name = "Select already configured workspaces...",
+      value = "existing-workspace",
+      help = [[Select one of the already configured workspaces. This could be useful for quickly starting any existing workspaces that you configured earlier.
+
+NOTE: You might want to select "Connect to host using connection string" if you want to modify the connection options passed when connecting to the host. Don't worry, if you previously configured the host, saved configuration would be re-used.]],
+    },
+    {
+      name = "Select host from SSH Config file",
       value = "ssh-config",
       help = [[Choosing this will allow you to choose one of the known hosts from your `ssh-config` files. The list used can be configured using the `ssh-config-files` flag.
 
-The current known host parser only deals with exact host matches. If you have specified a regex for host matching, use the 'Remote-Neovim: Select saved SSH Host config' option and type the name of the host. If your underlying binary can match the regex, it would work.]],
+The current known host parser only deals with exact host matches. If you have specified a regex for host matching, use the 'Connect to host using connection string' option and type the name of the host. If your underlying binary can match the regex, it would work.]],
     },
     {
-      name = "Remote-Neovim: Connect to host using passed parameters",
+      name = "Connect to host using connection string",
       value = "manual-ssh-input",
       help = [[Next prompt would allow you to type in your SSH configuration.
 
@@ -135,6 +217,8 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
           local selection = action_state.get_selected_entry()
           if selection.value == "ssh-config" then
             select_ssh_host_from_ssh_config(opts)
+          elseif selection.value == "existing-workspace" then
+            select_ssh_host_from_workspace_config(opts)
           elseif selection.value == "manual-ssh-input" then
             local ssh_args = vim.fn.input("ssh ")
             if ssh_args == "" then
