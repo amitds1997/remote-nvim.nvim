@@ -1,6 +1,5 @@
 local remote_neovim = require("remote-nvim")
 local ssh_utils = require("remote-nvim.providers.ssh.ssh_utils")
-local logger = require("remote-nvim.utils").logger
 
 ---@class SSHRemoteExecutor
 ---@field remote_host string Host name of the remote host

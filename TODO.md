@@ -7,7 +7,7 @@
 - [ ] Add Neovim documentation
 - [ ] Add unit tests
 - [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
-- [ ] Add correct error handling
+- [ ] Handle Neovim already exists on remote machine
 - Add templates for (example: [Noice.nvim](https://github.com/folke/noice.nvim/tree/main/.github/ISSUE_TEMPLATE))
   - [ ] Bug report
   - [ ] Feature request
@@ -21,16 +21,10 @@
 - [ ] Add tutorial videos
 - [ ] Add CHANGELOG
 - [ ] Add auto completion for the commands
-- [ ] Add check to ensure that minimum neovim version is there
 - [ ] Restructure plugin folders and move around code to recommended folders
 - [ ] Add full screen client running capabilities
-- [ ] Add an option to take a script that takes as an input the local port over
-which Neovim is running and basically do whatever with it
-- [ ] Handle multiple setup calls received when a setup is already running. Just
-pop a notification if we want to abort already running instance.
 - [ ] Embrace plenary.nvim for common operations like opening configuration file
 in config handler and ssh parser
-- [ ] Fix missing jobs or intermittent job failures
 - Add more commands
   - [ ] `:RemoteNvimCloseTUI` to close current running TUI without closing the server
   - [ ] `:RemoteNvimInfo` to get information about active sessions
@@ -41,10 +35,8 @@ in config handler and ssh parser
 
 ## Planned
 
-- [ ] Handle Neovim already exists on remote machine scenario (just
-symlink the right version)
-- [ ] Fix issue where launching too soon makes the TUI crash
+- [ ] Fix missing jobs or intermittent job failures (SSH gets stuck?)
 
 ## In progress
 
-- [ ] Add scripts to do checks
+- [ ] Fix issue where we launch client well before the remote server is launched

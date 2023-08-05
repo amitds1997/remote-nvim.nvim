@@ -8,6 +8,8 @@ local M = {}
 ---@field remote_neovim_install_home string Where should remote neovim install and save configurations on the remote server
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
+---@field neovim_client_start_callback function<string> Function that would be called upon to start a Neovim client if
+--needed
 ---@field log_level log_level
 
 ---@alias log_level "trace"|"debug"|"info"|"error"|"fatal"
@@ -54,9 +56,16 @@ M.default_opts = {
   remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
   neovim_user_config_path = vim.fn.stdpath("config"),
   log_level = "info",
+  neovim_client_start_callback = nil,
 }
 
+---Setup for the plugin
+---@param opts RemoteNeovimConfig User configuration parameters for the plugin
+---@return nil
 M.setup = function(opts)
+  if vim.fn.has("nvim-0.8.0") ~= 1 then
+    return vim.notify("remote-nvim.nvim requires Neovim >= 0.8.0", vim.log.levels.ERROR, { title = "remote-nvim.nvim" })
+  end
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
   M.config.ssh_config.ssh_binary = util.find_binary(M.config.ssh_config.ssh_binary)
   M.config.ssh_config.scp_binary = util.find_binary(M.config.ssh_config.scp_binary)
