@@ -41,8 +41,5 @@ in config handler and ssh parser
 
 ## In progress
 
-- [ ] Add check to ensure that minimum neovim version is there
 - [ ] Add an option to take a script that takes as an input the local port over
 which Neovim is running and basically do whatever with it
-- [ ] Handle multiple setup calls received when a setup is already running. Just
-pop a notification if we want to abort already running instance.
