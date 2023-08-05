@@ -16,6 +16,7 @@ M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 M.logger = require("plenary.log").new({
   plugin = M.PLUGIN_NAME,
   level = M.LOG_LEVEL,
+  use_console = false,
   outfile = string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "cache" }), M.PLUGIN_NAME),
 })
 
