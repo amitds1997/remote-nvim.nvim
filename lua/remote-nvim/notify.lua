@@ -28,6 +28,17 @@ function Notifier:new(host_id, opts)
   return instance
 end
 
+---Show a notification once and be done
+---@param msg string Message to display in the notification
+---@param level? string Level at which the notification should be shown
+---@return table Notifier table
+function Notifier:notify_once(msg, level)
+  notify(self:_format_msg(msg), level or "info", {
+    title = self.title,
+  })
+  return self
+end
+
 ---Start showing a notification
 ---@param msg string Message to display in the notification
 ---@param level? string Level at which the notification should be shown
@@ -94,7 +105,7 @@ function Notifier:stop(msg, level, opts)
   opts.replace = nil
   local notif_opts = {
     title = self.title,
-    icon = level == "error" and "" or "",
+    icon = (level == "error") and "" or "",
     replace = self.notification,
     timeout = 3000,
   }

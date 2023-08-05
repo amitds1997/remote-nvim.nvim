@@ -44,7 +44,7 @@ local function select_ssh_host_from_workspace_config(opts)
       local lines = {}
       for key, value in pairs(host_config) do
         local formatted_key = string.format("%-" .. max_key_length .. "s", key:gsub("_", " "):gsub("^%l", string.upper))
-        table.insert(lines, "  " .. formatted_key .. " = " .. value)
+        table.insert(lines, "  " .. formatted_key .. " = " .. tostring(value))
       end
       table.sort(lines)
 

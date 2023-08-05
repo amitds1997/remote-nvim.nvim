@@ -20,6 +20,7 @@ local function get_or_create_workspace_config_path()
 end
 
 ---@alias provider "ssh"
+---@alias os_type "macOS"|"Windows"|"Linux"
 
 ---@class WorkspaceConfig Workspace config for a remote host
 ---@field provider provider Which provider is responsible for managing this workspace
@@ -29,6 +30,7 @@ end
 ---@field neovim_version string Version of Neovim running on the remote
 ---@field connection_options string Connection options needed to connect to the remote host
 ---@field remote_neovim_home string Path on remote host where remote-neovim installs/configures things
+---@field config_copy boolean|nil Flag indicating if the config should be copied or not
 
 ---@class NeovimWorkspaceConfig Handles saving workspace information for each remote host
 ---@field workspace_config_path string Path where the workspace config will be stored as JSON
@@ -106,6 +108,20 @@ function NeovimRemoteWorkspaceConfig:get_all_host_ids()
     table.insert(host_ids, host_id)
   end
   return host_ids
+end
+
+---Update a key value pair for an existing host config
+---@param host_id string Host identifier
+---@param key string Key to update in the record
+---@param value any Value to be updated with
+---@return boolean status Status of the update
+function NeovimRemoteWorkspaceConfig:update_host_record(host_id, key, value)
+  if not self.data[host_id] then
+    error("Host ID does not exist. Use NeovimWorkspaceConfig:add_host_config() to add new host config")
+  end
+  self.data[host_id][key] = value
+  self:write_file()
+  return true
 end
 
 ---Add new host workspace configuration to the config

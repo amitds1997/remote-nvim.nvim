@@ -6,8 +6,8 @@
 
 - [ ] Add Neovim documentation
 - [ ] Add unit tests
-- [ ] Add [selene](https://github.com/Kampfkarren/selene/pull/541) check in
-pre-commit once it's available
+- [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
+- [ ] Add correct error handling
 - Add templates for (example: [Noice.nvim](https://github.com/folke/noice.nvim/tree/main/.github/ISSUE_TEMPLATE))
   - [ ] Bug report
   - [ ] Feature request
@@ -44,13 +44,7 @@ in config handler and ssh parser
 - [ ] Handle Neovim already exists on remote machine scenario (just
 symlink the right version)
 - [ ] Fix issue where launching too soon makes the TUI crash
-- [ ] Add correct error handling
 
 ## In progress
 
 - [ ] Add scripts to do checks
-
-*Idea: We should wrap up upload, download and execute command in provider functions
-so that we can add descriptions, handle errors, log responses, etc. Each provider
-has a global message tray that it updates and any existing implementation can call
-it to get the status of the provider and task it is executing at the moment*
