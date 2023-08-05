@@ -455,7 +455,7 @@ function NeovimSSHProvider:set_up_remote()
   return self
 end
 
----Run SSH download job inside a pcall and handle any errors gracefully
+---Run SSH download job and handle any errors gracefully
 ---@param remote_path string Remote path where it should be copied over
 ---@param local_path string Local path to be copied over
 ---@param desc string Description of the download job being run
@@ -468,19 +468,13 @@ function NeovimSSHProvider:download(remote_path, local_path, desc)
     local_path
   )
 
-  local succ, ret = pcall(self.ssh_executor.download, self.ssh_executor, remote_path, local_path)
-  if not succ then
-    error(([[Download from %s over SSH failed to start. Run :RemoteNvimLog for more details]]):format(self.remote_host))
-  end
-
-  if self.ssh_executor.exit_code == 0 then
-    self.notifier:notify(desc .. " completed")
-  end
+  self.ssh_executor:download(remote_path, local_path)
+  self:_handle_job_completion(desc)
 
   return ret
 end
 
----Run SSH upload job inside a pcall and handle any errors gracefully
+---Run SSH upload job and handle any errors gracefully
 ---@param local_path string Local path to be copied over
 ---@param remote_path string Remote path where it should be copied over
 ---@param desc string Description of the upload job being run
@@ -488,35 +482,35 @@ function NeovimSSHProvider:upload(local_path, remote_path, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running upload from local %s path over SSH to %s on %s", local_path, self.remote_host, remote_path)
 
-  local succ, ret = pcall(self.ssh_executor.upload, self.ssh_executor, local_path, remote_path)
-  if not succ then
-    error(([[Upload to %s over SSH failed to start. Run :RemoteNvimLog for more details]]):format(self.remote_host))
-  end
-
-  if self.ssh_executor.exit_code == 0 then
-    self.notifier:notify(desc .. " completed")
-  end
+  self.ssh_executor:upload(local_path, remote_path)
+  self:_handle_job_completion(desc)
 
   return ret
 end
 
----Run SSH command inside a pcall and handle any errors gracefully
+---Run SSH command and handle any errors gracefully
 ---@param command string Command to run over SSH
 ---@param desc string Description of the operation being run
 function NeovimSSHProvider:run_command(command, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running %s over SSH on %s", command, self.remote_host)
 
-  local succ, ret = pcall(self.ssh_executor.run_command, self.ssh_executor, command)
-  if not succ then
-    error(([['%s' job failed to start. Run :RemoteNvimLog for more details]]):format(desc))
-  end
-
-  if self.ssh_executor.exit_code == 0 then
-    self.notifier:notify(desc .. " completed")
-  end
+  self.ssh_executor:run_command(command)
+  self:_handle_job_completion(desc)
 
   return ret
+end
+
+function NeovimSSHProvider:_handle_job_completion(desc)
+  if self.ssh_executor.exit_code == 0 then
+    self.notifier:notify(desc .. " completed")
+  else
+    self.notifier:stop(desc .. " failed. Run :RemoteNvimLog for more details", "error", {
+      hide_from_history = false,
+    })
+    logger.fmt_error("%s command failed to execute on remote host %s", self.ssh_executor.complete_cmd, self.remote_host)
+    error(([['%s' job failed while running.]]):format(desc))
+  end
 end
 
 return NeovimSSHProvider
