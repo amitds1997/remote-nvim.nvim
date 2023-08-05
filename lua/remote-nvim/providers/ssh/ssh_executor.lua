@@ -200,8 +200,6 @@ function SSHRemoteExecutor:handle_exit(exit_code)
         self.ssh_prompts[idx].value = self.saved_prompts[prompt.match]
       end
     end
-  else
-    error("Job " .. self.complete_cmd .. " failed")
   end
 end
 
