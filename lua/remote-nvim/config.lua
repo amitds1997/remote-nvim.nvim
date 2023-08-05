@@ -30,7 +30,8 @@ end
 ---@field neovim_version string Version of Neovim running on the remote
 ---@field connection_options string Connection options needed to connect to the remote host
 ---@field remote_neovim_home string Path on remote host where remote-neovim installs/configures things
----@field config_copy boolean|nil Flag indicating if the config should be copied or not
+---@field config_copy? boolean Flag indicating if the config should be copied or not
+---@field client_auto_start? boolean Flag indicating if the client should be auto started or not
 
 ---@class NeovimWorkspaceConfig Handles saving workspace information for each remote host
 ---@field workspace_config_path string Path where the workspace config will be stored as JSON

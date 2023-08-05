@@ -35,8 +35,4 @@ in config handler and ssh parser
 
 ## Planned
 
-- [ ] Fix missing jobs or intermittent job failures (SSH gets stuck?)
-
 ## In progress
-
-- [ ] Fix issue where we launch client well before the remote server is launched

@@ -170,6 +170,7 @@ function NeovimSSHProvider:setup_workspace_config_vars()
       remote_neovim_home = self.remote_neovim_home,
       os = remote_os,
       config_copy = nil,
+      client_auto_start = nil,
       neovim_version = neovim_version,
       workspace_id = utils.generate_random_string(10),
     })
@@ -348,22 +349,56 @@ function NeovimSSHProvider:handle_local_client_launch()
     })
   end
 
-  self:get_user_selection({ "Yes", "No" }, {
-    prompt = "Start Neovim client here?",
-  }, function(choice)
-    local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
-    if choice == "Yes" then
-      if RemoteNeovimConfig.config.neovim_client_start_callback ~= nil then
-        RemoteNeovimConfig.config.neovim_client_start_callback(self.local_free_port)
+  local client_start = self.workspace_config.client_auto_start
+
+  if client_start == nil then
+    self:get_user_selection({
+      "Yes",
+      "No",
+      "Yes, and do not ask again.",
+      "No, and do not ask again.",
+    }, {
+      prompt = "Start Neovim client?",
+    }, function(choice)
+      if choice == "Yes, and do not ask again." then
+        client_start = true
+        RemoteNeovimConfig.host_workspace_config:update_host_record(
+          self.unique_host_identifier,
+          "client_auto_start",
+          client_start
+        )
+      elseif choice == "No, and do not ask again." then
+        client_start = false
+        RemoteNeovimConfig.host_workspace_config:update_host_record(
+          self.unique_host_identifier,
+          "client_auto_start",
+          client_start
+        )
       else
-        launch_local_client(cmd)
+        client_start = choice == "Yes" and true or false
       end
+    end)
+  end
+
+  local cmd = ("nvim --server localhost:%s --remote-ui"):format(self.local_free_port)
+  if client_start then
+    -- We need to wait for the server to become available before we launch the client. This is one way of checking that
+    repeat
+      self.ssh_executor:run_command(
+        ("nvim --server localhost:%s --remote-send ':version<CR>'"):format(self.local_free_port)
+      )
+    until self.ssh_executor.exit_code ~= 0
+
+    if RemoteNeovimConfig.config.neovim_client_start_callback ~= nil then
+      RemoteNeovimConfig.config.neovim_client_start_callback(self.local_free_port)
     else
-      self.notifier:stop("Connect to the remote server using '" .. table.concat(cmd, " ") .. "'", "info", {
-        hide_from_history = false,
-      })
+      launch_local_client(cmd)
     end
-  end)
+  else
+    self.notifier:stop("Connect to the remote server using '" .. cmd .. "'", "info", {
+      hide_from_history = false,
+    })
+  end
 end
 
 ---Get async selection from the user
