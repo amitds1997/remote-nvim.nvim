@@ -25,7 +25,6 @@
 - [ ] Add full screen client running capabilities
 - [ ] Embrace plenary.nvim for common operations like opening configuration file
 in config handler and ssh parser
-- [ ] Fix missing jobs or intermittent job failures (SSH gets stuck?)
 - Add more commands
   - [ ] `:RemoteNvimCloseTUI` to close current running TUI without closing the server
   - [ ] `:RemoteNvimInfo` to get information about active sessions
@@ -36,7 +35,8 @@ in config handler and ssh parser
 
 ## Planned
 
-- [ ] Fix issue where launching too soon makes the TUI crash
-- [ ] Fix notification line length issue
+- [ ] Fix missing jobs or intermittent job failures (SSH gets stuck?)
 
 ## In progress
+
+- [ ] Fix issue where we launch client well before the remote server is launched

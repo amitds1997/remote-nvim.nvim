@@ -94,7 +94,7 @@ end
 ---Detect and register the OS of the remote SSH host
 ---@return os_type os_name Name of the OS running on remote host
 function NeovimSSHProvider:detect_remote_os()
-  self:run_command("uname", "Checking OS type")
+  self:run_command("uname", "Determining OS type...")
   local stdout_lines = self.ssh_executor:get_stdout()
   local remote_os = stdout_lines[#stdout_lines]
 
@@ -206,7 +206,7 @@ end
 ---Verify if we can connect to the remote host
 ---@async
 function NeovimSSHProvider:verify_connection()
-  self:run_command('echo "OK"', "Checking if remote host is reachable")
+  self:run_command('echo "OK"', "Checking if remote host is reachable...")
   if self.ssh_executor.exit_code ~= 0 then
     self.notifier:stop("Remote host is not reachable", "error")
     logger.fmt_error("Could not connect to remote host %s", self.unique_host_identifier)
@@ -257,7 +257,7 @@ function NeovimSSHProvider:handle_neovim_config_update_on_remote()
     self:upload(
       self.local_nvim_user_config_path,
       self.remote_neovim_config_path,
-      "Copying local neovim configuration onto remote machine"
+      "Copying local config onto remote machine..."
     )
   end
 end
@@ -359,7 +359,7 @@ function NeovimSSHProvider:handle_local_client_launch()
         launch_local_client(cmd)
       end
     else
-      self.notifier:stop("You can connect to the remote server using " .. table.concat(cmd, " "), "info", {
+      self.notifier:stop("Connect to the remote server using '" .. table.concat(cmd, " ") .. "'", "info", {
         hide_from_history = false,
       })
     end
@@ -445,17 +445,17 @@ function NeovimSSHProvider:set_up_remote()
           self.remote_scripts_path,
           self.remote_xdg_config_path
         )
-        self:run_command(mkdir_cmd, "Creating necessary directories on remote machine, if required")
+        self:run_command(mkdir_cmd, "Creating necessary directories...")
 
         -- We now copy over all scripts that we have onto the remote server
-        self:upload(self.local_nvim_scripts_path, self.remote_neovim_home, "Copying necessary scripts onto remote")
+        self:upload(self.local_nvim_scripts_path, self.remote_neovim_home, "Copying over necessary scripts...")
 
         -- If we have provided a custom Neovim installation script, only then copy over the custom script
         if RemoteNeovimConfig.default_opts.neovim_install_script_path ~= self.local_nvim_install_script_path then
           self:upload(
             self.local_nvim_install_script_path,
             self.remote_scripts_path,
-            "Copying custom installation script onto remote"
+            "Copying custom installation scripts..."
           )
         end
 
@@ -466,7 +466,7 @@ function NeovimSSHProvider:set_up_remote()
           self.remote_neovim_version,
           self.remote_neovim_home
         )
-        self:run_command(install_neovim_cmd, "Running installation script on remote machine")
+        self:run_command(install_neovim_cmd, "Running installation script...")
 
         -- Time to copy over Neovim configuration (if needed)
         self:handle_neovim_config_update_on_remote()
