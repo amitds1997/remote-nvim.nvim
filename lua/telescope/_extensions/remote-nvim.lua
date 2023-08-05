@@ -32,11 +32,9 @@ local function select_ssh_host_from_workspace_config(opts)
   local previewer = previewers.new_buffer_previewer({
     define_preview = function(self, entry)
       local host_config = workspace_config:get_workspace_config_data(entry.value)
-      host_config["Host ID"] = entry.value
-
-      local max_key_length = 0
 
       -- Find the longest key length
+      local max_key_length = 0
       for key, _ in pairs(host_config) do
         max_key_length = math.max(max_key_length, #key)
       end
@@ -44,12 +42,12 @@ local function select_ssh_host_from_workspace_config(opts)
       local lines = {}
       for key, value in pairs(host_config) do
         local formatted_key = string.format("%-" .. max_key_length .. "s", key:gsub("_", " "):gsub("^%l", string.upper))
-        table.insert(lines, "  " .. formatted_key .. " = " .. tostring(value))
+        table.insert(lines, "  " .. formatted_key .. " : " .. tostring(value))
       end
       table.sort(lines)
 
       vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-      previewer_utils.highlighter(self.state.bufnr, "toml")
+      previewer_utils.highlighter(self.state.bufnr, "yaml")
     end,
   })
 

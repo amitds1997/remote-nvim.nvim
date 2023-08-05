@@ -380,15 +380,22 @@ function NeovimSSHProvider:handle_local_client_launch()
     end)
   end
 
-  local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
+  local cmd = ("nvim --server localhost:%s --remote-ui"):format(self.local_free_port)
   if client_start then
+    -- We need to wait for the server to become available before we launch the client. This is one way of checking that
+    repeat
+      self.ssh_executor:run_command(
+        ("nvim --server localhost:%s --remote-send ':version<CR>'"):format(self.local_free_port)
+      )
+    until self.ssh_executor.exit_code ~= 0
+
     if RemoteNeovimConfig.config.neovim_client_start_callback ~= nil then
       RemoteNeovimConfig.config.neovim_client_start_callback(self.local_free_port)
     else
       launch_local_client(cmd)
     end
   else
-    self.notifier:stop("Connect to the remote server using '" .. table.concat(cmd, " ") .. "'", "info", {
+    self.notifier:stop("Connect to the remote server using '" .. cmd .. "'", "info", {
       hide_from_history = false,
     })
   end
