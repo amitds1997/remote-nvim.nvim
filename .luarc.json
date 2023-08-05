@@ -6,6 +6,7 @@
     "/usr/local/Cellar/neovim/0.9.1/share/nvim/runtime/lua",
     "/Users/amitsingh/.local/share/nvim/lazy/neodev.nvim/types/stable",
     "/Users/amitsingh/.local/share/nvim/lazy/telescope.nvim/lua",
-    "/Users/amitsingh/.local/share/nvim/lazy/plenary.nvim/lua"
+    "/Users/amitsingh/.local/share/nvim/lazy/plenary.nvim/lua",
+    "/Users/amitsingh/.local/share/nvim/lazy/nvim-notify/lua"
   ]
 }
