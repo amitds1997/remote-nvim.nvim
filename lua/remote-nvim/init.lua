@@ -28,7 +28,7 @@ local M = {}
 ---@field ssh_prompts RemoteNeovimSSHPrompts[] List of SSH prompts that should be considered for input
 
 ---@type RemoteNeovimConfig
-local default_opts = {
+M.default_opts = {
   ssh_config = {
     ssh_binary = "ssh",
     scp_binary = "scp",
@@ -56,8 +56,8 @@ local default_opts = {
   log_level = "info",
 }
 
-M.setup = function(args)
-  M.config = vim.tbl_deep_extend("force", default_opts, args or {}) or default_opts
+M.setup = function(opts)
+  M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
   M.config.ssh_config.ssh_binary = util.find_binary(M.config.ssh_config.ssh_binary)
   M.config.ssh_config.scp_binary = util.find_binary(M.config.ssh_config.scp_binary)
 

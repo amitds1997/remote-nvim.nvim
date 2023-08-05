@@ -429,11 +429,15 @@ function NeovimSSHProvider:set_up_remote()
 
       -- We now copy over all scripts that we have onto the remote server
       self:upload(self.local_nvim_scripts_path, self.remote_neovim_home, "Copying necessary scripts onto remote")
-      self:upload(
-        self.local_nvim_install_script_path,
-        self.remote_scripts_path,
-        "Copying custom installation script onto remote"
-      )
+
+      -- If we have provided a custom Neovim installation script, only then copy over the custom script
+      if RemoteNeovimConfig.default_opts.neovim_install_script_path ~= self.local_nvim_install_script_path then
+        self:upload(
+          self.local_nvim_install_script_path,
+          self.remote_scripts_path,
+          "Copying custom installation script onto remote"
+        )
+      end
 
       -- Make the installation script executable and run it to install the specified version of Neovim
       local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s]]):format(
