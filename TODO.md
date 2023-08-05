@@ -37,6 +37,7 @@ in config handler and ssh parser
 ## Planned
 
 - [ ] Fix issue where launching too soon makes the TUI crash
+- [ ] Fix notification line length issue
 
 ## In progress
 
