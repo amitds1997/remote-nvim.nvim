@@ -110,7 +110,7 @@ function NeovimSSHProvider:detect_remote_os()
       "macOS",
       "Windows",
     }
-    utils.get_user_selection(os_options, {
+    self:get_user_selection(os_options, {
       prompt = "Select your remote host's OS: ",
       format_item = function(item)
         return "Remote host is running " .. item
@@ -137,7 +137,7 @@ function NeovimSSHProvider:determine_remote_neovim_version()
     local api_info = vim.version()
     local client_version = "v" .. table.concat({ api_info.major, api_info.minor, api_info.patch }, ".")
 
-    utils.get_user_selection(valid_neovim_versions, {
+    self:get_user_selection(valid_neovim_versions, {
       prompt = "What Neovim version should be installed on remote host?",
       format_item = function(ver)
         if ver == client_version then
@@ -218,7 +218,7 @@ function NeovimSSHProvider:handle_neovim_config_update_on_remote()
   local copy_config_choice = false
 
   --- Get user choice about copying the Neovim configuration over
-  utils.get_user_selection({ "Yes", "No" }, {
+  self:get_user_selection({ "Yes", "No" }, {
     prompt = "Copy Neovim config at " .. self.local_nvim_user_config_path .. " ?",
   }, function(choice)
     copy_config_choice = choice == "Yes" and true or false
@@ -315,7 +315,7 @@ function NeovimSSHProvider:handle_local_client_launch()
     })
   end
 
-  utils.get_user_selection({ "Yes", "No" }, {
+  self:get_user_selection({ "Yes", "No" }, {
     prompt = "Start Neovim client here?",
   }, function(choice)
     local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
@@ -325,6 +325,28 @@ function NeovimSSHProvider:handle_local_client_launch()
       self.notifier:stop("You can connect to the remote server using " .. table.concat(cmd, " "))
     end
   end)
+end
+
+---Get async selection from the user
+---@param choices string[] Options to be presented to the user
+---@param input_opts table Input options, same as one given to vim.ui.select
+---@param cb function Callback to call once choice has been made
+---@see vim.ui.select
+function NeovimSSHProvider:get_user_selection(choices, input_opts, cb)
+  local co = coroutine.running()
+  vim.ui.select(choices, input_opts, function(choice)
+    cb(choice)
+    if choice == nil then
+      self.notifier:stop("Setup cancelled", "warn")
+      return
+    end
+    if co then
+      coroutine.resume(co)
+    end
+  end)
+  if co then
+    coroutine.yield()
+  end
 end
 
 ---Clean up remote host information so that we can start afresh
@@ -337,7 +359,7 @@ function NeovimSSHProvider:clean_up_remote_host()
     self:setup_workspace_config_vars()
 
     -- Get user input about what should be deleted
-    utils.get_user_selection({
+    self:get_user_selection({
       "Delete just my workspace (Useful if multiple people work in the same space)",
       "Delete everything remote-neovim on remote",
     }, {
