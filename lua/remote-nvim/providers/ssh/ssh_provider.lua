@@ -1,6 +1,7 @@
 local RemoteNeovimConfig = require("remote-nvim")
 local SSHExecutor = require("remote-nvim.providers.ssh.ssh_executor")
 local SSHUtils = require("remote-nvim.providers.ssh.ssh_utils")
+local notifier = require("remote-nvim.notify")
 local utils = require("remote-nvim.utils")
 local logger = utils.logger
 
@@ -13,6 +14,7 @@ local logger = utils.logger
 ---@field remote_neovim_home string Remote path on which remote neovim will install things
 ---@field unique_host_identifier string Unique identifier for the host
 ---@field workspace_config WorkspaceConfig Workspace config for remote host
+---@field notifier Notifier Notification handling instance
 ---@field local_nvim_install_script_path string Local path where Neovim installation script is stored
 ---@field local_nvim_user_config_path string Local path where Neovim configuration files are stored
 ---@field local_nvim_scripts_path string Local path where Remote Neovim scripts are stored
@@ -79,6 +81,9 @@ function NeovimSSHProvider:new(host, connection_options)
   instance.remote_free_port = nil
   instance.remote_port_forwarding_job_id = nil
 
+  -- Notifier instance
+  instance.notifier = notifier:new(instance.unique_host_identifier)
+
   return instance
 end
 
@@ -87,7 +92,7 @@ end
 ---Detect and register the OS of the remote SSH host
 ---@return os_type os_name Name of the OS running on remote host
 function NeovimSSHProvider:detect_remote_os()
-  self:run_command("Checking OS type", "uname")
+  self:run_command("uname", "Checking OS type")
   local stdout_lines = self.ssh_executor:get_stdout()
   local remote_os = stdout_lines[#stdout_lines]
 
@@ -105,7 +110,7 @@ function NeovimSSHProvider:detect_remote_os()
       "macOS",
       "Windows",
     }
-    utils.get_user_selection(os_options, {
+    self:get_user_selection(os_options, {
       prompt = "Select your remote host's OS: ",
       format_item = function(item)
         return "Remote host is running " .. item
@@ -132,7 +137,7 @@ function NeovimSSHProvider:determine_remote_neovim_version()
     local api_info = vim.version()
     local client_version = "v" .. table.concat({ api_info.major, api_info.minor, api_info.patch }, ".")
 
-    utils.get_user_selection(valid_neovim_versions, {
+    self:get_user_selection(valid_neovim_versions, {
       prompt = "What Neovim version should be installed on remote host?",
       format_item = function(ver)
         if ver == client_version then
@@ -198,9 +203,11 @@ end
 ---Verify if we can connect to the remote host
 ---@async
 function NeovimSSHProvider:verify_connection()
-  self:run_command("Checking if remote host is reachable", 'echo "OK"')
+  self:run_command('echo "OK"', "Checking if remote host is reachable")
   if self.ssh_executor.exit_code ~= 0 then
     error("Could not connect to the remote host: " .. self.unique_host_identifier)
+  else
+    self.notifier:stop("Remote host is reachable")
   end
 end
 
@@ -211,7 +218,7 @@ function NeovimSSHProvider:handle_neovim_config_update_on_remote()
   local copy_config_choice = false
 
   --- Get user choice about copying the Neovim configuration over
-  utils.get_user_selection({ "Yes", "No" }, {
+  self:get_user_selection({ "Yes", "No" }, {
     prompt = "Copy Neovim config at " .. self.local_nvim_user_config_path .. " ?",
   }, function(choice)
     copy_config_choice = choice == "Yes" and true or false
@@ -219,9 +226,9 @@ function NeovimSSHProvider:handle_neovim_config_update_on_remote()
 
   if copy_config_choice then
     self:upload(
-      "Copying local neovim configuration onto remote machine",
       self.local_nvim_user_config_path,
-      self.remote_neovim_config_path
+      self.remote_neovim_config_path,
+      "Copying local neovim configuration onto remote machine"
     )
   end
 end
@@ -255,12 +262,14 @@ function NeovimSSHProvider:handle_remote_server_launch()
     local free_port_cmd = self:get_remote_neovim_binary_path()
       .. " -l "
       .. utils.path_join(self.remote_is_windows, self.remote_scripts_path, "free_port_finder.lua")
-    self:run_command("Finding a free port on local machine", free_port_cmd)
+    self:run_command(free_port_cmd, "Search for free port on remote machine")
     local free_port_output = self.ssh_executor:get_stdout()
     self.remote_free_port = free_port_output[#free_port_output]
 
     -- Find free port on our local server
+    self.notifier:notify("Search for free port on local machine")
     self.local_free_port = utils.find_free_port()
+    self.notifier:notify("Search for free port on local machine completed")
 
     -- Setup SSH port forwarding connection options
     local forwarded_ports = self.local_free_port .. ":localhost:" .. self.remote_free_port
@@ -275,11 +284,8 @@ function NeovimSSHProvider:handle_remote_server_launch()
 
     -- Launch remote server and port forward to local
     local p = coroutine.create(function()
-      self:run_command(
-        "Launching remote neovim server with port forwarding",
-        remote_port_forwarding_cmd,
-        port_forward_ssh_opts
-      )
+      self.notifier:notify("Starting remote neovim server along with port forwarding")
+      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts)
     end)
     local success, err = coroutine.resume(p)
     if not success then
@@ -296,28 +302,51 @@ end
 function NeovimSSHProvider:handle_local_client_launch()
   -- Launch remote server if it is not already running
   self:handle_remote_server_launch()
+  self.notifier:stop("Remote server launch completed")
 
   local function launch_local_client(cmd)
     require("lazy.util").float_term(cmd, {
       interactive = true,
       on_exit_handler = function(_, exit_code)
         if exit_code ~= 0 then
-          vim.notify("Local Neovim server " .. table.concat(cmd, " ") .. " failed")
+          self.notifier:stop("Local Neovim server " .. table.concat(cmd, " ") .. " failed", "error")
         end
       end,
     })
   end
 
-  utils.get_user_selection({ "Yes", "No" }, {
+  self:get_user_selection({ "Yes", "No" }, {
     prompt = "Start Neovim client here?",
   }, function(choice)
     local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
     if choice == "Yes" then
       launch_local_client(cmd)
     else
-      vim.notify("You can connect to the remote server using " .. table.concat(cmd, " "))
+      self.notifier:stop("You can connect to the remote server using " .. table.concat(cmd, " "))
     end
   end)
+end
+
+---Get async selection from the user
+---@param choices string[] Options to be presented to the user
+---@param input_opts table Input options, same as one given to vim.ui.select
+---@param cb function Callback to call once choice has been made
+---@see vim.ui.select
+function NeovimSSHProvider:get_user_selection(choices, input_opts, cb)
+  local co = coroutine.running()
+  vim.ui.select(choices, input_opts, function(choice)
+    cb(choice)
+    if choice == nil then
+      self.notifier:stop("Setup cancelled", "warn")
+      return
+    end
+    if co then
+      coroutine.resume(co)
+    end
+  end)
+  if co then
+    coroutine.yield()
+  end
 end
 
 ---Clean up remote host information so that we can start afresh
@@ -330,16 +359,16 @@ function NeovimSSHProvider:clean_up_remote_host()
     self:setup_workspace_config_vars()
 
     -- Get user input about what should be deleted
-    utils.get_user_selection({
+    self:get_user_selection({
       "Delete just my workspace (Useful if multiple people work in the same space)",
       "Delete everything remote-neovim on remote",
     }, {
       prompt = "What should be cleaned up?",
     }, function(choice)
       if choice == "Delete just my workspace (Useful if multiple people work in the same space)" then
-        self:run_command("Deleting workspace on remote host", "rm -rf " .. self.remote_workspace_id_path)
+        self:run_command("rm -rf " .. self.remote_workspace_id_path, "Deleting workspace on remote host")
       elseif choice == "Delete everything remote-neovim on remote" then
-        self:run_command("Deleting remote neovim from remote host", "rm -rf " .. self.remote_neovim_home)
+        self:run_command("rm -rf " .. self.remote_neovim_home, "Deleting remote neovim from remote host")
       end
     end)
 
@@ -365,14 +394,14 @@ function NeovimSSHProvider:set_up_remote()
       self.remote_scripts_path,
       self.remote_xdg_config_path
     )
-    self:run_command("Creating necessary directories on remote machine", mkdir_cmd)
+    self:run_command(mkdir_cmd, "Creating necessary directories on remote machine")
 
     -- We now copy over all scripts that we have onto the remote server
-    self:upload("Copying remote neovim scripts onto remote", self.local_nvim_scripts_path, self.remote_neovim_home)
+    self:upload(self.local_nvim_scripts_path, self.remote_neovim_home, "Copying remote neovim scripts onto remote")
     self:upload(
-      "Copying custom installation script onto remote",
       self.local_nvim_install_script_path,
-      self.remote_scripts_path
+      self.remote_scripts_path,
+      "Copying custom installation script onto remote"
     )
 
     -- Make the installation script executable and run it to install the specified version of Neovim
@@ -382,10 +411,11 @@ function NeovimSSHProvider:set_up_remote()
       self.remote_neovim_version,
       self.remote_neovim_home
     )
-    self:run_command(("Installing Neovim %s on remote machine"):format(self.remote_neovim_version), install_neovim_cmd)
+    self:run_command(install_neovim_cmd, "Running installation script on remote machine")
 
     -- Time to copy over Neovim configuration (if needed)
     self:handle_neovim_config_update_on_remote()
+    self.notifier:stop("Remote setup complete")
 
     -- Start remote neovim server
     self:handle_local_client_launch()
@@ -395,48 +425,66 @@ function NeovimSSHProvider:set_up_remote()
 end
 
 ---Run SSH download job inside a pcall and handle any errors gracefully
----@param desc string Description of the download job being run
 ---@param remote_path string Remote path where it should be copied over
 ---@param local_path string Local path to be copied over
-function NeovimSSHProvider:download(desc, remote_path, local_path, ...)
+---@param desc string Description of the download job being run
+function NeovimSSHProvider:download(remote_path, local_path, desc)
+  self.notifier:notify(desc)
   logger.fmt_debug(
     "Running download from remote %s on %s over SSH to local %s path",
     remote_path,
     self.remote_host,
     local_path
   )
-  local succ, ret = pcall(self.ssh_executor.download, self.ssh_executor, remote_path, local_path, ...)
+
+  local succ, ret = pcall(self.ssh_executor.download, self.ssh_executor, remote_path, local_path)
   if not succ then
     error(([[Download from %s over SSH failed to start. Run :RemoteNvimLog for more details]]):format(self.remote_host))
   end
-  self.running_job_msg = desc
+
+  if self.ssh_executor.exit_code == 0 then
+    self.notifier:notify(desc .. " completed")
+  end
+
   return ret
 end
 
 ---Run SSH upload job inside a pcall and handle any errors gracefully
----@param desc string Description of the upload job being run
 ---@param local_path string Local path to be copied over
 ---@param remote_path string Remote path where it should be copied over
-function NeovimSSHProvider:upload(desc, local_path, remote_path, ...)
+---@param desc string Description of the upload job being run
+function NeovimSSHProvider:upload(local_path, remote_path, desc)
+  self.notifier:notify(desc)
   logger.fmt_debug("Running upload from local %s path over SSH to %s on %s", local_path, self.remote_host, remote_path)
-  local succ, ret = pcall(self.ssh_executor.upload, self.ssh_executor, local_path, remote_path, ...)
+
+  local succ, ret = pcall(self.ssh_executor.upload, self.ssh_executor, local_path, remote_path)
   if not succ then
     error(([[Upload to %s over SSH failed to start. Run :RemoteNvimLog for more details]]):format(self.remote_host))
   end
-  self.running_job_msg = desc
+
+  if self.ssh_executor.exit_code == 0 then
+    self.notifier:notify(desc .. " completed")
+  end
+
   return ret
 end
 
 ---Run SSH command inside a pcall and handle any errors gracefully
----@param desc string Description of the operation being run
 ---@param command string Command to run over SSH
-function NeovimSSHProvider:run_command(desc, command, ...)
+---@param desc string Description of the operation being run
+function NeovimSSHProvider:run_command(command, desc)
+  self.notifier:notify(desc)
   logger.fmt_debug("Running %s over SSH on %s", command, self.remote_host)
-  local succ, ret = pcall(self.ssh_executor.run_command, self.ssh_executor, command, ...)
+
+  local succ, ret = pcall(self.ssh_executor.run_command, self.ssh_executor, command)
   if not succ then
     error(([['%s' job failed to start. Run :RemoteNvimLog for more details]]):format(desc))
   end
-  self.running_job_msg = desc
+
+  if self.ssh_executor.exit_code == 0 then
+    self.notifier:notify(desc .. " completed")
+  end
+
   return ret
 end
 

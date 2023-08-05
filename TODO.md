@@ -41,15 +41,14 @@ in config handler and ssh parser
 
 ## Planned
 
-- [ ] Add scripts to do checks
 - [ ] Handle Neovim already exists on remote machine scenario (just
 symlink the right version)
 - [ ] Fix issue where launching too soon makes the TUI crash
+- [ ] Add correct error handling
 
 ## In progress
 
-- [ ] Add progress bar notification
-- [ ] Add correct error handling
+- [ ] Add scripts to do checks
 
 *Idea: We should wrap up upload, download and execute command in provider functions
 so that we can add descriptions, handle errors, log responses, etc. Each provider

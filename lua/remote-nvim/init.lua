@@ -56,10 +56,6 @@ local default_opts = {
   log_level = "info",
 }
 
-M.setup_keymaps = function()
-  vim.api.nvim_set_keymap("n", ",p", ":Lazy reload remote-nvim.nvim<CR>", {})
-end
-
 M.setup = function(args)
   M.config = vim.tbl_deep_extend("force", default_opts, args or {}) or default_opts
   M.config.ssh_config.ssh_binary = util.find_binary(M.config.ssh_config.ssh_binary)
@@ -69,7 +65,6 @@ M.setup = function(args)
   M.sessions = {}
 
   require("remote-nvim.command")
-  M.setup_keymaps()
 end
 
 return M
