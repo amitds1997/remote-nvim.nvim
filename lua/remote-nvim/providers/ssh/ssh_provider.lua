@@ -505,9 +505,11 @@ function NeovimSSHProvider:_handle_job_completion(desc)
   if self.ssh_executor.exit_code == 0 then
     self.notifier:notify(desc .. " completed")
   else
-    self.notifier:stop(desc .. " failed. Run :RemoteNvimLog for more details", "error", {
-      hide_from_history = false,
-    })
+    local notification_msg = desc .. " failed. Run :RemoteNvimLog for more details"
+    self.notifier:stop(notification_msg, "error", { timeout = 0 })
+    -- We show the notification again so that it gets registered in the logs
+    self.notifier:notify_once(notification_msg, "error")
+
     logger.fmt_error("%s command failed to execute on remote host %s", self.ssh_executor.complete_cmd, self.remote_host)
     error(([['%s' job failed while running.]]):format(desc))
   end
