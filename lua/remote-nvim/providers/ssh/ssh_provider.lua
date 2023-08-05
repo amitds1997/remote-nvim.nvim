@@ -473,9 +473,7 @@ function NeovimSSHProvider:download(remote_path, local_path, desc)
   )
 
   self.ssh_executor:download(remote_path, local_path)
-  self:_handle_job_completion(desc)
-
-  return ret
+  return self:_handle_job_completion(desc)
 end
 
 ---Run SSH upload job and handle any errors gracefully
@@ -487,9 +485,7 @@ function NeovimSSHProvider:upload(local_path, remote_path, desc)
   logger.fmt_debug("Running upload from local %s path over SSH to %s on %s", local_path, self.remote_host, remote_path)
 
   self.ssh_executor:upload(local_path, remote_path)
-  self:_handle_job_completion(desc)
-
-  return ret
+  return self:_handle_job_completion(desc)
 end
 
 ---Run SSH command and handle any errors gracefully
@@ -500,9 +496,7 @@ function NeovimSSHProvider:run_command(command, desc)
   logger.fmt_debug("Running %s over SSH on %s", command, self.remote_host)
 
   self.ssh_executor:run_command(command)
-  self:_handle_job_completion(desc)
-
-  return ret
+  return self:_handle_job_completion(desc)
 end
 
 function NeovimSSHProvider:_handle_job_completion(desc)

@@ -89,9 +89,9 @@ function download_decompress_neovim_macOS() {
 # Function to install Neovim
 function install_neovim() {
 	# Check if Neovim is available globally in the system's $PATH
-	if ! $force_installation; then
-		check_neovim_in_path
-	fi
+	# if ! $force_installation; then
+	# 	check_neovim_in_path
+	# fi
 
 	# Check if the specified download directory exists
 	if [[ ! -d $remote_nvim_dir ]]; then
