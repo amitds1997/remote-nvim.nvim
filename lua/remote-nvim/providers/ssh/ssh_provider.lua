@@ -353,7 +353,11 @@ function NeovimSSHProvider:handle_local_client_launch()
   }, function(choice)
     local cmd = { "nvim", "--server", "localhost:" .. self.local_free_port, "--remote-ui" }
     if choice == "Yes" then
-      launch_local_client(cmd)
+      if RemoteNeovimConfig.config.neovim_client_start_callback ~= nil then
+        RemoteNeovimConfig.config.neovim_client_start_callback(self.local_free_port)
+      else
+        launch_local_client(cmd)
+      end
     else
       self.notifier:stop("You can connect to the remote server using " .. table.concat(cmd, " "), "info", {
         hide_from_history = false,

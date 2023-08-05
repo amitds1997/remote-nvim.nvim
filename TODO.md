@@ -40,6 +40,3 @@ in config handler and ssh parser
 - [ ] Fix notification line length issue
 
 ## In progress
-
-- [ ] Add an option to take a script that takes as an input the local port over
-which Neovim is running and basically do whatever with it
