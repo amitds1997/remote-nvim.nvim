@@ -2,6 +2,7 @@ local RemoteNeovimConfig = require("remote-nvim")
 local SSHExecutor = require("remote-nvim.providers.ssh.ssh_executor")
 local SSHUtils = require("remote-nvim.providers.ssh.ssh_utils")
 local notifier = require("remote-nvim.notify")
+local ui = require("remote-nvim.ui")
 local utils = require("remote-nvim.utils")
 local logger = utils.logger
 
@@ -342,17 +343,6 @@ function NeovimSSHProvider:handle_local_client_launch()
   -- Launch remote server if it is not already running
   self:handle_remote_server_launch()
 
-  local function launch_local_client(cmd)
-    require("lazy.util").float_term(cmd, {
-      interactive = true,
-      on_exit_handler = function(_, exit_code)
-        if exit_code ~= 0 then
-          self.notifier:stop("Local Neovim server " .. table.concat(cmd, " ") .. " failed", "error")
-        end
-      end,
-    })
-  end
-
   local client_start = self.workspace_config.client_auto_start
 
   if client_start == nil then
@@ -393,10 +383,17 @@ function NeovimSSHProvider:handle_local_client_launch()
       )
     until self.ssh_executor.exit_code ~= 0
 
-    if RemoteNeovimConfig.config.neovim_client_start_callback ~= nil then
-      RemoteNeovimConfig.config.neovim_client_start_callback(self.local_free_port)
+    if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
+      RemoteNeovimConfig.config.local_client_config.callback(self.local_free_port)
     else
-      launch_local_client(cmd)
+      -- Launch a floating window with the Neovim client launched in it
+      ui.float_term(cmd, nil, {
+        on_exit_handler = function(_, exit_code)
+          if exit_code ~= 0 then
+            self.notifier:stop("Local Neovim client " .. cmd .. " failed", "error")
+          end
+        end,
+      })
     end
   else
     self.notifier:stop("Connect to the remote server using '" .. cmd .. "'", "info", {

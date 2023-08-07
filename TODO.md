@@ -1,5 +1,10 @@
 # TO-DO List
 
+## Unresolved issues
+
+1. Correct way to handle Neovim existing on remote machine
+2. Correct way to handle detaching the Remote Neovim server from the remote instance
+
 ## Backlog
 
 ### Noice to have
@@ -7,7 +12,6 @@
 - [ ] Add Neovim documentation
 - [ ] Add unit tests
 - [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
-- [ ] Handle Neovim already exists on remote machine
 - Add templates for (example: [Noice.nvim](https://github.com/folke/noice.nvim/tree/main/.github/ISSUE_TEMPLATE))
   - [ ] Bug report
   - [ ] Feature request
@@ -20,15 +24,12 @@
 
 - [ ] Add tutorial videos
 - [ ] Add CHANGELOG
-- [ ] Restructure plugin folders and move around code to recommended folders
-- [ ] Add full screen client running capabilities
 
 ## Planned
 
 - [ ] Add `plenary.curl` like error notification
 - [ ] Embrace plenary.nvim for common operations like opening configuration file
 in config handler and ssh parser
-- [ ] Add ability to delete local config from RemoteInfo UI
 
 ## In progress
 

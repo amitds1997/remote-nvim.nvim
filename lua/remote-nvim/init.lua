@@ -8,13 +8,17 @@ local M = {}
 ---@field remote_neovim_install_home string Where should remote neovim install and save configurations on the remote server
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
----@field neovim_client_start_callback function<string> Function that would be called upon to start a Neovim client if
---needed
+---@field local_client_config LocalClientConfig Configuration for the local client
 ---@field log_level log_level
 
 ---@alias log_level "trace"|"debug"|"info"|"error"|"fatal"
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
+
+---@class LocalClientConfig
+---@field callback function<string> Function that would be called upon to start a Neovim client if not nil
+---@field default_client_config FloatWindowOpts Configuration to be applied to the default client that would be launched
+--if callback is nil
 
 ---@class RemoteNeovimSSHPrompts
 ---@field match string Text that input should be matched against to identify need for stdin
@@ -55,8 +59,27 @@ M.default_opts = {
   neovim_install_script_path = util.path_join(util.is_windows, util.get_package_root(), "scripts", "neovim_install.sh"),
   remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
   neovim_user_config_path = vim.fn.stdpath("config"),
+  local_client_config = {
+    callback = nil,
+    default_client_config = {
+      col_percent = 0.9,
+      row_percent = 0.9,
+      win_opts = {
+        winblend = 5,
+      },
+      border_opts = {
+        topleft = "╭",
+        topright = "╮",
+        top = "─",
+        left = "│",
+        right = "│",
+        botleft = "╰",
+        botright = "╯",
+        bot = "─",
+      },
+    },
+  },
   log_level = "info",
-  neovim_client_start_callback = nil,
 }
 
 ---Setup for the plugin
