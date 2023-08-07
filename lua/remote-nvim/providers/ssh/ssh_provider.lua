@@ -211,11 +211,14 @@ function NeovimSSHProvider:verify_connection()
   self:run_command('echo "OK"', "Checking if remote host is reachable...")
   if self.ssh_executor.exit_code ~= 0 then
     self.notifier:stop("Remote host is not reachable", "error")
+    -- If we are not able to connect to the remote host, there is no session possible
+    RemoteNeovimConfig.sessions[self.unique_host_identifier] = nil
     logger.fmt_error("Could not connect to remote host %s", self.unique_host_identifier)
     error("Could not connect to the remote host: " .. self.unique_host_identifier)
   else
     self:setup_workspace_config_vars()
     self.notifier:stop("Remote host is reachable")
+    return self
   end
 end
 
@@ -564,7 +567,7 @@ function NeovimSSHProvider:_handle_job_completion(desc)
   if self.ssh_executor.exit_code == 0 then
     self.notifier:notify(desc .. " completed")
   else
-    local notification_msg = desc .. " failed. Run :RemoteNvimLog for more details"
+    local notification_msg = desc .. " failed. Run :RemoteLog for more details"
     self.notifier:stop(notification_msg, "error", { timeout = 0 })
     -- We show the notification again so that it gets registered in the logs
     self.notifier:notify_once(notification_msg, "error")

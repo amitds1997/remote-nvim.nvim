@@ -1,5 +1,6 @@
 local remote_neovim = require("remote-nvim")
 local ssh_utils = require("remote-nvim.providers.ssh.ssh_utils")
+local logger = require("remote-nvim.utils").logger
 
 ---@class SSHRemoteExecutor
 ---@field remote_host string Host name of the remote host
@@ -127,6 +128,11 @@ end
 ---@return SSHRemoteExecutor executor The executor on which the job is executing
 function SSHRemoteExecutor:run_job()
   local co = coroutine.running()
+  logger.fmt_debug(
+    "Starting jobstart with command %s over SSH (Inside coroutine: %s)",
+    self.complete_cmd,
+    co and "Yes" or "No"
+  )
   self.job_id = vim.fn.jobstart(self.complete_cmd, {
     pty = true,
     on_stdout = function(_, data)
@@ -200,13 +206,6 @@ function SSHRemoteExecutor:handle_exit(exit_code)
       end
     end
   end
-end
-
----A way for executor to send progress report about the status of job
----@param callback function Callback function to call that will provide status of the job
-function SSHRemoteExecutor:get_progress(callback)
-  --TODO: Implement monotoring progress
-  callback()
 end
 
 ---Get status of the currently running job

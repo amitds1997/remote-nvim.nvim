@@ -28,6 +28,7 @@
 - [ ] Add `plenary.curl` like error notification
 - [ ] Embrace plenary.nvim for common operations like opening configuration file
 in config handler and ssh parser
+- [ ] Add ability to delete local config from RemoteInfo UI
 
 ## In progress
 
