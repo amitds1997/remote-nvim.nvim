@@ -15,9 +15,6 @@
   - [ ] Add test runner. Example. [Noice.nvim](https://github.com/folke/noice.nvim/blob/main/.github/workflows/ci.yml)
   - [ ] Add documentation step. Example: [Noice.nvim](https://github.com/folke/noice.nvim/blob/main/.github/workflows/ci.yml#L29-L48)
   - [ ] Add release step. Example. [Noice.nvim](https://github.com/folke/noice.nvim/blob/main/.github/workflows/ci.yml)
-- Add more commands
-  - [ ] `:RemoteNvimCloseTUI` to close current running TUI without closing the server
-  - [ ] `:RemoteNvimLocal` to switch to the local and hide every remote session running
 
 ### Must do
 

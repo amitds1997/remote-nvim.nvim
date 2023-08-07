@@ -55,6 +55,9 @@ TBD
 * We change the XDG_CONFIG_HOME env variable (only for the launched
 Neovim server) so any XDG_CONFIG_HOME based stuff you do from inside
 Neovim would have to be adjusted accordingly.
+* Sometimes, some executables are not available and when the client starts,
+you would see an empty screen without all the bells and whistles that your
+plugin brings in. Run `:messages` to check what happened.
 
 ## Future goals
 
