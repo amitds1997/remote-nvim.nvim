@@ -52,6 +52,8 @@ TBD
 
 ## Caveats
 
+* Launched remote server is associated with the launching instance. Closing
+that instance would close the remote server as well.
 * We change the XDG_CONFIG_HOME env variable (only for the launched
 Neovim server) so any XDG_CONFIG_HOME based stuff you do from inside
 Neovim would have to be adjusted accordingly.

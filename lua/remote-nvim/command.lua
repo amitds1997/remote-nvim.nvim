@@ -78,6 +78,22 @@ end, {
   end,
 })
 
+vim.api.nvim_create_user_command("RemoteConfigDel", function(opts)
+  local unique_host_identifier = opts.args
+  remote_nvim.host_workspace_config:delete_workspace(unique_host_identifier)
+end, {
+  desc = "Delete cached workspace record",
+  nargs = 1,
+  complete = function(_, line)
+    local args = vim.split(vim.trim(line), "%s+")
+    table.remove(args, 1)
+    if #args == 0 then
+      return remote_nvim.host_workspace_config:get_all_host_ids()
+    end
+    return vim.fn.matchfuzzy(remote_nvim.host_workspace_config:get_all_host_ids(), args[1])
+  end,
+})
+
 vim.api.nvim_create_user_command("RemoteCloseTUIs", function()
   for _, ui in pairs(vim.api.nvim_list_uis()) do
     if ui.chan and not ui.stdout_tty then

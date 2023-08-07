@@ -35,5 +35,3 @@ in config handler and ssh parser
 - Add commands:
   - [ ] `:RemoteInfo` - Launched pop-up should show following details: Remote OS,
   Local port, Remote port, Remote Neovim version, workspace ID
-  - [ ] `:RemoteCloseTUIs` - (Autocomplete shows options for active servers) Close
-  all running TUIs
