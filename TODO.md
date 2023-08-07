@@ -32,13 +32,7 @@ in config handler and ssh parser
 ## In progress
 
 - Add commands:
-  - [ ] `:RemoteCleanup` - (Autocomplete should show all known host configs from
-  the file) Clean up the host
   - [ ] `:RemoteInfo` - Launched pop-up should show following details: Remote OS,
   Local port, Remote port, Remote Neovim version, workspace ID
   - [ ] `:RemoteCloseTUIs` - (Autocomplete shows options for active servers) Close
   all running TUIs
-  - [x] `:RemoteStart` - Launch remote workspace
-  - [ ] `:RemoteStop` - (Autocomplete should show active servers) Close remote port
-  forwarding server
-  - [x] `:RemoteLog` - Show log file

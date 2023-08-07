@@ -1,54 +1,87 @@
 local remote_nvim = require("remote-nvim")
 local remote_nvim_ssh_provider = require("remote-nvim.providers.ssh.ssh_provider")
 
-local parse = function(cmd, args)
-  local parts = vim.split(vim.trim(args), "%s+")
-  if parts[1]:find(cmd) then
-    table.remove(parts, 1)
+local M = {}
+
+function M.RemoteStart(opts)
+  local host_identifier = opts.args
+  if host_identifier == "" then
+    require("telescope").extensions["remote-nvim"].connect()
+  else
+    local workspace_config = remote_nvim.host_workspace_config:get_workspace_config_data(host_identifier)
+    remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
+      or remote_nvim_ssh_provider:new(workspace_config.host, workspace_config.connection_options)
+    remote_nvim.sessions[host_identifier]:set_up_remote()
   end
-  if args:sub(-1) == " " then
-    parts[#parts + 1] = ""
-  end
-  return table.remove(parts, 1) or "", parts
 end
 
-local function RemoteStart()
-  require("telescope").extensions["remote-nvim"].connect()
-end
-vim.api.nvim_create_user_command("RemoteStart", RemoteStart, {
+vim.api.nvim_create_user_command("RemoteStart", M.RemoteStart, {
+  nargs = "?",
   desc = "Start Neovim on remote host",
+  complete = function(_, line)
+    local args = vim.split(vim.trim(line), "%s+")
+    table.remove(args, 1)
+    if #args == 0 then
+      return remote_nvim.host_workspace_config:get_all_host_ids()
+    end
+    return vim.fn.matchfuzzy(remote_nvim.host_workspace_config:get_all_host_ids(), args[1])
+  end,
 })
 
-local function RemoteLog()
-  local logger = require("remote-nvim.utils").logger
+function M.RemoteLog()
   vim.api.nvim_cmd({
     cmd = "tabnew",
-    args = { logger.outfile },
+    args = { require("remote-nvim.utils").logger.outfile },
   }, {})
 end
 
-vim.api.nvim_create_user_command("RemoteLog", RemoteLog, {
-  desc = "Open the remote-nvim.nvim log file in a new tab",
+vim.api.nvim_create_user_command("RemoteLog", M.RemoteLog, {
+  desc = "Open the remote-nvim.nvim log file",
 })
 
-vim.api.nvim_create_user_command("RemoteCleanup", function(opts)
+function M.RemoteCleanup(opts)
   local host_identifier = opts.args
   local workspace_config = remote_nvim.host_workspace_config:get_workspace_config_data(host_identifier)
 
   remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
     or remote_nvim_ssh_provider:new(workspace_config.host, workspace_config.connection_options)
   remote_nvim.sessions[host_identifier]:clean_up_remote_host()
-  -- TODO: Also call close session command because the server folders do not exist any more
-end, {
+  remote_nvim.sessions[host_identifier]:reset()
+end
+
+vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
   desc = "Clean up remote host",
   nargs = 1,
   complete = function(_, line)
-    local prefix, _ = parse("RemoteNvimClean", line)
-    return vim.fn.matchfuzzy(remote_nvim.host_workspace_config:get_all_host_ids(), prefix)
+    local args = vim.split(vim.trim(line), "%s+")
+    table.remove(args, 1)
+    if #args == 0 then
+      return remote_nvim.host_workspace_config:get_all_host_ids()
+    end
+    return vim.fn.matchfuzzy(remote_nvim.host_workspace_config:get_all_host_ids(), args[1])
   end,
 })
 
-return {
-  RemoteStart = RemoteStart,
-  RemoteLog = RemoteLog,
-}
+vim.api.nvim_create_user_command("RemoteStop", function(opts)
+  local active_server_host_identifier = opts.args
+  remote_nvim.sessions[active_server_host_identifier]:reset()
+end, {
+  desc = "Stop running remote server",
+  nargs = 1,
+  complete = function(_, line)
+    local args = vim.split(vim.trim(line), "%s+")
+    table.remove(args, 1)
+    if #args == 0 then
+      return vim.tbl_keys(remote_nvim.sessions)
+    end
+    return vim.fn.matchfuzzy(vim.tbl_keys(remote_nvim.sessions), args[1])
+  end,
+})
+
+-- vim.api.nvim_create_user_command("RemoteCloseTUIs", function()
+-- end, {
+--   desc = "Close all TUIs associated with the current associated server",
+--   nargs = 0
+-- })
+
+return M
