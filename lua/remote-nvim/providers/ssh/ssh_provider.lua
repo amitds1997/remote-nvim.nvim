@@ -311,7 +311,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
     local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
 
     -- Generate remote server launch command
-    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s %s --listen 0.0.0.0:%s --headless --embed]]):format(
       self.remote_xdg_config_path,
       self:get_remote_neovim_binary_path(),
       self.remote_free_port
