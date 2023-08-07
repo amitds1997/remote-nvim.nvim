@@ -33,13 +33,11 @@ end
 ---@return string cleaned_conn_opts Cleaned up connection option
 ---@return number? count Count of replacements
 function M.clean_up_conn_opts(host, conn_opts)
-  return conn_opts
+  return vim.trim(conn_opts
     :gsub("^%s*ssh%s*", "") -- Remove "ssh" prefix if it exists
     :gsub(host:gsub("([^%w])", "%%%1"), "") -- Remove hostname from connection string
     :gsub("%-N", "") -- "-N" restrics command execution so we do not do it
-    :gsub("%s+", " ") -- Replace multiple whitespaces by a single one
-    :gsub("^%s+", "") -- Remove leading whitespaces
-    :gsub("%s+$", "") -- Remove trailing whitespaces
+    :gsub("%s+", " ")) -- Replace multiple whitespaces by a single one
 end
 
 return M

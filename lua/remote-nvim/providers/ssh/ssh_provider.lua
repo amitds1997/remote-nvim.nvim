@@ -121,6 +121,7 @@ function NeovimSSHProvider:detect_remote_os()
       self.remote_os = choice
     end)
   end
+  self.notifier:stop(("OS is %s"):format(self.remote_os))
 
   return self.remote_os
 end
@@ -444,6 +445,7 @@ function NeovimSSHProvider:clean_up_remote_host()
         self:run_command("rm -rf " .. self.remote_neovim_home, "Deleting remote neovim from remote host")
       end
     end)
+    self.notifier:stop("Cleanup complete")
 
     -- Remove record of the workspace
     RemoteNeovimConfig.host_workspace_config:delete_workspace(self.unique_host_identifier)

@@ -143,6 +143,7 @@ M.get_neovim_versions = function()
       accept = "application/vnd.github+json",
     },
   })
+
   local available_versions = { "stable" }
   ---@diagnostic disable-next-line: param-type-mismatch
   for _, version_info in ipairs(vim.fn.json_decode(res.body)) do
