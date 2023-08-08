@@ -94,17 +94,6 @@ end, {
   end,
 })
 
-vim.api.nvim_create_user_command("RemoteCloseTUIs", function()
-  for _, ui in pairs(vim.api.nvim_list_uis()) do
-    if ui.chan and not ui.stdout_tty then
-      vim.fn.chanclose(ui.chan)
-    end
-  end
-end, {
-  desc = "Close all TUIs associated with the current associated server",
-  nargs = 0,
-})
-
 vim.api.nvim_create_user_command("RemoteSessionInfo", require("remote-nvim.views.info").RemoteInfo, {
   desc = "Get information about all running session(s)",
   nargs = 0,

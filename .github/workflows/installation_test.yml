@@ -1,0 +1,28 @@
+---
+name: Installation CI
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches: [main]
+    paths: [scripts/neovim_install.sh]
+  pull_request:
+    paths: [scripts/neovim_install.sh]
+concurrency:
+  group: |
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  install_test:
+    name: Test run Neovim installation
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos]
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Neovim (stable) on ${{ matrix.os }}
+        shell: bash
+        run: |-
+          chmod +x ./scripts/neovim_install.sh
+          ./scripts/neovim_install.sh -v stable -d ~/.remote-nvim
+          ~/.remote-nvim/vim-downloads/stable/bin/nvim -v

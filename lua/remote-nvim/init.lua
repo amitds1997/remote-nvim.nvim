@@ -9,14 +9,12 @@ local M = {}
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
 ---@field local_client_config LocalClientConfig Configuration for the local client
----@field log_level log_level
 
----@alias log_level "trace"|"debug"|"info"|"error"|"fatal"
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
 
 ---@class LocalClientConfig
----@field callback function<string> Function that would be called upon to start a Neovim client if not nil
+---@field callback function<string, WorkspaceConfig> Function that would be called upon to start a Neovim client if not nil
 ---@field default_client_config FloatWindowOpts Configuration to be applied to the default client that would be launched
 --if callback is nil
 
@@ -79,7 +77,6 @@ M.default_opts = {
       },
     },
   },
-  log_level = "info",
 }
 
 ---Setup for the plugin
