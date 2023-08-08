@@ -105,4 +105,9 @@ end, {
   nargs = 0,
 })
 
+vim.api.nvim_create_user_command("RemoteSessionInfo", require("remote-nvim.views.info").RemoteInfo, {
+  desc = "Get information about all running session(s)",
+  nargs = 0,
+})
+
 return M

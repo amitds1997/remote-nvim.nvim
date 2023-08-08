@@ -94,6 +94,7 @@ M.setup = function(opts)
   M.config.ssh_config.scp_binary = util.find_binary(M.config.ssh_config.scp_binary)
 
   M.host_workspace_config = RemoteHostWorkspaceConfig:new()
+  ---@type table<string,NeovimSSHProvider>
   M.sessions = {}
 
   require("remote-nvim.command")

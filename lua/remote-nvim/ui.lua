@@ -37,23 +37,28 @@ local float_default_opts = {
 }
 
 ---Run command in a floating window
----comment
 ---@param cmd string Command to be run in the floating terminal
 ---@param float_opts? FloatWindowOpts Options related to the floating window
 ---@param cmd_opts? table Options related to the term that would be launched in the window
 M.float_term = function(cmd, float_opts, cmd_opts)
-  float_opts = vim.tbl_deep_extend("force", float_default_opts, float_opts or {})
   cmd_opts = cmd_opts or {}
-  require("plenary.window.float").percentage_range_window(
+  local _ = M.float(float_opts)
+  vim.fn.termopen(cmd, vim.tbl_isempty(cmd_opts) and vim.empty_dict() or cmd_opts)
+  if cmd_opts.interactive ~= false then
+    vim.cmd.startinsert()
+  end
+end
+
+---Launches a minimal float window given the window opts
+---@param float_opts? FloatWindowOpts Configuration for the floating window
+M.float = function(float_opts)
+  float_opts = vim.tbl_deep_extend("force", float_default_opts, float_opts or {})
+  return require("plenary.window.float").percentage_range_window(
     float_opts.col_percent,
     float_opts.row_percent,
     float_opts.win_opts,
     float_opts.border_opts
   )
-  vim.fn.termopen(cmd, vim.tbl_isempty(cmd_opts) and vim.empty_dict() or cmd_opts)
-  if cmd_opts.interactive ~= false then
-    vim.cmd.startinsert()
-  end
 end
 
 return M

@@ -12,6 +12,7 @@
 - [ ] Add Neovim documentation
 - [ ] Add unit tests
 - [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
+- [ ] Setup discussions
 - Add templates for (example: [Noice.nvim](https://github.com/folke/noice.nvim/tree/main/.github/ISSUE_TEMPLATE))
   - [ ] Bug report
   - [ ] Feature request
@@ -24,6 +25,7 @@
 
 - [ ] Add tutorial videos
 - [ ] Add CHANGELOG
+- [ ] Add checkhealth
 
 ## Planned
 
@@ -32,7 +34,3 @@
 in config handler and ssh parser
 
 ## In progress
-
-- Add commands:
-  - [ ] `:RemoteInfo` - Launched pop-up should show following details: Remote OS,
-  Local port, Remote port, Remote Neovim version, workspace ID
