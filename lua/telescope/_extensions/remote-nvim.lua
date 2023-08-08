@@ -61,19 +61,13 @@ local function select_ssh_host_from_workspace_config(opts)
           return {
             display = function(input)
               local host_identifier = input.value
-              local at_position = host_identifier:find("@")
               local colon_position = host_identifier:find(":")
 
-              local username, hostname, port
-              if at_position and colon_position then
-                username = host_identifier:sub(1, at_position - 1)
-                hostname = host_identifier:sub(at_position + 1, colon_position - 1)
+              local login_identifier, port
+              if colon_position then
+                login_identifier = host_identifier:sub(1, colon_position - 1)
                 port = host_identifier:sub(colon_position + 1)
-                return "User '" .. username .. "' at " .. hostname .. " on port " .. port
-              elseif colon_position then
-                hostname = host_identifier:sub(1, colon_position - 1)
-                port = host_identifier:sub(colon_position + 1)
-                return hostname .. " on port " .. port
+                return login_identifier .. " on port " .. port
               else
                 return host_identifier
               end

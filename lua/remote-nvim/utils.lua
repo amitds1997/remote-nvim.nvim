@@ -143,6 +143,7 @@ M.get_neovim_versions = function()
       accept = "application/vnd.github+json",
     },
   })
+
   local available_versions = { "stable" }
   ---@diagnostic disable-next-line: param-type-mismatch
   for _, version_info in ipairs(vim.fn.json_decode(res.body)) do
@@ -186,6 +187,51 @@ M.run_code_in_coroutine = function(fn, err_fn)
       error("Coroutine failed with error " .. err)
     end
   end
+end
+
+M.generate_equally_spaced_columns = function(token_arr, num)
+  -- Create lists for the grouped elements
+  local col_grouped_list = {}
+
+  for i = 1, num do
+    col_grouped_list[i] = {}
+  end
+
+  -- Fill the grouped lists
+  for i, value in ipairs(token_arr) do
+    local groupIndex = (i - 1) % num + 1
+    table.insert(col_grouped_list[groupIndex], value)
+  end
+
+  --Calculate the size of each column
+  local col_widths = {}
+  for _, col in ipairs(col_grouped_list) do
+    local max_width = 0
+    for _, item in ipairs(col) do
+      local item_width = #tostring(item)
+      max_width = math.max(max_width, item_width)
+    end
+    table.insert(col_widths, max_width)
+  end
+
+  -- Generate formatted lines with proper spacing
+  local formatted_lines = {}
+  for i = 1, math.ceil(#token_arr / num) do
+    local formatted_row = ""
+    for j = 1, num do
+      local index = (i - 1) * num + j
+      if index <= #token_arr then
+        local item_str = tostring(token_arr[index])
+        local padding = col_widths[j] - #item_str
+        formatted_row = formatted_row .. item_str .. string.rep(" ", padding) .. "    "
+      else
+        formatted_row = formatted_row .. string.rep(" ", col_widths[j] + 4)
+      end
+    end
+    table.insert(formatted_lines, formatted_row)
+  end
+
+  return formatted_lines
 end
 
 return M

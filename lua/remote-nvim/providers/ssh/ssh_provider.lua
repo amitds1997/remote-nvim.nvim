@@ -2,6 +2,7 @@ local RemoteNeovimConfig = require("remote-nvim")
 local SSHExecutor = require("remote-nvim.providers.ssh.ssh_executor")
 local SSHUtils = require("remote-nvim.providers.ssh.ssh_utils")
 local notifier = require("remote-nvim.notify")
+local ui = require("remote-nvim.ui")
 local utils = require("remote-nvim.utils")
 local logger = utils.logger
 
@@ -121,6 +122,7 @@ function NeovimSSHProvider:detect_remote_os()
       self.remote_os = choice
     end)
   end
+  self.notifier:stop(("OS is %s"):format(self.remote_os))
 
   return self.remote_os
 end
@@ -210,11 +212,14 @@ function NeovimSSHProvider:verify_connection()
   self:run_command('echo "OK"', "Checking if remote host is reachable...")
   if self.ssh_executor.exit_code ~= 0 then
     self.notifier:stop("Remote host is not reachable", "error")
+    -- If we are not able to connect to the remote host, there is no session possible
+    RemoteNeovimConfig.sessions[self.unique_host_identifier] = nil
     logger.fmt_error("Could not connect to remote host %s", self.unique_host_identifier)
     error("Could not connect to the remote host: " .. self.unique_host_identifier)
   else
     self:setup_workspace_config_vars()
     self.notifier:stop("Remote host is reachable")
+    return self
   end
 end
 
@@ -310,7 +315,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
     local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
 
     -- Generate remote server launch command
-    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s %s --listen 0.0.0.0:%s --headless --embed]]):format(
       self.remote_xdg_config_path,
       self:get_remote_neovim_binary_path(),
       self.remote_free_port
@@ -337,17 +342,6 @@ end
 function NeovimSSHProvider:handle_local_client_launch()
   -- Launch remote server if it is not already running
   self:handle_remote_server_launch()
-
-  local function launch_local_client(cmd)
-    require("lazy.util").float_term(cmd, {
-      interactive = true,
-      on_exit_handler = function(_, exit_code)
-        if exit_code ~= 0 then
-          self.notifier:stop("Local Neovim server " .. table.concat(cmd, " ") .. " failed", "error")
-        end
-      end,
-    })
-  end
 
   local client_start = self.workspace_config.client_auto_start
 
@@ -389,10 +383,17 @@ function NeovimSSHProvider:handle_local_client_launch()
       )
     until self.ssh_executor.exit_code ~= 0
 
-    if RemoteNeovimConfig.config.neovim_client_start_callback ~= nil then
-      RemoteNeovimConfig.config.neovim_client_start_callback(self.local_free_port)
+    if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
+      RemoteNeovimConfig.config.local_client_config.callback(self.local_free_port)
     else
-      launch_local_client(cmd)
+      -- Launch a floating window with the Neovim client launched in it
+      ui.float_term(cmd, nil, {
+        on_exit_handler = function(_, exit_code)
+          if exit_code ~= 0 then
+            self.notifier:stop("Local Neovim client " .. cmd .. " failed", "error")
+          end
+        end,
+      })
     end
   else
     self.notifier:stop("Connect to the remote server using '" .. cmd .. "'", "info", {
@@ -444,6 +445,7 @@ function NeovimSSHProvider:clean_up_remote_host()
         self:run_command("rm -rf " .. self.remote_neovim_home, "Deleting remote neovim from remote host")
       end
     end)
+    self.notifier:stop("Cleanup complete")
 
     -- Remove record of the workspace
     RemoteNeovimConfig.host_workspace_config:delete_workspace(self.unique_host_identifier)
@@ -562,7 +564,7 @@ function NeovimSSHProvider:_handle_job_completion(desc)
   if self.ssh_executor.exit_code == 0 then
     self.notifier:notify(desc .. " completed")
   else
-    local notification_msg = desc .. " failed. Run :RemoteNvimLog for more details"
+    local notification_msg = desc .. " failed. Run :RemoteLog for more details"
     self.notifier:stop(notification_msg, "error", { timeout = 0 })
     -- We show the notification again so that it gets registered in the logs
     self.notifier:notify_once(notification_msg, "error")
