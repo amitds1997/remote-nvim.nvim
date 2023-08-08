@@ -8,7 +8,7 @@ come after that.
 
 **Aim:** to bring near feature-parity with [Remote development using SSH - VS Code](https://code.visualstudio.com/docs/remote/ssh).
 
-🚧 **This plugin is under active development and is not yet ready for use.** 🚧
+🚧 **This plugin is still experimental. Things might break.** 🚧
 
 ## 🎁 Features
 
@@ -37,7 +37,15 @@ behaves just like local
 ### [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
-{ "amitds1997/remote-nvim.nvim", opts = {} }
+{
+    "amitds1997/remote-nvim.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      -- This would eventually be turned into an optional dependency
+      "nvim-telescope/telescope.nvim",
+    }
+}
 ```
 
 ### [packer](https://github.com/wbthomason/packer.nvim)
@@ -48,7 +56,63 @@ use { "amitds1997/remote-nvim.nvim" }
 
 ## ⚙️ Configuration
 
-TBD
+These are the default configurations that `remote-nvim.nvim` starts with:
+
+```lua
+{
+  ssh_config = {
+    ssh_binary = "ssh",
+    scp_binary = "scp",
+    ssh_config_file_paths = { "$HOME/.ssh/config" },
+    ssh_prompts = {
+      {
+        match = "password:",
+        type = "secret",
+        input_prompt = "Enter password: ",
+        value_type = "static",
+        value = "",
+      },
+      {
+        match = "continue connecting (yes/no/[fingerprint])?",
+        type = "plain",
+        input_prompt = "Do you want to continue connection (yes/no)? ",
+        value_type = "static",
+        value = "",
+      },
+    },
+  },
+  neovim_install_script_path = util.path_join(util.is_windows,
+  util.get_package_root(), "scripts", "neovim_install.sh"),
+  remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
+  neovim_user_config_path = vim.fn.stdpath("config"),
+  local_client_config = {
+    -- modify this function to override how your client launches
+    -- function should accept two arguments function(local_port, workspace_config)
+    -- local_port is the port on which the remote server is available locally
+    -- workspace_config contains the workspace config. For all attributes present
+    -- in it, see WorkspaceConfig in ./lua/remote-nvim/config.lua.
+    callback = nil,
+    default_client_config = {
+      col_percent = 0.9,
+      row_percent = 0.9,
+      win_opts = {
+        winblend = 5,
+      },
+      border_opts = {
+        topleft = "╭",
+        topright = "╮",
+        top = "─",
+        left = "│",
+        right = "│",
+        botleft = "╰",
+        botright = "╯",
+        bot = "─",
+      },
+    },
+  },
+
+}
+```
 
 ## Caveats
 
@@ -63,4 +127,4 @@ you would see bare bones Neovim. Run `:messages` to check what happened.
 ## Future goals
 
 * [ ] Remote development inside docker container. This should be possible
-already with this plugin, if you use [devpod](https://github.com/loft-sh/devpod)
+already with this plugin, if you use [devpod](https://github.com/loft-sh/devpod).
