@@ -23,7 +23,8 @@ lot though).** 🚧
     1. [nui.nvim](https://github.com/MunifTanjim/nui.nvim) - For UI elements
     2. [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) - For standard
     functions
-    3. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
+    3. [nvim-notify](https://github.com/rcarriga/nvim-notify) - For progress notifications
+    4. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
     For telescope extension (also the current default setup UI)
 
 ### On your remote machine ☁️
@@ -39,13 +40,14 @@ lot though).** 🚧
 - [x] Remember past sessions so that we can easily connect back to them
 - [x] Control over how to launch your local client
 - [x] Support for password-based SSH authentication
-- [x] Automatic syncing of your local Neovim config on next run (or not, if you so
-- choose!)
+- [x] Automatic syncing of your local Neovim config on next run (or not, if you
+so choose!)
 - [x] Support to pick up hosts from your SSH configs
 - [x] Support to clean up everything on your remote
 - [x] Support for dev containers (using [devpod](https://github.com/loft-sh/devpod))
 - [ ] Remote development inside Docker container
-- [ ] Complete installation over SSH (without using SSH)
+- [ ] Complete installation over SSH (without using internet on remote;
+basically download locally and copy over the installation over SSH)
 
 ## 📥 Installation
 
@@ -57,11 +59,15 @@ lot though).** 🚧
    dependencies = {
        "nvim-lua/plenary.nvim",
        "MunifTanjim/nui.nvim",
+       "rcarriga/nvim-notify",
        -- This would be an optional dependency eventually
        "nvim-telescope/telescope.nvim",
    }
 }
 ```
+
+After installation, run `:checkhealth remote-nvim` to verify that you have everything
+you need.
 
 ## ⚙️ Configuration
 
