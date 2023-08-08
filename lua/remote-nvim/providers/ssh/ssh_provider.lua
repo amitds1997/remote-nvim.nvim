@@ -384,7 +384,10 @@ function NeovimSSHProvider:handle_local_client_launch()
     until self.ssh_executor.exit_code ~= 0
 
     if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
-      RemoteNeovimConfig.config.local_client_config.callback(self.local_free_port)
+      RemoteNeovimConfig.config.local_client_config.callback(
+        self.local_free_port,
+        RemoteNeovimConfig.host_workspace_config:get_workspace_config_data(self.unique_host_identifier)
+      )
     else
       -- Launch a floating window with the Neovim client launched in it
       ui.float_term(cmd, nil, {

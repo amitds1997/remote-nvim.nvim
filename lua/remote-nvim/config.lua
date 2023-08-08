@@ -137,6 +137,9 @@ function NeovimRemoteWorkspaceConfig:add_host_config(host_id, workspace_config)
   return false
 end
 
+---Get workspace data for a host
+---@param host_id string Host identifier to be fetched
+---@return WorkspaceConfig config Workspace config for the host
 function NeovimRemoteWorkspaceConfig:get_workspace_config_data(host_id)
   return self.data[host_id]
 end

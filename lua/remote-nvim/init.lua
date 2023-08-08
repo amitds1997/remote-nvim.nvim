@@ -14,7 +14,7 @@ local M = {}
 ---@alias prompt_value_type "static"|"dynamic"
 
 ---@class LocalClientConfig
----@field callback function<string> Function that would be called upon to start a Neovim client if not nil
+---@field callback function<string, WorkspaceConfig> Function that would be called upon to start a Neovim client if not nil
 ---@field default_client_config FloatWindowOpts Configuration to be applied to the default client that would be launched
 --if callback is nil
 
