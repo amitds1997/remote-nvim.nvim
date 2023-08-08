@@ -1,8 +1,6 @@
 ---
 name: CI
 on:  # yamllint disable-line rule:truthy
-  push:
-    branches: [main]
   pull_request:
 concurrency:
   group: |
@@ -14,7 +12,6 @@ jobs:
     permissions:
       contents: write
     name: Generate docs
-    if: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v3
       - name: panvimdoc
