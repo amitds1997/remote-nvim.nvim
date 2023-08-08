@@ -9,7 +9,6 @@
 
 ### Noice to have
 
-- [ ] Add Neovim documentation
 - [ ] Add unit tests
 - [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
 - [ ] Setup discussions
@@ -32,3 +31,5 @@
 - [ ] Add `plenary.curl` like error notification
 - [ ] Embrace plenary.nvim for common operations like opening configuration file
 in config handler and ssh parser
+- [ ] Allow `:RemoteConfigDel` to take infinitely many inputs and allow deleting
+it

@@ -26,6 +26,9 @@ local logger = utils.logger
 ---@field remote_scripts_path  string Path to scripts path on the remote host
 ---@field remote_workspace_id_path  string Path to the workspace associated with the remote host
 ---@field remote_xdg_config_path  string Get workspace specific XDG config path
+---@field remote_xdg_data_path  string Get workspace specific XDG data path
+---@field remote_xdg_state_path  string Get workspace specific XDG state path
+---@field remote_xdg_cache_path  string Get workspace specific XDG cache path
 ---@field remote_neovim_config_path  string Get neovim configuration path on the remote host
 ---@field remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 ---@field remote_free_port string Free port available on the remote
@@ -76,6 +79,9 @@ function NeovimSSHProvider:new(host, connection_options)
   instance.remote_scripts_path = nil
   instance.remote_workspace_id_path = nil
   instance.remote_xdg_config_path = nil
+  instance.remote_xdg_cache_path = nil
+  instance.remote_xdg_state_path = nil
+  instance.remote_xdg_data_path = nil
   instance.remote_neovim_config_path = nil
   instance.remote_neovim_install_script_path = nil
   instance.remote_free_port = nil
@@ -203,6 +209,9 @@ function NeovimSSHProvider:setup_workspace_config_vars()
   self.remote_workspace_id_path =
     utils.path_join(self.remote_is_windows, self.remote_workspaces_path, self.remote_workspace_id)
   self.remote_xdg_config_path = utils.path_join(self.remote_is_windows, self.remote_workspace_id_path, ".config")
+  self.remote_xdg_cache_path = utils.path_join(self.remote_is_windows, self.remote_workspace_id_path, ".cache")
+  self.remote_xdg_data_path = utils.path_join(self.remote_is_windows, self.remote_workspace_id_path, ".local", "share")
+  self.remote_xdg_state_path = utils.path_join(self.remote_is_windows, self.remote_workspace_id_path, ".local", "state")
   self.remote_neovim_config_path = utils.path_join(self.remote_is_windows, self.remote_xdg_config_path, "nvim")
 end
 
@@ -315,8 +324,11 @@ function NeovimSSHProvider:handle_remote_server_launch()
     local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
 
     -- Generate remote server launch command
-    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s %s --listen 0.0.0.0:%s --headless --embed]]):format(
+    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless --embed]]):format(
       self.remote_xdg_config_path,
+      self.remote_xdg_data_path,
+      self.remote_xdg_state_path,
+      self.remote_xdg_cache_path,
       self:get_remote_neovim_binary_path(),
       self.remote_free_port
     )
@@ -480,12 +492,19 @@ function NeovimSSHProvider:set_up_remote()
         self.is_setup_running = true
 
         -- Create neovim directories on the remote server
-        local mkdir_cmd = ([[mkdir -p %s && mkdir -p %s && mkdir -p %s]]):format(
+        local directories = {
           self.remote_workspaces_path,
           self.remote_scripts_path,
-          self.remote_xdg_config_path
-        )
-        self:run_command(mkdir_cmd, "Creating necessary directories...")
+          self.remote_xdg_config_path,
+          self.remote_xdg_cache_path,
+          self.remote_xdg_data_path,
+          self.remote_xdg_state_path,
+        }
+        local create_dir = {}
+        for _, dir in ipairs(directories) do
+          table.insert(create_dir, ("mkdir -p %s"):format(dir))
+        end
+        self:run_command(table.concat(create_dir, " && "), "Creating necessary directories...")
 
         -- We now copy over all scripts that we have onto the remote server
         self:upload(self.local_nvim_scripts_path, self.remote_neovim_home, "Copying over necessary scripts...")
