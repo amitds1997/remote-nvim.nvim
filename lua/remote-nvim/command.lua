@@ -1,3 +1,4 @@
+local plenary = require("plenary")
 local remote_nvim = require("remote-nvim")
 local remote_nvim_ssh_provider = require("remote-nvim.providers.ssh.ssh_provider")
 
@@ -78,19 +79,40 @@ end, {
   end,
 })
 
+-- Define a function to check if an element exists in a list
+local function contains(list, element)
+  for _, value in ipairs(list) do
+    if value == element then
+      return true
+    end
+  end
+  return false
+end
+
 vim.api.nvim_create_user_command("RemoteConfigDel", function(opts)
-  local unique_host_identifier = opts.args
-  remote_nvim.host_workspace_config:delete_workspace(unique_host_identifier)
+  local host_identifiers = opts.args
+  for _, host_id in ipairs(host_identifiers) do
+    remote_nvim.host_workspace_config:delete_workspace(host_id)
+  end
 end, {
   desc = "Delete cached workspace record",
-  nargs = 1,
+  nargs = "+",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)
     if #args == 0 then
       return remote_nvim.host_workspace_config:get_all_host_ids()
     end
-    return vim.fn.matchfuzzy(remote_nvim.host_workspace_config:get_all_host_ids(), args[1])
+    local host_ids = vim.fn.filter(remote_nvim.host_workspace_config:get_all_host_ids(), function(_, item)
+      return not contains(args, item)
+    end)
+    local completion_word = table.remove(args, #args)
+
+    -- If we have not provided any input, then the last word is the last completion
+    if contains(remote_nvim.host_workspace_config:get_all_host_ids(), completion_word) then
+      return host_ids
+    end
+    return vim.fn.matchfuzzy(host_ids, completion_word)
   end,
 })
 

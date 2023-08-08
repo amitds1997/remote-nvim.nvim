@@ -31,5 +31,3 @@
 - [ ] Add `plenary.curl` like error notification
 - [ ] Embrace plenary.nvim for common operations like opening configuration file
 in config handler and ssh parser
-- [ ] Allow `:RemoteConfigDel` to take infinitely many inputs and allow deleting
-it
