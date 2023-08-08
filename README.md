@@ -40,13 +40,14 @@ lot though).** 🚧
 - [x] Remember past sessions so that we can easily connect back to them
 - [x] Control over how to launch your local client
 - [x] Support for password-based SSH authentication
-- [x] Automatic syncing of your local Neovim config on next run (or not, if you so
-- choose!)
+- [x] Automatic syncing of your local Neovim config on next run (or not, if you
+so choose!)
 - [x] Support to pick up hosts from your SSH configs
 - [x] Support to clean up everything on your remote
 - [x] Support for dev containers (using [devpod](https://github.com/loft-sh/devpod))
 - [ ] Remote development inside Docker container
-- [ ] Complete installation over SSH (without using SSH)
+- [ ] Complete installation over SSH (without using internet on remote;
+basically download locally and copy over the installation over SSH)
 
 ## 📥 Installation
 
