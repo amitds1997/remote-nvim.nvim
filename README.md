@@ -23,7 +23,8 @@ lot though).** 🚧
     1. [nui.nvim](https://github.com/MunifTanjim/nui.nvim) - For UI elements
     2. [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) - For standard
     functions
-    3. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
+    3. [nvim-notify](https://github.com/rcarriga/nvim-notify) - For progress notifications
+    4. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
     For telescope extension (also the current default setup UI)
 
 ### On your remote machine ☁️
@@ -57,6 +58,7 @@ lot though).** 🚧
    dependencies = {
        "nvim-lua/plenary.nvim",
        "MunifTanjim/nui.nvim",
+       "rcarriga/nvim-notify",
        -- This would be an optional dependency eventually
        "nvim-telescope/telescope.nvim",
    }
