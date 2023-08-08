@@ -66,6 +66,9 @@ basically download locally and copy over the installation over SSH)
 }
 ```
 
+After installation, run `:checkhealth remote-nvim` to verify that you have everything
+you need.
+
 ## ⚙️ Configuration
 
 These are the default values. Alter them as needed for your personal use.
