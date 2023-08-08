@@ -9,9 +9,7 @@ local M = {}
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
 ---@field local_client_config LocalClientConfig Configuration for the local client
----@field log_level log_level
 
----@alias log_level "trace"|"debug"|"info"|"error"|"fatal"
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
 
@@ -79,7 +77,6 @@ M.default_opts = {
       },
     },
   },
-  log_level = "info",
 }
 
 ---Setup for the plugin
