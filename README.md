@@ -224,3 +224,13 @@ you would see a fresh, clean Neovim installation (assuming you copied your
 Neovim config over). This is no fault with the plugin. Run `:messages` to see
 what went wrong. Usually, `git` or some other important binary is not available
 on the remote in some docker systems.
+
+## FAQs
+
+1. The notification just keeps rotating, with no progress. What's the issue?
+A. The `ssh` protocol behind the scenes can get slow while copying over your
+configuration. In such cases, just stop and restart your neovim instance. You
+can verify this by running `ps aux | grep ssh` and you would see something of
+the kind `/usr/bin/ssh -x -oPermitLocalCommand=no -oClearAllForwardings=yes
+-oRemoteCommand=none -oRequestTTY=no ... sftp` that is moving forward very
+slowly. I have not yet figured out the reason for this and possible resolution.

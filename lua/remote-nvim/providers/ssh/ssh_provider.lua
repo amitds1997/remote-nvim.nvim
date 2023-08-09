@@ -324,7 +324,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
     local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
 
     -- Generate remote server launch command
-    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless --embed]]):format(
+    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
       self.remote_xdg_config_path,
       self.remote_xdg_data_path,
       self.remote_xdg_state_path,
@@ -389,12 +389,21 @@ function NeovimSSHProvider:handle_local_client_launch()
   local cmd = ("nvim --server localhost:%s --remote-ui"):format(self.local_free_port)
   if client_start then
     -- We need to wait for the server to become available before we launch the client. This is one way of checking that
-    repeat
+    local exit_code = 0
+    while true do
       self.ssh_executor:run_command(
-        ("nvim --server localhost:%s --remote-send ':version<CR>'"):format(self.local_free_port)
+        ("%s --server localhost:%s --remote-send ':version<CR>'"):format(
+          self:get_remote_neovim_binary_path(),
+          self.remote_free_port
+        )
       )
-    until self.ssh_executor.exit_code ~= 0
+      exit_code = self.ssh_executor.exit_code
+      if exit_code == 0 then
+        break
+      end
+    end
 
+    -- If we reach here, we assume the server is ready for clients to attach
     if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
       RemoteNeovimConfig.config.local_client_config.callback(
         self.local_free_port,

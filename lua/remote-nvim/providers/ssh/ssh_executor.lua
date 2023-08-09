@@ -138,9 +138,6 @@ function SSHRemoteExecutor:run_job()
     on_stdout = function(_, data)
       self:handle_stdout(data)
     end,
-    on_stderr = function(_, data)
-      self:handle_stderr(data)
-    end,
     on_exit = function(_, exit_code)
       self:handle_exit(exit_code)
       if co ~= nil then
@@ -160,6 +157,7 @@ end
 ---@param data string[] Data string array produced by the running job
 function SSHRemoteExecutor:handle_stdout(data)
   ssh_utils.append_tty_data_to_buffer(self.stdout_bufr, data)
+  logger.fmt_debug("[Job stdout]: %s", table.concat(data, " "):gsub("\r", "\n"):gsub("\n", ""))
 
   -- Check for existence of any prompt matches which indicate SSH is waiting for an input
   local search_string = table.concat({ unpack(self.stdout_bufr, self.last_stdout_processed_idx + 1) }, "")
@@ -184,12 +182,6 @@ function SSHRemoteExecutor:handle_stdout(data)
       vim.api.nvim_chan_send(self.job_id, prompt_value .. "\n")
     end
   end
-end
-
----@private
----@param data string[] Error string array produced by the running job
-function SSHRemoteExecutor:handle_stderr(data)
-  ssh_utils.append_tty_data_to_buffer(self.stderr_bufr, data)
 end
 
 ---@private
