@@ -589,7 +589,7 @@ function NeovimSSHProvider:download(remote_path, local_path, desc)
     local_path
   )
 
-  pcall(self.ssh_executor.download, remote_path, local_path)
+  pcall(self.ssh_executor.download, self.ssh_executor, remote_path, local_path)
   return self:_handle_job_completion(desc)
 end
 
@@ -601,7 +601,7 @@ function NeovimSSHProvider:upload(local_path, remote_path, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running upload from local %s path over SSH to %s on %s", local_path, self.remote_host, remote_path)
 
-  pcall(self.ssh_executor.upload, local_path, remote_path)
+  pcall(self.ssh_executor.upload, self.ssh_executor, local_path, remote_path)
   return self:_handle_job_completion(desc)
 end
 
