@@ -21,30 +21,32 @@ local function RemoteInfoNodes()
 
   -- Remote OS, Local port, Remote port, Remote Neovim version, workspace ID
   for host_id, session in pairs(remote_nvim.sessions) do
-    local general_info = NuiTree.Node({
-      text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session.local_free_port),
-    })
+    if session.remote_port_forwarding_job_id ~= nil then
+      local general_info = NuiTree.Node({
+        text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session.local_free_port),
+      })
 
-    local local_node = NuiTree.Node({ text = "Local" }, {
-      NuiTree.Node({ text = ("Port: %s"):format(session.local_free_port) }),
-      NuiTree.Node({ text = ("Neovim version: %s"):format(neovim_version) }),
-      NuiTree.Node({ text = "" }),
-    })
-    local remote_node = NuiTree.Node({ text = "Remote" }, {
-      NuiTree.Node({ text = ("Port: %s"):format(session.remote_free_port) }),
-      NuiTree.Node({ text = ("Neovim version: %s"):format(session.remote_neovim_version) }),
-      NuiTree.Node({ text = ("Workspace path: %s"):format(session.remote_workspace_id_path) }),
-      NuiTree.Node({ text = ("Remote OS: %s"):format(session.remote_os) }),
-    })
-    table.insert(
-      nodes,
-      NuiTree.Node({ text = ("Host ID: %s"):format(host_id) }, {
-        general_info,
-        local_node,
-        remote_node,
+      local local_node = NuiTree.Node({ text = "Local" }, {
+        NuiTree.Node({ text = ("Port: %s"):format(session.local_free_port) }),
+        NuiTree.Node({ text = ("Neovim version: %s"):format(neovim_version) }),
         NuiTree.Node({ text = "" }),
       })
-    )
+      local remote_node = NuiTree.Node({ text = "Remote" }, {
+        NuiTree.Node({ text = ("Port: %s"):format(session.remote_free_port) }),
+        NuiTree.Node({ text = ("Neovim version: %s"):format(session.remote_neovim_version) }),
+        NuiTree.Node({ text = ("Workspace path: %s"):format(session.remote_workspace_id_path) }),
+        NuiTree.Node({ text = ("Remote OS: %s"):format(session.remote_os) }),
+      })
+      table.insert(
+        nodes,
+        NuiTree.Node({ text = ("Host ID: %s"):format(host_id) }, {
+          general_info,
+          local_node,
+          remote_node,
+          NuiTree.Node({ text = "" }),
+        })
+      )
+    end
   end
 
   if #nodes <= 2 then

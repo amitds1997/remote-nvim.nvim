@@ -117,16 +117,18 @@ end
 ---SSH command to run over the remote host
 ---@param command string Command to run on the remote host
 ---@param connection_options? string Connection operations for the command to be run
+---@param exit_cb? function Function to be run on exit of job
 ---@return SSHRemoteExecutor executor Executor on which the command is running
-function SSHRemoteExecutor:run_command(command, connection_options)
-  return self:set_command(command, self.ssh_binary, connection_options):run_job()
+function SSHRemoteExecutor:run_command(command, connection_options, exit_cb)
+  return self:set_command(command, self.ssh_binary, connection_options):run_job(exit_cb)
 end
 
 ---@private
 ---@async
 ---Run job specified by command over the SSHExecutor
+---@param exit_cb? function Function to be run on exit of job
 ---@return SSHRemoteExecutor executor The executor on which the job is executing
-function SSHRemoteExecutor:run_job()
+function SSHRemoteExecutor:run_job(exit_cb)
   local co = coroutine.running()
   logger.fmt_debug(
     "Starting jobstart with command %s over SSH (Inside coroutine: %s)",
@@ -140,6 +142,9 @@ function SSHRemoteExecutor:run_job()
     end,
     on_exit = function(_, exit_code)
       self:handle_exit(exit_code)
+      if exit_cb ~= nil then
+        exit_cb()
+      end
       if co ~= nil then
         coroutine.resume(co)
       end

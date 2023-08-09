@@ -336,7 +336,9 @@ function NeovimSSHProvider:handle_remote_server_launch()
     -- Launch remote server and port forward to local
     local p = coroutine.create(function()
       self.notifier:notify("Starting remote neovim server along with port forwarding")
-      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts)
+      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts, function()
+        self:reset()
+      end)
     end)
     local success, err = coroutine.resume(p)
     if not success then
@@ -389,19 +391,7 @@ function NeovimSSHProvider:handle_local_client_launch()
   local cmd = ("nvim --server localhost:%s --remote-ui"):format(self.local_free_port)
   if client_start then
     -- We need to wait for the server to become available before we launch the client. This is one way of checking that
-    local exit_code = 0
-    while true do
-      self.ssh_executor:run_command(
-        ("%s --server localhost:%s --remote-send ':version<CR>'"):format(
-          self:get_remote_neovim_binary_path(),
-          self.remote_free_port
-        )
-      )
-      exit_code = self.ssh_executor.exit_code
-      if exit_code == 0 then
-        break
-      end
-    end
+    -- TODO: Add a reliable way to do this
 
     -- If we reach here, we assume the server is ready for clients to attach
     if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
@@ -484,6 +474,8 @@ function NeovimSSHProvider:reset()
     vim.fn.jobstop(self.remote_port_forwarding_job_id)
   end
   self.remote_port_forwarding_job_id = nil
+  self.local_free_port = nil
+  self.remote_free_port = nil
   self.is_setup_running = false
 end
 
