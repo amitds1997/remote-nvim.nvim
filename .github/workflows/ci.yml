@@ -1,6 +1,7 @@
 ---
 name: CI
 on:  # yamllint disable-line rule:truthy
+  push:
   pull_request:
 concurrency:
   group: |
@@ -9,6 +10,7 @@ concurrency:
 jobs:
   docs:
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
     name: Generate docs
@@ -29,3 +31,29 @@ jobs:
           commit_user_email: github-actions[bot]@users.noreply.github.com
           commit_author: |-
             github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+  release:
+    name: release
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs: [docs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          release-type: simple
+          package-name: remote-nvim.nvim
+          extra-files: |
+            lua/remote-nvim/init.lua
+      - uses: actions/checkout@v3
+      - name: tag stable versions
+        if: ${{ steps.release.outputs.release_created }}
+        # yamllint disable rule:line-length
+        run: |-
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git remote add gh-token "https://${{ secrets.GITHUB_TOKEN }}@github.com/google-github-actions/release-please-action.git"
+          git tag -d stable || true
+          git push origin :stable || true
+          git tag -a stable -m "Last Stable Release"
+          git push origin stable
+        # yamllint enable rule:line-length
