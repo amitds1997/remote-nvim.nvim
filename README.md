@@ -224,3 +224,11 @@ you would see a fresh, clean Neovim installation (assuming you copied your
 Neovim config over). This is no fault with the plugin. Run `:messages` to see
 what went wrong. Usually, `git` or some other important binary is not available
 on the remote in some docker systems.
+
+## Credits
+
+I have learnt a lot from all the different plugins; and want to extend a thank
+you to all the plugin authors. You all are awesome ❤️
+
+The package structure, CIs have been borrowed with some modifications from the
+[lazy.nvim](https://github.com/folke/lazy.nvim/) plugin.

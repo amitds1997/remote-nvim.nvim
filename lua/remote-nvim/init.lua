@@ -2,6 +2,8 @@ local RemoteHostWorkspaceConfig = require("remote-nvim.config")
 local util = require("remote-nvim.utils")
 local M = {}
 
+M.version = "0.0.1" -- x-release-please-version
+
 ---@class RemoteNeovimConfig
 ---@field ssh_config RemoteNeovimSSHConfig
 ---@field neovim_install_script_path string Local path where neovim installation script is stored
