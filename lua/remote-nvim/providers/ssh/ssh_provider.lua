@@ -505,6 +505,7 @@ end
 function NeovimSSHProvider:reset()
   if self.remote_port_forwarding_job_id ~= nil then
     vim.fn.jobstop(self.remote_port_forwarding_job_id)
+    self.notifier:stop("Stopped the remote Neovim server")
   end
   self.remote_port_forwarding_job_id = nil
   self.local_free_port = nil
