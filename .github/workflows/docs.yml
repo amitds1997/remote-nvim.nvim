@@ -2,6 +2,7 @@
 name: CI
 on:  # yamllint disable-line rule:truthy
   pull_request:
+    paths: [README.md]
 concurrency:
   group: |
     ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
