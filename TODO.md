@@ -22,4 +22,3 @@
 
 - [ ] Add tutorial videos
 - [ ] Add CHANGELOG
-- [ ] Add a reliable async way to wait until clients are ready

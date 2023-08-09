@@ -1,4 +1,3 @@
-local plenary = require("plenary")
 local remote_nvim = require("remote-nvim")
 local remote_nvim_ssh_provider = require("remote-nvim.providers.ssh.ssh_provider")
 

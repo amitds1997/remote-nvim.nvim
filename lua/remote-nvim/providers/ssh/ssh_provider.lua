@@ -398,7 +398,7 @@ function NeovimSSHProvider:handle_local_client_launch()
     -- Wait for max 20 seconds for the server to become available
     local timeout = 20000
     local timer = vim.loop.new_timer()
-    assert(timer ~= nil)
+    assert(timer ~= nil, "Timer object should not be nil")
 
     local co = coroutine.running()
     local function check_server_readiness_for_clients()
@@ -589,7 +589,7 @@ function NeovimSSHProvider:download(remote_path, local_path, desc)
     local_path
   )
 
-  self.ssh_executor:download(remote_path, local_path)
+  pcall(self.ssh_executor.download, remote_path, local_path)
   return self:_handle_job_completion(desc)
 end
 
@@ -601,7 +601,7 @@ function NeovimSSHProvider:upload(local_path, remote_path, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running upload from local %s path over SSH to %s on %s", local_path, self.remote_host, remote_path)
 
-  self.ssh_executor:upload(local_path, remote_path)
+  pcall(self.ssh_executor.upload, local_path, remote_path)
   return self:_handle_job_completion(desc)
 end
 
@@ -612,7 +612,7 @@ function NeovimSSHProvider:run_command(command, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running %s over SSH on %s", command, self.remote_host)
 
-  self.ssh_executor:run_command(command)
+  pcall(self.ssh_executor.run_command, self.ssh_executor, command)
   return self:_handle_job_completion(desc)
 end
 

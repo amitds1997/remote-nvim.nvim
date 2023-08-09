@@ -135,10 +135,8 @@ function M.RemoteInfo()
       key = "<CR>",
       handler = function()
         local node = tree:get_node()
-        assert(node ~= nil)
-        if node:collapse() then
-          tree:render()
-        elseif node:expand() then
+        assert(node ~= nil, "Node should not be nil")
+        if node:collapse() or node:expand() then
           tree:render()
         end
       end,
@@ -147,7 +145,7 @@ function M.RemoteInfo()
       key = "l",
       handler = function()
         local node = tree:get_node()
-        assert(node ~= nil)
+        assert(node ~= nil, "Node should not be nil")
 
         if node:expand() then
           tree:render()
@@ -158,7 +156,7 @@ function M.RemoteInfo()
       key = "h",
       handler = function()
         local node = tree:get_node()
-        assert(node ~= nil)
+        assert(node ~= nil, "Node should not be nil")
 
         if node:collapse() then
           tree:render()

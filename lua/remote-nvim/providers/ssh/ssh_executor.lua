@@ -184,6 +184,7 @@ function SSHRemoteExecutor:handle_stdout(data)
           self.saved_prompts[prompt.match] = prompt_value
         end
       end
+      logger.fmt_debug("Sent in our response for the match %s", prompt.match)
       vim.api.nvim_chan_send(self.job_id, prompt_value .. "\n")
     end
   end

@@ -228,9 +228,8 @@ on the remote in some docker systems.
 ## FAQs
 
 1. The notification just keeps rotating, with no progress. What's the issue?
-A. The `ssh` protocol behind the scenes can get slow while copying over your
-configuration. In such cases, just stop and restart your neovim instance. You
-can verify this by running `ps aux | grep ssh` and you would see something of
-the kind `/usr/bin/ssh -x -oPermitLocalCommand=no -oClearAllForwardings=yes
--oRemoteCommand=none -oRequestTTY=no ... sftp` that is moving forward very
-slowly. I have not yet figured out the reason for this and possible resolution.
+A. Probably a bug in the plugin. Re-running the same command again or restarting
+and running the command again should solve it. Author is working on tracking it
+down and fixing it. To determine if this is the same issue as the one author thinks
+it is, just run `ps aux | grep ssh` and you should see a pending `sftp` ssh job
+waiting for password prompt. This does not happen with key-based auth methods.
