@@ -189,6 +189,10 @@ M.run_code_in_coroutine = function(fn, err_fn)
   end
 end
 
+---Convert list into equally spaced columns of given number ready to be printed
+---@param token_arr string[] List containing the string tokens
+---@param num number Number of columns to be created
+---@return string[] spaced_arr Formatted list containing the formatted string tokens
 M.generate_equally_spaced_columns = function(token_arr, num)
   -- Create lists for the grouped elements
   local col_grouped_list = {}

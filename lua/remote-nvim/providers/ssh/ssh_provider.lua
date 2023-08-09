@@ -324,7 +324,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
     local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
 
     -- Generate remote server launch command
-    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless --embed]]):format(
+    local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
       self.remote_xdg_config_path,
       self.remote_xdg_data_path,
       self.remote_xdg_state_path,
@@ -336,7 +336,9 @@ function NeovimSSHProvider:handle_remote_server_launch()
     -- Launch remote server and port forward to local
     local p = coroutine.create(function()
       self.notifier:notify("Starting remote neovim server along with port forwarding")
-      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts)
+      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts, function()
+        self:reset()
+      end)
     end)
     local success, err = coroutine.resume(p)
     if not success then
@@ -388,13 +390,43 @@ function NeovimSSHProvider:handle_local_client_launch()
 
   local cmd = ("nvim --server localhost:%s --remote-ui"):format(self.local_free_port)
   if client_start then
-    -- We need to wait for the server to become available before we launch the client. This is one way of checking that
-    repeat
-      self.ssh_executor:run_command(
-        ("nvim --server localhost:%s --remote-send ':version<CR>'"):format(self.local_free_port)
-      )
-    until self.ssh_executor.exit_code ~= 0
+    -- We need to wait for the server to become ready to accept clients before we launch the client
+    local client_connect_test_cmd = ("nvim --server localhost:%s --remote-send ':echo<CR>'"):format(
+      self.local_free_port
+    )
 
+    -- Wait for max 20 seconds for the server to become available
+    local timeout = 20000
+    local timer = vim.loop.new_timer()
+    assert(timer ~= nil, "Timer object should not be nil")
+
+    local co = coroutine.running()
+    local function check_server_readiness_for_clients()
+      -- This is syncronous but that's fine because the command we would be running should immediately return
+      local res = vim.fn.system(client_connect_test_cmd)
+      if res == "" then
+        timer:stop()
+        timer:close()
+        if co ~= nil and coroutine.status(co) == "suspended" then
+          coroutine.resume(co)
+        end
+      else
+        vim.defer_fn(check_server_readiness_for_clients, 2000)
+        if co ~= nil and coroutine.status(co) == "running" then
+          coroutine.yield(co)
+        end
+      end
+    end
+    -- Start the timer
+    timer:start(timeout, 0, function()
+      self.notifier:stop(("Server did not come up on local in %s ms. Try again :("):format(timeout), "error")
+      timer:stop()
+      timer:close()
+      error(("Server did not come up on local in %s ms. Try again :("):format(timeout))
+    end)
+    check_server_readiness_for_clients()
+
+    -- If we reach here, we assume the server is ready for clients to attach
     if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
       RemoteNeovimConfig.config.local_client_config.callback(
         self.local_free_port,
@@ -475,6 +507,8 @@ function NeovimSSHProvider:reset()
     vim.fn.jobstop(self.remote_port_forwarding_job_id)
   end
   self.remote_port_forwarding_job_id = nil
+  self.local_free_port = nil
+  self.remote_free_port = nil
   self.is_setup_running = false
 end
 
@@ -555,7 +589,7 @@ function NeovimSSHProvider:download(remote_path, local_path, desc)
     local_path
   )
 
-  self.ssh_executor:download(remote_path, local_path)
+  pcall(self.ssh_executor.download, remote_path, local_path)
   return self:_handle_job_completion(desc)
 end
 
@@ -567,7 +601,7 @@ function NeovimSSHProvider:upload(local_path, remote_path, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running upload from local %s path over SSH to %s on %s", local_path, self.remote_host, remote_path)
 
-  self.ssh_executor:upload(local_path, remote_path)
+  pcall(self.ssh_executor.upload, local_path, remote_path)
   return self:_handle_job_completion(desc)
 end
 
@@ -578,7 +612,7 @@ function NeovimSSHProvider:run_command(command, desc)
   self.notifier:notify(desc)
   logger.fmt_debug("Running %s over SSH on %s", command, self.remote_host)
 
-  self.ssh_executor:run_command(command)
+  pcall(self.ssh_executor.run_command, self.ssh_executor, command)
   return self:_handle_job_completion(desc)
 end
 

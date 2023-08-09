@@ -117,16 +117,18 @@ end
 ---SSH command to run over the remote host
 ---@param command string Command to run on the remote host
 ---@param connection_options? string Connection operations for the command to be run
+---@param exit_cb? function Function to be run on exit of job
 ---@return SSHRemoteExecutor executor Executor on which the command is running
-function SSHRemoteExecutor:run_command(command, connection_options)
-  return self:set_command(command, self.ssh_binary, connection_options):run_job()
+function SSHRemoteExecutor:run_command(command, connection_options, exit_cb)
+  return self:set_command(command, self.ssh_binary, connection_options):run_job(exit_cb)
 end
 
 ---@private
 ---@async
 ---Run job specified by command over the SSHExecutor
+---@param exit_cb? function Function to be run on exit of job
 ---@return SSHRemoteExecutor executor The executor on which the job is executing
-function SSHRemoteExecutor:run_job()
+function SSHRemoteExecutor:run_job(exit_cb)
   local co = coroutine.running()
   logger.fmt_debug(
     "Starting jobstart with command %s over SSH (Inside coroutine: %s)",
@@ -138,11 +140,11 @@ function SSHRemoteExecutor:run_job()
     on_stdout = function(_, data)
       self:handle_stdout(data)
     end,
-    on_stderr = function(_, data)
-      self:handle_stderr(data)
-    end,
     on_exit = function(_, exit_code)
       self:handle_exit(exit_code)
+      if exit_cb ~= nil then
+        exit_cb()
+      end
       if co ~= nil then
         coroutine.resume(co)
       end
@@ -160,6 +162,7 @@ end
 ---@param data string[] Data string array produced by the running job
 function SSHRemoteExecutor:handle_stdout(data)
   ssh_utils.append_tty_data_to_buffer(self.stdout_bufr, data)
+  logger.fmt_debug("[Job stdout]: %s", table.concat(data, " "):gsub("\r", "\n"):gsub("\n", ""))
 
   -- Check for existence of any prompt matches which indicate SSH is waiting for an input
   local search_string = table.concat({ unpack(self.stdout_bufr, self.last_stdout_processed_idx + 1) }, "")
@@ -181,15 +184,10 @@ function SSHRemoteExecutor:handle_stdout(data)
           self.saved_prompts[prompt.match] = prompt_value
         end
       end
+      logger.fmt_debug("Sent in our response for the match %s", prompt.match)
       vim.api.nvim_chan_send(self.job_id, prompt_value .. "\n")
     end
   end
-end
-
----@private
----@param data string[] Error string array produced by the running job
-function SSHRemoteExecutor:handle_stderr(data)
-  ssh_utils.append_tty_data_to_buffer(self.stderr_bufr, data)
 end
 
 ---@private

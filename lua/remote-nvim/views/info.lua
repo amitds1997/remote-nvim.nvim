@@ -21,30 +21,32 @@ local function RemoteInfoNodes()
 
   -- Remote OS, Local port, Remote port, Remote Neovim version, workspace ID
   for host_id, session in pairs(remote_nvim.sessions) do
-    local general_info = NuiTree.Node({
-      text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session.local_free_port),
-    })
+    if session.remote_port_forwarding_job_id ~= nil then
+      local general_info = NuiTree.Node({
+        text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session.local_free_port),
+      })
 
-    local local_node = NuiTree.Node({ text = "Local" }, {
-      NuiTree.Node({ text = ("Port: %s"):format(session.local_free_port) }),
-      NuiTree.Node({ text = ("Neovim version: %s"):format(neovim_version) }),
-      NuiTree.Node({ text = "" }),
-    })
-    local remote_node = NuiTree.Node({ text = "Remote" }, {
-      NuiTree.Node({ text = ("Port: %s"):format(session.remote_free_port) }),
-      NuiTree.Node({ text = ("Neovim version: %s"):format(session.remote_neovim_version) }),
-      NuiTree.Node({ text = ("Workspace path: %s"):format(session.remote_workspace_id_path) }),
-      NuiTree.Node({ text = ("Remote OS: %s"):format(session.remote_os) }),
-    })
-    table.insert(
-      nodes,
-      NuiTree.Node({ text = ("Host ID: %s"):format(host_id) }, {
-        general_info,
-        local_node,
-        remote_node,
+      local local_node = NuiTree.Node({ text = "Local" }, {
+        NuiTree.Node({ text = ("Port: %s"):format(session.local_free_port) }),
+        NuiTree.Node({ text = ("Neovim version: %s"):format(neovim_version) }),
         NuiTree.Node({ text = "" }),
       })
-    )
+      local remote_node = NuiTree.Node({ text = "Remote" }, {
+        NuiTree.Node({ text = ("Port: %s"):format(session.remote_free_port) }),
+        NuiTree.Node({ text = ("Neovim version: %s"):format(session.remote_neovim_version) }),
+        NuiTree.Node({ text = ("Workspace path: %s"):format(session.remote_workspace_id_path) }),
+        NuiTree.Node({ text = ("Remote OS: %s"):format(session.remote_os) }),
+      })
+      table.insert(
+        nodes,
+        NuiTree.Node({ text = ("Host ID: %s"):format(host_id) }, {
+          general_info,
+          local_node,
+          remote_node,
+          NuiTree.Node({ text = "" }),
+        })
+      )
+    end
   end
 
   if #nodes <= 2 then
@@ -133,10 +135,8 @@ function M.RemoteInfo()
       key = "<CR>",
       handler = function()
         local node = tree:get_node()
-        assert(node ~= nil)
-        if node:collapse() then
-          tree:render()
-        elseif node:expand() then
+        assert(node ~= nil, "Node should not be nil")
+        if node:collapse() or node:expand() then
           tree:render()
         end
       end,
@@ -145,7 +145,7 @@ function M.RemoteInfo()
       key = "l",
       handler = function()
         local node = tree:get_node()
-        assert(node ~= nil)
+        assert(node ~= nil, "Node should not be nil")
 
         if node:expand() then
           tree:render()
@@ -156,7 +156,7 @@ function M.RemoteInfo()
       key = "h",
       handler = function()
         local node = tree:get_node()
-        assert(node ~= nil)
+        assert(node ~= nil, "Node should not be nil")
 
         if node:collapse() then
           tree:render()
