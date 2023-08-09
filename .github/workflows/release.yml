@@ -1,0 +1,26 @@
+---
+name: Release
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches: [main]
+concurrency:
+  group: |
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  release:
+    name: release
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          command: release-pr
+          release-type: simple
+          package-name: remote-nvim.nvim
+          extra-files: |-
+            lua/remote-nvim/init.lua
