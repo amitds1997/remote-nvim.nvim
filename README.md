@@ -56,6 +56,8 @@ basically download locally and copy over the installation over SSH)
 ```lua
 {
    "amitds1997/remote-nvim.nvim",
+   tag = "v0.0.1", -- It is recommended that you keep this pinned to a tag
+   -- so that you do not pick up breaking changes
    dependencies = {
        "nvim-lua/plenary.nvim",
        "MunifTanjim/nui.nvim",
