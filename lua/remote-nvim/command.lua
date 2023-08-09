@@ -3,6 +3,16 @@ local remote_nvim_ssh_provider = require("remote-nvim.providers.ssh.ssh_provider
 
 local M = {}
 
+-- Define a function to check if an element exists in a list
+local function contains(list, element)
+  for _, value in ipairs(list) do
+    if value == element then
+      return true
+    end
+  end
+  return false
+end
+
 function M.RemoteStart(opts)
   local host_identifier = opts.args
   if host_identifier == "" then
@@ -40,13 +50,18 @@ vim.api.nvim_create_user_command("RemoteLog", M.RemoteLog, {
 })
 
 function M.RemoteCleanup(opts)
-  local host_identifier = opts.args
-  local workspace_config = remote_nvim.host_workspace_config:get_workspace_config_data(host_identifier)
+  local host_ids = vim.split(vim.trim(opts.args), "%s+")
+  if #host_ids > 1 then
+    error("Please pass only one parameter at a time")
+  end
+  for _, host_id in ipairs(host_ids) do
+    local workspace_config = remote_nvim.host_workspace_config:get_workspace_config_data(host_id)
 
-  remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
-    or remote_nvim_ssh_provider:new(workspace_config.host, workspace_config.connection_options)
-  remote_nvim.sessions[host_identifier]:clean_up_remote_host()
-  remote_nvim.sessions[host_identifier]:reset()
+    remote_nvim.sessions[host_id] = remote_nvim.sessions[host_id]
+      or remote_nvim_ssh_provider:new(workspace_config.host, workspace_config.connection_options)
+    remote_nvim.sessions[host_id]:clean_up_remote_host()
+    remote_nvim.sessions[host_id]:reset()
+  end
 end
 
 vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
@@ -58,38 +73,57 @@ vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
     if #args == 0 then
       return remote_nvim.host_workspace_config:get_all_host_ids()
     end
-    return vim.fn.matchfuzzy(remote_nvim.host_workspace_config:get_all_host_ids(), args[1])
+    local host_ids = vim.fn.filter(remote_nvim.host_workspace_config:get_all_host_ids(), function(_, item)
+      return not contains(args, item)
+    end)
+    local completion_word = table.remove(args, #args)
+
+    -- If we have not provided any input, then the last word is the last completion
+    if contains(remote_nvim.host_workspace_config:get_all_host_ids(), completion_word) then
+      return host_ids
+    end
+    return vim.fn.matchfuzzy(host_ids, completion_word)
   end,
 })
 
 vim.api.nvim_create_user_command("RemoteStop", function(opts)
-  local active_server_host_identifier = opts.args
-  remote_nvim.sessions[active_server_host_identifier]:reset()
+  local host_ids = vim.split(vim.trim(opts.args), "%s+")
+  for _, host_id in ipairs(host_ids) do
+    remote_nvim.sessions[host_id]:reset()
+  end
 end, {
   desc = "Stop running remote server",
-  nargs = 1,
+  nargs = "+",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)
-    if #args == 0 then
-      return vim.tbl_keys(remote_nvim.sessions)
+
+    -- Filter out those sessions whose port forwarding jobs are not running
+    local running_sessions = {}
+    for session, session_provider in pairs(remote_nvim.sessions) do
+      if session_provider.remote_port_forwarding_job_id ~= nil then
+        table.insert(running_sessions, session)
+      end
     end
-    return vim.fn.matchfuzzy(vim.tbl_keys(remote_nvim.sessions), args[1])
+
+    if #args == 0 then
+      return running_sessions
+    end
+    local host_ids = vim.fn.filter(running_sessions, function(_, item)
+      return not contains(args, item)
+    end)
+    local completion_word = table.remove(args, #args)
+
+    -- If we have not provided any input, then the last word is the last completion
+    if contains(running_sessions, completion_word) then
+      return host_ids
+    end
+    return vim.fn.matchfuzzy(running_sessions, completion_word)
   end,
 })
 
--- Define a function to check if an element exists in a list
-local function contains(list, element)
-  for _, value in ipairs(list) do
-    if value == element then
-      return true
-    end
-  end
-  return false
-end
-
 vim.api.nvim_create_user_command("RemoteConfigDel", function(opts)
-  local host_identifiers = opts.args
+  local host_identifiers = vim.split(vim.trim(opts.args), "%s+")
   for _, host_id in ipairs(host_identifiers) do
     remote_nvim.host_workspace_config:delete_workspace(host_id)
   end
