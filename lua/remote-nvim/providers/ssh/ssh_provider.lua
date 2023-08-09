@@ -390,8 +390,41 @@ function NeovimSSHProvider:handle_local_client_launch()
 
   local cmd = ("nvim --server localhost:%s --remote-ui"):format(self.local_free_port)
   if client_start then
-    -- We need to wait for the server to become available before we launch the client. This is one way of checking that
-    -- TODO: Add a reliable way to do this
+    -- We need to wait for the server to become ready to accept clients before we launch the client
+    local client_connect_test_cmd = ("nvim --server localhost:%s --remote-send ':echo<CR>'"):format(
+      self.local_free_port
+    )
+
+    -- Wait for max 20 seconds for the server to become available
+    local timeout = 20000
+    local timer = vim.loop.new_timer()
+    assert(timer ~= nil)
+
+    local co = coroutine.running()
+    local function check_server_readiness_for_clients()
+      -- This is syncronous but that's fine because the command we would be running should immediately return
+      local res = vim.fn.system(client_connect_test_cmd)
+      if res == "" then
+        timer:stop()
+        timer:close()
+        if co ~= nil and coroutine.status(co) == "suspended" then
+          coroutine.resume(co)
+        end
+      else
+        vim.defer_fn(check_server_readiness_for_clients, 2000)
+        if co ~= nil and coroutine.status(co) == "running" then
+          coroutine.yield(co)
+        end
+      end
+    end
+    -- Start the timer
+    timer:start(timeout, 0, function()
+      self.notifier:stop(("Server did not come up on local in %s ms. Try again :("):format(timeout), "error")
+      timer:stop()
+      timer:close()
+      error(("Server did not come up on local in %s ms. Try again :("):format(timeout))
+    end)
+    check_server_readiness_for_clients()
 
     -- If we reach here, we assume the server is ready for clients to attach
     if RemoteNeovimConfig.config.local_client_config.callback ~= nil then
