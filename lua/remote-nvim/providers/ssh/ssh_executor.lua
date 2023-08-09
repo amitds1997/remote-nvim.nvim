@@ -47,7 +47,7 @@ function SSHRemoteExecutor:new(host, connection_options)
   instance.is_job_complete = false
   instance.stdout_bufr = {}
   instance.stderr_bufr = {}
-  instance.last_stdout_processed_idx = 1
+  instance.last_stdout_processed_idx = 0
   instance.saved_prompts = {}
 
   return instance
@@ -63,7 +63,7 @@ function SSHRemoteExecutor:reset()
   self.is_job_complete = false
   self.stdout_bufr = {}
   self.stderr_bufr = {}
-  self.last_stdout_processed_idx = 1
+  self.last_stdout_processed_idx = 0
   self.saved_prompts = {}
 end
 
@@ -162,19 +162,23 @@ end
 ---@param data string[] Data string array produced by the running job
 function SSHRemoteExecutor:handle_stdout(data)
   ssh_utils.append_tty_data_to_buffer(self.stdout_bufr, data)
-  logger.fmt_debug("[Job stdout]: %s", table.concat(data, " "):gsub("\r", "\n"):gsub("\n", ""))
 
   -- Check for existence of any prompt matches which indicate SSH is waiting for an input
-  local search_string = table.concat({ unpack(self.stdout_bufr, self.last_stdout_processed_idx + 1) }, "")
+  local search_string = table.concat(vim.list_slice(self.stdout_bufr, self.last_stdout_processed_idx + 1), "")
+  logger.fmt_debug("Current search string is %s", search_string)
   for _, prompt in ipairs(self.ssh_prompts) do
+    logger.fmt_debug("Looking for %s in search string", prompt.match)
     if search_string:find(prompt.match) then
+      logger.fmt_debug("Got a prompt match: %s", prompt.match)
       self.last_stdout_processed_idx = #self.stdout_bufr
 
       local prompt_value
       -- If it is a "static" value prompt, use cached input values, unless values were passed in config
       if prompt.value_type == "static" and prompt.value ~= "" then
+        logger.fmt_debug("Using cached value for %s", prompt.match)
         prompt_value = prompt.value
       else
+        logger.fmt_debug("Fetching user input for %s", prompt.match)
         local prompt_label = prompt.input_prompt or ("Enter " .. prompt.match .. " ")
         prompt_value = self:handle_input(prompt_label, prompt.type)
 
@@ -184,7 +188,6 @@ function SSHRemoteExecutor:handle_stdout(data)
           self.saved_prompts[prompt.match] = prompt_value
         end
       end
-      logger.fmt_debug("Sent in our response for the match %s", prompt.match)
       vim.api.nvim_chan_send(self.job_id, prompt_value .. "\n")
     end
   end
