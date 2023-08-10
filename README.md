@@ -12,6 +12,11 @@ are welcome).
 🚧 **This plugin is still experimental. Breaking changes are expected (not a
 lot though).** 🚧
 
+## Demo
+
+[![Tutorial for remote-nvim.nvim plugin v0.0.1](http://img.youtube.com/vi/5qbDq1lGEx4/0.jpg)](http://www.youtube.com/watch?v=5qbDq1lGEx4
+"Remote development on Neovim using remote-nvim.nvim")
+
 ## 📜 Requirements
 
 ### On your local machine 💻
@@ -32,6 +37,7 @@ lot though).** 🚧
 1. A running OpenSSH compliant server
 2. Access to internet (to download Neovim)
 3. Binaries: **curl** or **wget**; **tar** (if your remote machine is MacOS)
+4. **bash** must be present
 
 ## ✨ Features
 
@@ -138,6 +144,7 @@ These are the default values. Alter them as needed for your personal use.
     -- local_port is the port on which the remote server is available locally
     -- workspace_config contains the workspace config. For all attributes present
     -- in it, see WorkspaceConfig in ./lua/remote-nvim/config.lua.
+    -- See examples of callback in https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes
     callback = nil,
     -- [Subject to change]: These values may be subject to change, so there
     -- might be a breaking change. Right now, it uses the [plenary.nvim#win_float.percentage_range_window](https://github.com/nvim-lua/plenary.nvim/blob/267282a9ce242bbb0c5dc31445b6d353bed978bb/lua/plenary/window/float.lua#L138C25-L138C25)
