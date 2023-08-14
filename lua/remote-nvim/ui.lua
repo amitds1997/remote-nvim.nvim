@@ -22,7 +22,7 @@ local float_default_opts = {
   col_percent = 0.9,
   row_percent = 0.9,
   win_opts = {
-    winblend = 5,
+    winblend = 0,
   },
   border_opts = {
     topleft = "╭",

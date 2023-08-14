@@ -68,7 +68,7 @@ function M.RemoteInfo()
     focusable = true,
     relative = "editor",
     win_options = {
-      winblend = 10,
+      winblend = 0,
       winhighlight = "Normal:Normal,FloatBorder:FloatBorder",
     },
   })
@@ -79,6 +79,10 @@ function M.RemoteInfo()
       text = {
         top = " Keyboard shortcuts ",
       },
+    },
+    win_options = {
+      winblend = 0,
+      winhighlight = "Normal:Normal,FloatBorder:FloatBorder",
     },
   })
 
@@ -203,6 +207,10 @@ function M.RemoteInfo()
   end
 
   vim.api.nvim_buf_set_lines(keymap_popup.bufnr, 0, -1, true, utils.generate_equally_spaced_columns(keymap_tokens, 4))
+
+  -- Also set the winblend for the layout window
+  vim.api.nvim_set_option_value("winblend", 0, { win = info_layout.winid })
+  vim.api.nvim_set_option_value("winhighlight", "Normal:Normal,FloatBorder:FloatBorder", { win = info_layout.winid })
 
   -- Enable syntax highlighting on buffer
   vim.api.nvim_buf_set_option(info_popup.bufnr, "syntax", "yaml")

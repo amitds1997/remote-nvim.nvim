@@ -152,7 +152,7 @@ These are the default values. Alter them as needed for your personal use.
       col_percent = 0.9,
       row_percent = 0.9,
       win_opts = {
-        winblend = 5,
+        winblend = 0,
       },
       border_opts = {
         topleft = "╭",
