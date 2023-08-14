@@ -271,7 +271,7 @@ function NeovimSSHProvider:handle_neovim_config_update_on_remote()
   if should_copy_config then
     self:upload(
       self.local_nvim_user_config_path,
-      self.remote_neovim_config_path,
+      self.remote_xdg_config_path,
       "Copying local config onto remote machine..."
     )
   end
