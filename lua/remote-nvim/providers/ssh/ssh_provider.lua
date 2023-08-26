@@ -456,17 +456,19 @@ end
 ---@see vim.ui.select
 function NeovimSSHProvider:get_user_selection(choices, input_opts, cb)
   local co = coroutine.running()
+  local select_choice_made = false
   vim.ui.select(choices, input_opts, function(choice)
-    cb(choice)
+    select_choice_made = true
     if choice == nil then
       self.notifier:stop("Setup cancelled", "warn")
       return
     end
+    cb(choice)
     if co then
       coroutine.resume(co)
     end
   end)
-  if co then
+  if co and not select_choice_made then
     coroutine.yield()
   end
 end
