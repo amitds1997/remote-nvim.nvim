@@ -62,20 +62,21 @@ basically download locally and copy over the installation over SSH)
 ```lua
 {
    "amitds1997/remote-nvim.nvim",
-   tag = "v0.0.1", -- It is recommended that you keep this pinned to a tag
-   -- so that you do not pick up breaking changes
+   version = "*", -- This keeps it pinned to semantic releases
    dependencies = {
        "nvim-lua/plenary.nvim",
        "MunifTanjim/nui.nvim",
        "rcarriga/nvim-notify",
        -- This would be an optional dependency eventually
        "nvim-telescope/telescope.nvim",
-   }
+   },
+   config = true, -- This calls the default setup(); make sure to call it
 }
 ```
 
-After installation, run `:checkhealth remote-nvim` to verify that you have everything
-you need.
+After installation, run `:checkhealth remote-nvim` to verify that you have
+everything you need. This might fail if you have not initialized the plugin
+using `setup()` call.
 
 ## ⚙️ Configuration
 
