@@ -22,6 +22,7 @@ jobs:
           version: Neovim >= 0.8.0
           demojify: true
           treesitter: true
+          dedupsubheadings: false
       - name: Push changes
         uses: stefanzweifel/git-auto-commit-action@v4.16.0
         with:
