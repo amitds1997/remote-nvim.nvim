@@ -4,14 +4,14 @@
 Table of Contents                              *remote-nvim-table-of-contents*
 
 1. Remote Nvim - Remote development in Neovim|remote-nvim-remote-nvim---remote-development-in-neovim|
-  - Demo         |remote-nvim-remote-nvim---remote-development-in-neovim-demo|
-  - Requirements|remote-nvim-remote-nvim---remote-development-in-neovim-requirements|
-  - Features |remote-nvim-remote-nvim---remote-development-in-neovim-features|
-  - Installation|remote-nvim-remote-nvim---remote-development-in-neovim-installation|
-  - Configuration|remote-nvim-remote-nvim---remote-development-in-neovim-configuration|
-  - Usage       |remote-nvim-remote-nvim---remote-development-in-neovim-usage|
-  - Caveats   |remote-nvim-remote-nvim---remote-development-in-neovim-caveats|
-  - Credits   |remote-nvim-remote-nvim---remote-development-in-neovim-credits|
+  - Demo                                                    |remote-nvim-demo|
+  - Requirements                                    |remote-nvim-requirements|
+  - Features                                            |remote-nvim-features|
+  - Installation                                    |remote-nvim-installation|
+  - Configuration                                  |remote-nvim-configuration|
+  - Usage                                                  |remote-nvim-usage|
+  - Caveats                                              |remote-nvim-caveats|
+  - Credits                                              |remote-nvim-credits|
 
 ==============================================================================
 1. Remote Nvim - Remote development in Neovim*remote-nvim-remote-nvim---remote-development-in-neovim*
@@ -29,13 +29,13 @@ contributions are welcome).
 though).**
 
 
-DEMO             *remote-nvim-remote-nvim---remote-development-in-neovim-demo*
+DEMO                                                        *remote-nvim-demo*
 
 
 <http://www.youtube.com/watch?v=5qbDq1lGEx4%20%22Remote%20development%20on%20Neovim%20using%20remote-nvim.nvim%22>
 
 
-REQUIREMENTS*remote-nvim-remote-nvim---remote-development-in-neovim-requirements*
+REQUIREMENTS                                        *remote-nvim-requirements*
 
 
 ON YOUR LOCAL MACHINE  ~
@@ -61,7 +61,7 @@ ON YOUR REMOTE MACHINE  ~
 4. **bash** must be present
 
 
-FEATURES     *remote-nvim-remote-nvim---remote-development-in-neovim-features*
+FEATURES                                                *remote-nvim-features*
 
 - Automatic installation of Neovim on remote
 - Automatic copying over your local Neovim configuration
@@ -78,7 +78,7 @@ FEATURES     *remote-nvim-remote-nvim---remote-development-in-neovim-features*
     basically download locally and copy over the installation over SSH)
 
 
-INSTALLATION*remote-nvim-remote-nvim---remote-development-in-neovim-installation*
+INSTALLATION                                        *remote-nvim-installation*
 
 
 LAZY.NVIM ~
@@ -103,7 +103,7 @@ everything you need. This might fail if you have not initialized the plugin
 using `setup()` call.
 
 
-CONFIGURATION*remote-nvim-remote-nvim---remote-development-in-neovim-configuration*
+CONFIGURATION                                      *remote-nvim-configuration*
 
 These are the default values. Alter them as needed for your personal use.
 
@@ -197,7 +197,7 @@ These are the default values. Alter them as needed for your personal use.
 <
 
 
-USAGE           *remote-nvim-remote-nvim---remote-development-in-neovim-usage*
+USAGE                                                      *remote-nvim-usage*
 
 Following user commands are available.
 
@@ -248,7 +248,7 @@ workspace configuration that you want to delete from your local. Think of this
 as your Remote Neovim sweeping broom.
 
 
-CAVEATS       *remote-nvim-remote-nvim---remote-development-in-neovim-caveats*
+CAVEATS                                                  *remote-nvim-caveats*
 
 - Just because how Neovim server and client currently work, it is not possible
     to deterministically close a TUI so in case you do a `:q`, the server and the
@@ -269,7 +269,7 @@ CAVEATS       *remote-nvim-remote-nvim---remote-development-in-neovim-caveats*
     on the remote in some docker systems.
 
 
-CREDITS       *remote-nvim-remote-nvim---remote-development-in-neovim-credits*
+CREDITS                                                  *remote-nvim-credits*
 
 I have learnt a lot from all the different plugins; and want to extend a thank
 you to all the plugin authors. You all are awesome
