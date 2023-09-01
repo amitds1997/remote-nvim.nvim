@@ -3,7 +3,7 @@
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
 
-1. Remote Nvim - Remote development in Neovim|remote-nvim-remote-nvim---remote-development-in-neovim|
+1. Remote Nvim                                       |remote-nvim-remote-nvim|
   - Demo                                                    |remote-nvim-demo|
   - Requirements                                    |remote-nvim-requirements|
   - Features                                            |remote-nvim-features|
@@ -14,7 +14,7 @@ Table of Contents                              *remote-nvim-table-of-contents*
   - Credits                                              |remote-nvim-credits|
 
 ==============================================================================
-1. Remote Nvim - Remote development in Neovim*remote-nvim-remote-nvim---remote-development-in-neovim*
+1. Remote Nvim                                       *remote-nvim-remote-nvim*
 
 **remote-nvim.nvim** brings the Remote development using SSH
 <https://code.visualstudio.com/docs/remote/ssh> in VSCode to Neovim. If you use
