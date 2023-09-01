@@ -6,6 +6,8 @@ on:  # yamllint disable-line rule:truthy
     paths: [scripts/neovim_install.sh]
   pull_request:
     paths: [scripts/neovim_install.sh]
+  schedule:
+    - cron: 23 11 * * *
 concurrency:
   group: |
     ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
