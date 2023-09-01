@@ -1,4 +1,4 @@
-# 🚀 Remote Nvim - Remote development in Neovim
+# 🚀 Remote Nvim
 
 **remote-nvim.nvim** brings the [Remote development using SSH](https://code.visualstudio.com/docs/remote/ssh)
 in VSCode to Neovim. If you use this plugin along with [devpod](https://github.com/loft-sh/devpod),
