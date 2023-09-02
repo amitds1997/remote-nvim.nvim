@@ -1,0 +1,23 @@
+---
+name: CI
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: |
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rhysd/action-setup-vim@v1
+        name: Install Neovim
+        with:
+          neovim: true
+      - name: Run tests
+        run: make test
+        timeout-minutes: 1
