@@ -40,5 +40,5 @@ luac.out
 *.x86_64
 *.hex
 
-# luarc.json
-.luarc.json
+# Ignore tests directory that we generate
+.tests/
