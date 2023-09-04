@@ -12,6 +12,20 @@ function M.append_tty_data_to_buffer(data_bufr, tty_data)
   return data_bufr
 end
 
+---Get user input
+---@param label string Label for the input box
+---@param input_type? prompt_type What kind of value would be typed as input
+---@return string response User response
+function M.get_user_input(label, input_type)
+  input_type = input_type or "plain"
+
+  if input_type == "secret" then
+    return vim.fn.inputsecret(label)
+  else
+    return vim.fn.input(label)
+  end
+end
+
 ---Generate host identifer using host and port on host
 ---@param host string Host name to be connected to
 ---@param conn_opts string Connection options required for connecting to host

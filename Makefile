@@ -14,5 +14,6 @@ install-hooks:
 check:
 	pre-commit run --all-files
 
+.PHONY: clean
 clean:
 	rm -rf .tests/

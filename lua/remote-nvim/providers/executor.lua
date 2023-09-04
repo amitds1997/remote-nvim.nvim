@@ -31,18 +31,18 @@ function Executor:reset()
 end
 
 ---Upload data to the host
----@param localSourcePath string Local path from which data would be uploaded
+---@param localSrcPath string Local path from which data would be uploaded
 ---@param remoteDestPath string Path on host where data would be uploaded
 ---@param cb? function Callback to call on upload completion
-function Executor:upload(localSourcePath, remoteDestPath, cb)
+function Executor:upload(localSrcPath, remoteDestPath, cb)
   error("Not implemented")
 end
 
 ---Download data from host
----@param remoteSourcePath string Remote path where data is located
+---@param remoteSrcPath string Remote path where data is located
 ---@param localDestPath string Local path where data will be downloaded
 ---@param cb function Callback to call on download completion
-function Executor:download(remoteSourcePath, localDestPath, cb)
+function Executor:download(remoteSrcPath, localDestPath, cb)
   error("Not implemented")
 end
 

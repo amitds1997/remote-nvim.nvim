@@ -9,7 +9,7 @@ local logger = utils.logger
 ---@class NeovimSSHProvider
 ---@field remote_host string Remote host to connect to
 ---@field connection_options string Connection options needed to connect to remote host
----@field ssh_executor SSHRemoteExecutor Executor over which jobs will be executed
+---@field ssh_executor SSHExecutor Executor over which jobs will be executed
 ---@field remote_neovim_home string Remote path on which remote neovim will install things
 ---@field unique_host_identifier string Unique identifier for the host
 ---@field workspace_config WorkspaceConfig Workspace config for remote host
@@ -57,7 +57,7 @@ function NeovimSSHProvider:new(host, connection_options)
     instance.connection_options = ""
   end
   instance.connection_options = SSHUtils.clean_up_conn_opts(instance.remote_host, instance.connection_options)
-  instance.ssh_executor = SSHExecutor:new(instance.remote_host, instance.connection_options)
+  instance.ssh_executor = SSHExecutor(instance.remote_host, instance.connection_options)
 
   -- Neovim configuration variables
   instance.remote_neovim_home = RemoteNeovimConfig.config.remote_neovim_install_home
@@ -102,7 +102,7 @@ end
 ---@return os_type os_name Name of the OS running on remote host
 function NeovimSSHProvider:detect_remote_os()
   self:run_command("uname", "Determining OS type...")
-  local stdout_lines = self.ssh_executor:get_stdout()
+  local stdout_lines = self.ssh_executor:job_stdout()
   local remote_os = stdout_lines[#stdout_lines]
 
   -- If we know the OS, we set it
@@ -219,7 +219,7 @@ end
 ---@async
 function NeovimSSHProvider:verify_connection()
   self:run_command('echo "OK"', "Checking if remote host is reachable...")
-  if self.ssh_executor.exit_code ~= 0 then
+  if self.ssh_executor:last_job_status() ~= 0 then
     self.notifier:stop("Remote host is not reachable", "error")
     -- If we are not able to connect to the remote host, there is no session possible
     RemoteNeovimConfig.sessions[self.unique_host_identifier] = nil
@@ -311,7 +311,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
       .. " -l "
       .. utils.path_join(self.remote_is_windows, self.remote_scripts_path, "free_port_finder.lua")
     self:run_command(free_port_cmd, "Searching for free port on remote machine")
-    local free_port_output = self.ssh_executor:get_stdout()
+    local free_port_output = self.ssh_executor:job_stdout()
     self.remote_free_port = free_port_output[#free_port_output]
 
     -- Find free port on our local server
@@ -321,7 +321,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
 
     -- Setup SSH port forwarding connection options
     local forwarded_ports = self.local_free_port .. ":localhost:" .. self.remote_free_port
-    local port_forward_ssh_opts = self.connection_options .. " -t -L " .. forwarded_ports
+    local port_forwarding_conn_opts = "-t -L " .. forwarded_ports
 
     -- Generate remote server launch command
     local remote_port_forwarding_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
@@ -336,7 +336,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
     -- Launch remote server and port forward to local
     local p = coroutine.create(function()
       self.notifier:notify("Starting remote neovim server along with port forwarding")
-      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forward_ssh_opts, function()
+      self.ssh_executor:run_command(remote_port_forwarding_cmd, port_forwarding_conn_opts, function()
         self:reset()
       end)
     end)
@@ -344,7 +344,7 @@ function NeovimSSHProvider:handle_remote_server_launch()
     if not success then
       print("Coroutine failed because " .. err)
     end
-    self.remote_port_forwarding_job_id = self.ssh_executor.job_id
+    self.remote_port_forwarding_job_id = self.ssh_executor._job_id
     self.notifier:stop("Remote server launch completed")
   end
 
@@ -463,7 +463,9 @@ function NeovimSSHProvider:get_user_selection(choices, input_opts, cb)
       self.notifier:stop("Setup cancelled", "warn")
       return
     end
-    cb(choice)
+    utils.run_code_in_coroutine(function(c)
+      cb(c)
+    end)
     if co then
       coroutine.resume(co)
     end
@@ -620,7 +622,7 @@ function NeovimSSHProvider:run_command(command, desc)
 end
 
 function NeovimSSHProvider:_handle_job_completion(desc)
-  if self.ssh_executor.exit_code == 0 then
+  if self.ssh_executor:last_job_status() == 0 then
     self.notifier:notify(desc .. " completed")
   else
     local notification_msg = desc .. " failed. Run :RemoteLog for more details"
@@ -629,7 +631,7 @@ function NeovimSSHProvider:_handle_job_completion(desc)
     self.notifier:notify_once(notification_msg, "error")
 
     self.is_setup_running = false
-    logger.fmt_error("%s command failed to execute on remote host %s", self.ssh_executor.complete_cmd, self.remote_host)
+    logger.fmt_error("%s failed to execute on remote host %s", desc, self.remote_host)
     error(([['%s' job failed while running.]]):format(desc))
   end
 end

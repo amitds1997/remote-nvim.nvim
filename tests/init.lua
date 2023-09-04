@@ -9,7 +9,8 @@ end
 function M.load(plugin)
   local name = plugin:match(".*/(.*)")
   local package_root = M.root(".tests/site/pack/deps/start/")
-  if not vim.loop.fs_stat(package_root .. name) then
+  local uv = vim.fn.has("0.10") and vim.uv or vim.loop
+  if not uv.fs_stat(package_root .. name) then
     print("Installing " .. plugin)
     vim.fn.mkdir(package_root, "p")
     vim.fn.system({
@@ -26,14 +27,13 @@ function M.setup()
   vim.cmd([[set runtimepath=$VIMRUNTIME]])
   vim.opt.runtimepath:append(M.root())
   vim.opt.packpath = { M.root(".tests/site") }
-  M.load("nvim-lua/plenary.nvim")
-  vim.env.XDG_CONFIG_HOME = M.root(".tests/config")
-  vim.env.XDG_DATA_HOME = M.root(".tests/data")
-  vim.env.XDG_STATE_HOME = M.root(".tests/state")
-  vim.env.XDG_CACHE_HOME = M.root(".tests/cache")
-end
 
-vim.o.swapfile = false
-_G.__TEST = true
+  M.load("MunifTanjim/nui.nvim")
+  M.load("nvim-lua/plenary.nvim")
+  M.load("rcarriga/nvim-notify")
+  M.load("nvim-telescope/telescope.nvim")
+
+  require("remote-nvim").setup()
+end
 
 M.setup()
