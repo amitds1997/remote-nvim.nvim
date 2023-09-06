@@ -8,7 +8,7 @@
 ---@field _job_id integer|nil Job ID of the current job
 ---@field _job_exit_code integer|nil Exit code of the job on the executor
 ---@field _job_stdout string[] Job output (if job is running)
-Executor = require("remote-nvim.providers.middleclass")("Executor")
+local Executor = require("remote-nvim.providers.middleclass")("Executor")
 
 ---Initialize executor instance
 ---@param host string Host name

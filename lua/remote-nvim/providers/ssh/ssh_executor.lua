@@ -7,7 +7,7 @@
 ---@field _ssh_prompts RemoteNeovimSSHPrompts[] SSH prompts registered for processing for input
 ---@field _job_stdout_processed_idx number Last index processed by output processor
 ---@field _job_prompt_responses table<string,string> Responses for prompts provided by user during the job
-SSHExecutor = require("remote-nvim.providers.executor"):subclass("SSHExecutor")
+local SSHExecutor = require("remote-nvim.providers.executor"):subclass("SSHExecutor")
 
 ---Initialize SSH executor instance
 ---@param host string Host name
