@@ -42,7 +42,7 @@ describe("Provider", function()
       provider.unique_host_id = "localhost:3011"
       provider.provider_type = "test-provider"
 
-      detect_remote_os_stub = stub(provider, "detect_remote_os")
+      detect_remote_os_stub = stub(provider, "get_remote_os")
       get_remote_neovim_version_preference_stub = stub(provider, "get_remote_neovim_version_preference")
 
       host_record_exists_stub.returns(true)
@@ -176,6 +176,66 @@ describe("Provider", function()
       assert
         .stub(notifier_stub).was
         .called_with(provider.notifier, ("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
+    end)
+  end)
+
+  describe("should handle option selection correctly", function()
+    local get_selection_stub, provider, notifier_stub
+    before_each(function()
+      provider = Provider("localhost")
+      notifier_stub = stub(provider.notifier, "notify")
+      get_selection_stub = stub(require("remote-nvim.providers.utils"), "get_selection")
+    end)
+
+    it("when no options are selected", function()
+      get_selection_stub.returns(nil)
+      local co = coroutine.create(function()
+        provider:get_selection({}, {})
+      end)
+      coroutine.resume(co)
+      assert
+        .stub(notifier_stub).was
+        .called_with(provider.notifier, "No selection made. Setup cancelled", vim.log.levels.WARN, true)
+    end)
+
+    it("when choice selection is done", function()
+      local choice = "choice"
+      get_selection_stub.returns(choice)
+      assert.equals(provider:get_selection({}, {}), choice)
+    end)
+  end)
+
+  describe("should handle remote OS detection correctly", function()
+    local provider, output_stub, selection_stub
+
+    before_each(function()
+      provider = Provider("localhost")
+      _ = stub(provider.notifier, "notify")
+      _ = stub(provider, "run_command")
+      output_stub = stub(provider.executor, "job_stdout")
+      selection_stub = stub(provider, "get_selection")
+    end)
+
+    it("when output is not correct", function()
+      output_stub.returns({})
+      selection_stub.returns("Linux")
+      assert.equals(provider:get_remote_os(), "Linux")
+    end)
+
+    it("when it is Linux OS", function()
+      output_stub.returns({ "Linux" })
+      assert.equals(provider:get_remote_os(), "Linux")
+    end)
+
+    it("when it is MacOS", function()
+      output_stub.returns({ "Darwin" })
+      assert.equals(provider:get_remote_os(), "macOS")
+    end)
+
+    it("when it is any another OS", function()
+      output_stub.returns({ "Windows" })
+      selection_stub.returns("Windows")
+      assert.equals(provider:get_remote_os(), "Windows")
     end)
   end)
 end)

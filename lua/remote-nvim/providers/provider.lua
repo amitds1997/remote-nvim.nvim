@@ -85,7 +85,7 @@ function Provider:_setup_workspace_variables()
 
   -- Gather remote OS information
   if self.workspace_config.os == nil then
-    remote_nvim.host_workspace_config:update_host_record(self.unique_host_id, "os", self:detect_remote_os())
+    remote_nvim.host_workspace_config:update_host_record(self.unique_host_id, "os", self:get_remote_os())
   end
 
   -- Set variables from the fetched configuration
@@ -127,11 +127,80 @@ function Provider:get_unique_host_id()
   error("Not implemented")
 end
 
-function Provider:detect_remote_os() end
+function Provider:get_remote_os()
+  if self._remote_os == nil then
+    self:run_command("uname", "Get remote OS")
+    local cmd_out_lines = self.executor:job_stdout()
+    local os = cmd_out_lines[#cmd_out_lines]
+
+    if os == "Linux" then
+      self._remote_os = os
+    elseif os == "Darwin" then
+      self._remote_os = "macOS"
+    else
+      local os_choices = {
+        "Linux",
+        "macOS",
+        "Windows",
+      }
+      self._remote_os = self:get_selection(os_choices, {
+        prompt = ("Choose remote OS (found OS '%s'): "):format(os),
+        format_item = function(item)
+          return ("Remote host is running %s"):format(item)
+        end,
+      })
+    end
+
+    self.notifier:notify(("OS is %s"):format(self._remote_os), vim.log.levels.INFO, true)
+  end
+
+  return self._remote_os
+end
+
+---Get selection choice
+---@param choices string[]
+---@param selection_opts table
+---@return string selected_choice Selected choice
+function Provider:get_selection(choices, selection_opts)
+  local choice = require("remote-nvim.providers.utils").get_selection(choices, selection_opts)
+
+  -- If the choice fails, we cannot move further so we stop the coroutine executing
+  if choice == nil then
+    self.notifier:notify("No selection made. Setup cancelled", vim.log.levels.WARN, true)
+    local co = coroutine.running()
+    if co then
+      return coroutine.yield()
+    else
+      error("Choice is necessary to proceed.")
+    end
+  else
+    return choice
+  end
+end
 
 function Provider:verify_connection_to_host() end
 
-function Provider:get_remote_neovim_version_preference() end
+function Provider:get_remote_neovim_version_preference()
+  if self._remote_neovim_version == nil then
+    local valid_neovim_versions = require("remote-nvim.providers.utils").get_neovim_versions()
+
+    -- Get client version
+    local api_info = vim.version()
+    local client_version = "v" .. table.concat({ api_info.major, api_info.minor, api_info.patch }, ".")
+
+    self._remote_neovim_version = self:get_selection(valid_neovim_versions, {
+      prompt = "What Neovim version should be installed on remote host?",
+      format_item = function(ver)
+        if ver == client_version then
+          return "Install Neovim " .. ver .. " (Your client version)"
+        end
+        return "Install Neovim " .. ver
+      end,
+    })
+  end
+
+  return self._remote_neovim_version
+end
 
 function Provider:get_neovim_config_upload_preference() end
 
