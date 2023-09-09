@@ -108,15 +108,13 @@ end
 function Notifier:notify(msg, level, stop_notification)
   stop_notification = stop_notification or false
 
-  if self.current_notification ~= nil then
-    if stop_notification then
-      self:_stop_persistent_notification(msg, level)
-    else
-      self.current_notification = notify(self:_format_msg(msg), level or vim.log.levels.INFO, {
-        replace = self.current_notification,
-        hide_from_history = self.hide_from_history,
-      })
-    end
+  if stop_notification then
+    self:_stop_persistent_notification(msg, level)
+  elseif self.current_notification ~= nil then
+    self.current_notification = notify(self:_format_msg(msg), level or vim.log.levels.INFO, {
+      replace = self.current_notification,
+      hide_from_history = self.hide_from_history,
+    })
   else
     self:_start_persistent_notification(msg, level)
   end

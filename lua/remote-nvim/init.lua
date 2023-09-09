@@ -3,6 +3,7 @@ local util = require("remote-nvim.utils")
 local M = {}
 
 M.version = "0.0.1" -- x-release-please-version
+M.MIN_NEOVIM_VERSION = "v0.8.0"
 
 ---@class RemoteNeovimConfig
 ---@field ssh_config RemoteNeovimSSHConfig
