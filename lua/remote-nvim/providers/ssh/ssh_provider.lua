@@ -1,8 +1,10 @@
 ---@class SSHProvider: Provider
 ---@field host string Name of the host
 ---@field conn_opts string Connection options
-local SSHExecutor = require("remote-nvim.providers.ssh.ssh_executor")
 local SSHProvider = require("remote-nvim.providers.provider"):subclass("SSHProvider")
+
+local Notifier = require("remote-nvim.providers.notifier")
+local SSHExecutor = require("remote-nvim.providers.ssh.ssh_executor")
 
 ---Initialize SSH provider instance
 ---@param host string
@@ -12,15 +14,18 @@ function SSHProvider:initialize(host, conn_opts)
 
   self.conn_opts = self:_cleanup_conn_options(self.conn_opts)
   self.executor = SSHExecutor(self.host, self.conn_opts)
-  self.unique_host_id = self:get_unique_host_id()
+  self.unique_host_id = self:_get_unique_host_id()
   self.provider_type = "ssh"
+  self.notifier = Notifier({
+    title = ("Remote Nvim: %s"):format(self.unique_host_id),
+  })
 
   self:_setup_workspace_variables()
 end
 
 ---Generate host identifer using host and port on host
 ---@return string host_id Unique identifier created by combining host and port information
-function SSHProvider:get_unique_host_id()
+function SSHProvider:_get_unique_host_id()
   local port = self.conn_opts:match("-p%s*(%d+)")
   return port ~= nil and ("%s:%s"):format(self.host, port) or self.host
 end

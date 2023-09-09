@@ -50,7 +50,7 @@ end
 ---@param command string Command to run on the remote host
 ---@param cb? function Callback to call on job completion
 function Executor:run_command(command, cb)
-  error("Not implemented")
+  return self:run_executor_job(command, cb)
 end
 
 ---@protected

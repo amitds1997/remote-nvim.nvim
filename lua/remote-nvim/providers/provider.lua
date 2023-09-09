@@ -21,6 +21,9 @@
 ---@field _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 local Provider = require("remote-nvim.providers.middleclass")("Provider")
 
+local Executor = require("remote-nvim.providers.executor")
+local Notifier = require("remote-nvim.providers.notifier")
+
 ---Create new provider instance
 ---@param host string
 ---@param conn_opts? string|table
@@ -38,6 +41,13 @@ function Provider:initialize(host, conn_opts)
   -- These should be overriden in implementing classes
   self.unique_host_id = nil
   self.provider_type = nil
+  self.executor = Executor()
+  self.notifier = Notifier({
+    title = "Remote Nvim",
+  })
+
+  -- Call these functions after initialization
+  -- self:_setup_workspace_variables()
 end
 
 ---Clean up connection options
@@ -128,5 +138,20 @@ function Provider:get_neovim_config_upload_preference() end
 function Provider:launch_neovim() end
 
 function Provider:clean_up_remote_host() end
+
+---Run command over executor
+---@param command string
+---@param desc string Description of the command running
+---@param close_notification boolean Should notification be closed
+function Provider:run_command(command, desc, close_notification)
+  self.notifier:notify(desc)
+  self.executor:run_command(command, function()
+    if self.executor:last_job_status() ~= 0 then
+      self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
+    else
+      self.notifier:notify(("'%s' succeeded."):format(desc), vim.log.levels.INFO, close_notification)
+    end
+  end)
+end
 
 return Provider
