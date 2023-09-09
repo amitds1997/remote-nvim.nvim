@@ -181,7 +181,11 @@ function Provider:get_selection(choices, selection_opts)
   end
 end
 
-function Provider:verify_connection_to_host() end
+function Provider:verify_connection_to_host()
+  self:run_command("echo 'OK'", "Check host connection")
+  self.notifier:notify("Successfully connected to remote host", vim.log.levels.INFO, true)
+  return true
+end
 
 function Provider:get_remote_neovim_version_preference()
   if self._remote_neovim_version == nil then
