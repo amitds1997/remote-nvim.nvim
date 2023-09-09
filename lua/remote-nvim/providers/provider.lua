@@ -23,6 +23,7 @@ local Provider = require("remote-nvim.providers.middleclass")("Provider")
 
 local Executor = require("remote-nvim.providers.executor")
 local Notifier = require("remote-nvim.providers.notifier")
+local provider_utils = require("remote-nvim.providers.utils")
 local remote_nvim = require("remote-nvim")
 
 ---Create new provider instance
@@ -72,7 +73,7 @@ function Provider:_setup_workspace_variables()
       remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
       config_copy = nil,
       client_auto_start = nil,
-      workspace_id = require("remote-nvim.utils").generate_random_string(10),
+      workspace_id = utils.generate_random_string(10),
     })
   end
   self.workspace_config = remote_nvim.host_workspace_config:get_workspace_config(self.unique_host_id)
@@ -165,11 +166,11 @@ end
 ---@param selection_opts table
 ---@return string selected_choice Selected choice
 function Provider:get_selection(choices, selection_opts)
-  local choice = require("remote-nvim.providers.utils").get_selection(choices, selection_opts)
+  local choice = provider_utils.get_selection(choices, selection_opts)
 
   -- If the choice fails, we cannot move further so we stop the coroutine executing
   if choice == nil then
-    self.notifier:notify("No selection made. Setup cancelled", vim.log.levels.WARN, true)
+    self.notifier:notify("No selection made", vim.log.levels.WARN, true)
     local co = coroutine.running()
     if co then
       return coroutine.yield()
@@ -184,12 +185,11 @@ end
 function Provider:verify_connection_to_host()
   self:run_command("echo 'OK'", "Check host connection")
   self.notifier:notify("Successfully connected to remote host", vim.log.levels.INFO, true)
-  return true
 end
 
 function Provider:get_remote_neovim_version_preference()
   if self._remote_neovim_version == nil then
-    local valid_neovim_versions = require("remote-nvim.providers.utils").get_neovim_versions()
+    local valid_neovim_versions = provider_utils.get_neovim_versions()
 
     -- Get client version
     local api_info = vim.version()
@@ -240,7 +240,31 @@ end
 
 function Provider:launch_neovim() end
 
-function Provider:clean_up_remote_host() end
+function Provider:clean_up_remote_host()
+  provider_utils.run_code_in_coroutine(function()
+    self:verify_connection_to_host()
+    local deletion_choices = {
+      "Delete neovim workspace (Choose if multiple people use the same user account)",
+      "Delete remote neovim from remote host (Nuke it!)",
+    }
+
+    local cleanup_choice = self:get_selection(deletion_choices, {
+      prompt = "Choose what should be cleaned up?",
+    })
+    if cleanup_choice == deletion_choices[1] then
+      self:run_command(
+        ("rm -rf %s"):format(self._remote_workspace_id_path),
+        "Delete remote nvim workspace from remote host"
+      )
+    elseif cleanup_choice == deletion_choices[2] then
+      self:run_command(("rm -rf %s"):format(self._remote_neovim_home), "Delete remote nvim from remote host")
+    end
+
+    self.notifier:notify("Cleanup on remote host completed")
+  end)
+
+  remote_nvim.host_workspace_config:delete_workspace(self.unique_host_id)
+end
 
 ---Run command over executor
 ---@param command string

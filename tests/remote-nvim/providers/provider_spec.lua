@@ -2,6 +2,7 @@ describe("Provider", function()
   local remote_nvim = require("remote-nvim")
   local Provider = require("remote-nvim.providers.provider")
   local stub = require("luassert.stub")
+  local match = require("luassert.match")
 
   describe("should handle array-type connections options", function()
     it("when it is not empty", function()
@@ -193,9 +194,7 @@ describe("Provider", function()
         provider:get_selection({}, {})
       end)
       coroutine.resume(co)
-      assert
-        .stub(notifier_stub).was
-        .called_with(provider.notifier, "No selection made. Setup cancelled", vim.log.levels.WARN, true)
+      assert.stub(notifier_stub).was.called_with(provider.notifier, "No selection made", vim.log.levels.WARN, true)
     end)
 
     it("when choice selection is done", function()
@@ -285,6 +284,44 @@ describe("Provider", function()
       assert.equals(provider:get_neovim_config_upload_preference(), false)
 
       assert.stub(update_host_record_stub).was.not_called()
+    end)
+  end)
+
+  describe("should handle remote cleanup correctly", function()
+    local provider, selection_stub, run_command_stub
+
+    before_each(function()
+      provider = Provider("localhost")
+      _ = stub(remote_nvim.host_workspace_config, "delete_workspace")
+      run_command_stub = stub(provider, "run_command")
+      selection_stub = stub(provider, "get_selection")
+      _ = stub(provider, "verify_connection_to_host")
+    end)
+
+    it("when asked to cleanup remote workspace", function()
+      local workspace_path = "~/.remote-nvim/workspaces/abc"
+      selection_stub.returns("Delete neovim workspace (Choose if multiple people use the same user account)")
+      provider._remote_workspace_id_path = workspace_path
+
+      provider:clean_up_remote_host()
+      assert
+        .stub(run_command_stub).was
+        .called_with(
+          match.is_ref(provider),
+          "rm -rf ~/.remote-nvim/workspaces/abc",
+          "Delete remote nvim workspace from remote host"
+        )
+    end)
+
+    it("when asked to cleanup remote workspace", function()
+      local remote_home = "~/.remote-nvim"
+      selection_stub.returns("Delete remote neovim from remote host (Nuke it!)")
+      provider._remote_neovim_home = remote_home
+
+      provider:clean_up_remote_host()
+      assert
+        .stub(run_command_stub).was
+        .called_with(match.is_ref(provider), "rm -rf ~/.remote-nvim", "Delete remote nvim from remote host")
     end)
   end)
 end)

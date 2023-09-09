@@ -174,21 +174,6 @@ M.get_neovim_versions = function()
   return available_versions
 end
 
----Run code in a coroutine
----@param fn function Function to run inside the coroutine
----@param err_fn? function Error handling function
-M.run_code_in_coroutine = function(fn, err_fn)
-  local co = coroutine.create(fn)
-  local success, err = coroutine.resume(co)
-  if not success then
-    if err_fn ~= nil then
-      err_fn(err)
-    else
-      error("Coroutine failed with error " .. err)
-    end
-  end
-end
-
 ---Convert list into equally spaced columns of given number ready to be printed
 ---@param token_arr string[] List containing the string tokens
 ---@param num number Number of columns to be created
