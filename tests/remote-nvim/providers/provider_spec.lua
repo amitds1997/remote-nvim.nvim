@@ -150,4 +150,32 @@ describe("Provider", function()
       end)
     end)
   end)
+
+  describe("should handle running commands", function()
+    local provider, notifier_stub
+    local desc = "Test command"
+
+    before_each(function()
+      provider = Provider("localhost")
+      notifier_stub = stub(provider.notifier, "notify")
+    end)
+
+    it("when they succeed", function()
+      provider:run_command("uname", desc)
+
+      assert
+        .stub(notifier_stub).was
+        .called_with(provider.notifier, ("'%s' succeeded."):format(desc), vim.log.levels.INFO)
+    end)
+
+    it("when they fail", function()
+      assert.error_matches(function()
+        provider:run_command("unme", desc)
+      end, ("'%s' failed"):format(desc))
+
+      assert
+        .stub(notifier_stub).was
+        .called_with(provider.notifier, ("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
+    end)
+  end)
 end)

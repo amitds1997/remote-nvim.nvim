@@ -142,16 +142,17 @@ function Provider:clean_up_remote_host() end
 ---Run command over executor
 ---@param command string
 ---@param desc string Description of the command running
----@param close_notification boolean Should notification be closed
-function Provider:run_command(command, desc, close_notification)
-  self.notifier:notify(desc)
-  self.executor:run_command(command, function()
-    if self.executor:last_job_status() ~= 0 then
-      self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
-    else
-      self.notifier:notify(("'%s' succeeded."):format(desc), vim.log.levels.INFO, close_notification)
-    end
-  end)
+function Provider:run_command(command, desc)
+  self.notifier:notify(("'%s' running..."):format(desc))
+  self.executor:run_command(command)
+
+  -- Handle errors
+  if self.executor:last_job_status() ~= 0 then
+    self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
+    error(("'%s' failed"):format(desc))
+  else
+    self.notifier:notify(("'%s' succeeded."):format(desc), vim.log.levels.INFO)
+  end
 end
 
 return Provider
