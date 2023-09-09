@@ -23,6 +23,7 @@ local Provider = require("remote-nvim.providers.middleclass")("Provider")
 
 local Executor = require("remote-nvim.providers.executor")
 local Notifier = require("remote-nvim.providers.notifier")
+local remote_nvim = require("remote-nvim")
 
 ---Create new provider instance
 ---@param host string
@@ -48,6 +49,8 @@ function Provider:initialize(host, conn_opts)
 
   -- Call these functions after initialization
   -- self:_setup_workspace_variables()
+
+  self.workspace_config = {}
 end
 
 ---Clean up connection options
@@ -59,7 +62,7 @@ end
 
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
-  local remote_nvim, utils = require("remote-nvim"), require("remote-nvim.utils")
+  local utils = require("remote-nvim.utils")
 
   if not remote_nvim.host_workspace_config:host_record_exists(self.unique_host_id) then
     remote_nvim.host_workspace_config:add_host_config(self.unique_host_id, {
@@ -202,7 +205,34 @@ function Provider:get_remote_neovim_version_preference()
   return self._remote_neovim_version
 end
 
-function Provider:get_neovim_config_upload_preference() end
+function Provider:get_neovim_config_upload_preference()
+  if self.workspace_config.config_copy == nil then
+    local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
+      prompt = ("Copy config at '%s' to remote host? "):format(remote_nvim.config.neovim_user_config_path),
+    })
+
+    -- Handle choices
+    if choice == "Yes (always)" then
+      self.workspace_config.config_copy = true
+      remote_nvim.host_workspace_config:update_host_record(
+        self.unique_host_id,
+        "config_copy",
+        self.workspace_config.config_copy
+      )
+    elseif choice == "No (never)" then
+      self.workspace_config.config_copy = false
+      remote_nvim.host_workspace_config:update_host_record(
+        self.unique_host_id,
+        "config_copy",
+        self.workspace_config.config_copy
+      )
+    else
+      self.workspace_config.config_copy = (choice == "Yes" and true) or false
+    end
+  end
+
+  return self.workspace_config.config_copy
+end
 
 function Provider:launch_neovim() end
 

@@ -1,4 +1,5 @@
 describe("Provider", function()
+  local remote_nvim = require("remote-nvim")
   local Provider = require("remote-nvim.providers.provider")
   local stub = require("luassert.stub")
 
@@ -28,7 +29,6 @@ describe("Provider", function()
   end)
 
   describe("should handle setting workspace variables", function()
-    local remote_nvim = require("remote-nvim")
     local provider, host_record_exists_stub, add_host_config_stub, get_workspace_config_stub, update_host_record_stub, detect_remote_os_stub, get_remote_neovim_version_preference_stub
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
@@ -236,6 +236,55 @@ describe("Provider", function()
       output_stub.returns({ "Windows" })
       selection_stub.returns("Windows")
       assert.equals(provider:get_remote_os(), "Windows")
+    end)
+  end)
+
+  describe("should handle config copy correctly", function()
+    local provider, selection_stub, update_host_record_stub
+
+    before_each(function()
+      provider = Provider("localhost")
+      selection_stub = stub(provider, "get_selection")
+      update_host_record_stub = stub(remote_nvim.host_workspace_config, "update_host_record")
+    end)
+
+    it("when the value is already known", function()
+      for _, value in ipairs({ true, false }) do
+        provider.workspace_config.config_copy = value
+        assert.equals(provider:get_neovim_config_upload_preference(), value)
+      end
+    end)
+
+    it("when the choice is 'Yes (always)'", function()
+      selection_stub.returns("Yes (always)")
+      assert.equals(provider:get_neovim_config_upload_preference(), true)
+
+      assert
+        .stub(update_host_record_stub).was
+        .called_with(remote_nvim.host_workspace_config, provider.unique_host_id, "config_copy", true)
+    end)
+
+    it("when the choice is 'No (never)'", function()
+      selection_stub.returns("No (never)")
+      assert.equals(provider:get_neovim_config_upload_preference(), false)
+
+      assert
+        .stub(update_host_record_stub).was
+        .called_with(remote_nvim.host_workspace_config, provider.unique_host_id, "config_copy", false)
+    end)
+
+    it("when the choice is 'Yes'", function()
+      selection_stub.returns("Yes")
+      assert.equals(provider:get_neovim_config_upload_preference(), true)
+
+      assert.stub(update_host_record_stub).was.not_called()
+    end)
+
+    it("when the choice is 'No'", function()
+      selection_stub.returns("No")
+      assert.equals(provider:get_neovim_config_upload_preference(), false)
+
+      assert.stub(update_host_record_stub).was.not_called()
     end)
   end)
 end)
