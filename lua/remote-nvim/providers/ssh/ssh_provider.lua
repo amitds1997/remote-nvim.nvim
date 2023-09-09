@@ -10,7 +10,7 @@ local SSHProvider = require("remote-nvim.providers.provider"):subclass("SSHProvi
 function SSHProvider:initialize(host, conn_opts)
   SSHProvider.super:initialize(host, conn_opts)
 
-  self.conn_opts = self:_cleanup_ssh_conn_options(self.conn_opts)
+  self.conn_opts = self:_cleanup_conn_options(self.conn_opts)
   self.executor = SSHExecutor(self.host, self.conn_opts)
   self.unique_host_id = self:get_unique_host_id()
   self.provider_type = "ssh"
@@ -28,7 +28,7 @@ end
 ---Cleanup SSH options
 ---@param conn_opts string
 ---@return string cleaned_conn_opts Cleaned up SSH options
-function SSHProvider:_cleanup_ssh_conn_options(conn_opts)
+function SSHProvider:_cleanup_conn_options(conn_opts)
   local host_expression = self.host:gsub("([^%w])", "%%%1")
   return vim.trim(
     conn_opts

@@ -33,7 +33,7 @@ function Provider:initialize(host, conn_opts)
   else
     conn_opts = conn_opts or ""
   end
-  self.conn_opts = self:_cleanup_ssh_conn_options(conn_opts)
+  self.conn_opts = self:_cleanup_conn_options(conn_opts)
 
   -- These should be overriden in implementing classes
   self.unique_host_id = nil
@@ -43,30 +43,30 @@ end
 ---Clean up connection options
 ---@param conn_opts string
 ---@return string cleaned_conn_opts
-function Provider:_cleanup_ssh_conn_options(conn_opts)
+function Provider:_cleanup_conn_options(conn_opts)
   return conn_opts
 end
 
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
-  local remote_nvim_config, utils = require("remote-nvim"), require("remote-nvim.utils")
+  local remote_nvim, utils = require("remote-nvim"), require("remote-nvim.utils")
 
-  if not remote_nvim_config.host_workspace_config:host_record_exists(self.unique_host_id) then
-    remote_nvim_config.host_workspace_config:add_host_config(self.unique_host_id, {
+  if not remote_nvim.host_workspace_config:host_record_exists(self.unique_host_id) then
+    remote_nvim.host_workspace_config:add_host_config(self.unique_host_id, {
       provider = self.provider_type,
       host = self.host,
       connection_options = self.conn_opts,
-      remote_neovim_home = remote_nvim_config.config.remote_neovim_install_home,
+      remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
       config_copy = nil,
       client_auto_start = nil,
       workspace_id = require("remote-nvim.utils").generate_random_string(10),
     })
   end
-  self.workspace_config = remote_nvim_config.host_workspace_config:get_workspace_config(self.unique_host_id)
+  self.workspace_config = remote_nvim.host_workspace_config:get_workspace_config(self.unique_host_id)
 
   -- Gather remote neovim version, if not setup
   if self.workspace_config.neovim_version == nil then
-    remote_nvim_config.host_workspace_config:update_host_record(
+    remote_nvim.host_workspace_config:update_host_record(
       self.unique_host_id,
       "neovim_version",
       self:get_remote_neovim_version_preference()
@@ -75,7 +75,7 @@ function Provider:_setup_workspace_variables()
 
   -- Gather remote OS information
   if self.workspace_config.os == nil then
-    remote_nvim_config.host_workspace_config:update_host_record(self.unique_host_id, "os", self:detect_remote_os())
+    remote_nvim.host_workspace_config:update_host_record(self.unique_host_id, "os", self:detect_remote_os())
   end
 
   -- Set variables from the fetched configuration
@@ -90,8 +90,8 @@ function Provider:_setup_workspace_variables()
   self._remote_scripts_path = utils.path_join(self._remote_is_windows, self._remote_neovim_home, "scripts")
   self._remote_neovim_install_script_path = utils.path_join(
     self._remote_is_windows,
-    self._remote_neovim_home,
-    vim.fn.fnamemodify(self._local_neovim_install_script_path, ":t")
+    self._remote_scripts_path,
+    vim.fn.fnamemodify(remote_nvim.config.neovim_install_script_path, ":t")
   )
   self._remote_workspace_id_path =
     utils.path_join(self._remote_is_windows, self._remote_workspaces_path, self._remote_workspace_id)
