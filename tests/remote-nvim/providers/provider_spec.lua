@@ -339,4 +339,45 @@ describe("Provider", function()
     assert.equals(provider._remote_server_process_id, nil)
     assert.equals(provider._local_free_port, nil)
   end)
+
+  describe("should correctly determine if remote server is running", function()
+    local provider
+
+    before_each(function()
+      provider = Provider("localhost")
+    end)
+
+    it("when we do not have a registered process id", function()
+      provider._remote_server_process_id = nil
+      assert.equals(provider:_remote_server_already_running(), false)
+    end)
+
+    describe("when we have a registered process", function()
+      local job_wait_stub
+
+      before_each(function()
+        provider._remote_server_process_id = 21
+        job_wait_stub = stub(vim.fn, "jobwait")
+      end)
+
+      it("and it is still running", function()
+        job_wait_stub.returns({ -1 })
+        assert.equals(provider:_remote_server_already_running(), true)
+      end)
+
+      it("but it is no longer running", function()
+        job_wait_stub.returns({ 0 })
+        assert.equals(provider:_remote_server_already_running(), false)
+      end)
+    end)
+  end)
+
+  it("should provide correct remote neovim binary path", function()
+    local provider = Provider("localhost")
+    provider._remote_is_windows = false
+    provider._remote_neovim_home = "~/.remote-nvim"
+    provider._remote_neovim_version = "stable"
+
+    assert.equals(provider:_remote_neovim_binary_path(), "~/.remote-nvim/nvim-downloads/stable/bin/nvim")
+  end)
 end)

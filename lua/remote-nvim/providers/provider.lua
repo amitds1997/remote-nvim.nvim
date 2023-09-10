@@ -239,7 +239,20 @@ function Provider:get_neovim_config_upload_preference()
   return self.workspace_config.config_copy
 end
 
-function Provider:launch_neovim() end
+function Provider:_remote_server_already_running()
+  return self._remote_server_process_id ~= nil and (vim.fn.jobwait({ self._remote_server_process_id }, 0)[1] == -1)
+end
+
+function Provider:_remote_neovim_binary_path()
+  return utils.path_join(
+    self._remote_is_windows,
+    self._remote_neovim_home,
+    "nvim-downloads",
+    self._remote_neovim_version,
+    "bin",
+    "nvim"
+  )
+end
 
 function Provider:clean_up_remote_host()
   provider_utils.run_code_in_coroutine(function()
