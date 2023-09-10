@@ -25,6 +25,7 @@ local Executor = require("remote-nvim.providers.executor")
 local Notifier = require("remote-nvim.providers.notifier")
 local provider_utils = require("remote-nvim.providers.utils")
 local remote_nvim = require("remote-nvim")
+local utils = require("remote-nvim.utils")
 
 ---Create new provider instance
 ---@param host string
@@ -48,10 +49,8 @@ function Provider:initialize(host, conn_opts)
     title = "Remote Nvim",
   })
 
-  -- Call these functions after initialization
-  -- self:_setup_workspace_variables()
-
   self.workspace_config = {}
+  self:reset()
 end
 
 ---Clean up connection options
@@ -63,8 +62,6 @@ end
 
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
-  local utils = require("remote-nvim.utils")
-
   if not remote_nvim.host_workspace_config:host_record_exists(self.unique_host_id) then
     remote_nvim.host_workspace_config:add_host_config(self.unique_host_id, {
       provider = self.provider_type,
@@ -78,6 +75,11 @@ function Provider:_setup_workspace_variables()
   end
   self.workspace_config = remote_nvim.host_workspace_config:get_workspace_config(self.unique_host_id)
 
+  -- Gather remote OS information
+  if self.workspace_config.os == nil then
+    remote_nvim.host_workspace_config:update_host_record(self.unique_host_id, "os", self:get_remote_os())
+  end
+
   -- Gather remote neovim version, if not setup
   if self.workspace_config.neovim_version == nil then
     remote_nvim.host_workspace_config:update_host_record(
@@ -85,11 +87,6 @@ function Provider:_setup_workspace_variables()
       "neovim_version",
       self:get_remote_neovim_version_preference()
     )
-  end
-
-  -- Gather remote OS information
-  if self.workspace_config.os == nil then
-    remote_nvim.host_workspace_config:update_host_record(self.unique_host_id, "os", self:get_remote_os())
   end
 
   -- Set variables from the fetched configuration
@@ -113,7 +110,7 @@ function Provider:_setup_workspace_variables()
   local xdg_variables = {
     config = ".config",
     cache = ".cache",
-    share = utils.path_join(self._remote_is_windows, ".local", "share"),
+    data = utils.path_join(self._remote_is_windows, ".local", "share"),
     state = utils.path_join(self._remote_is_windows, ".local", "state"),
   }
   for xdg_name, path in pairs(xdg_variables) do
@@ -123,7 +120,11 @@ function Provider:_setup_workspace_variables()
   self._remote_neovim_config_path = utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim")
 end
 
-function Provider:reset() end
+function Provider:reset()
+  self._setup_running = false
+  self._remote_server_process_id = nil
+  self._local_free_port = nil
+end
 
 ---Generate host identifer using host and port on host
 ---@return string host_id Unique identifier for the host
@@ -266,20 +267,28 @@ function Provider:clean_up_remote_host()
   remote_nvim.host_workspace_config:delete_workspace(self.unique_host_id)
 end
 
----Run command over executor
----@param command string
----@param desc string Description of the command running
-function Provider:run_command(command, desc)
-  self.notifier:notify(("'%s' running..."):format(desc))
-  self.executor:run_command(command)
-
-  -- Handle errors
+function Provider:_handle_job_completion(desc)
   if self.executor:last_job_status() ~= 0 then
     self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
     error(("'%s' failed"):format(desc))
   else
     self.notifier:notify(("'%s' succeeded."):format(desc), vim.log.levels.INFO)
   end
+end
+
+---Run command over executor
+---@param command string
+---@param desc string Description of the command running
+function Provider:run_command(command, desc, ...)
+  self.notifier:notify(("'%s' running..."):format(desc))
+  self.executor:run_command(command, ...)
+  self:_handle_job_completion(desc)
+end
+
+function Provider:upload(local_path, remote_path, desc)
+  self.notifier:notify(("'%s' upload running..."):format(desc))
+  self.executor:upload(local_path, remote_path)
+  self:_handle_job_completion(desc)
 end
 
 return Provider

@@ -11,5 +11,4 @@
 - [ ] Add unit tests
 - [ ] Add CONTRIBUTING.md
 - [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
-- [ ] Fix broken `vim.ui.select`
-- [ ] Write test for _setup_workspace_variables
+- [ ] Fix in-editor local client launch

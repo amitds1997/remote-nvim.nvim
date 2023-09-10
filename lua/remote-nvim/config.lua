@@ -78,16 +78,16 @@ function NeovimRemoteWorkspaceConfig:get_workspace_config(host_id)
     self.data[host_id] = {}
   end
 
-  -- Create a proxy table that synchronizes changes to the JSON file
-  local proxy = setmetatable({}, {
-    __index = self.data[host_id],
-    __newindex = function(_, key, value)
-      self.data[host_id][key] = value
-      self:write_file()
-    end,
-  })
+  -- -- Create a proxy table that synchronizes changes to the JSON file
+  -- local proxy = setmetatable({}, {
+  --   __index = self.data[host_id],
+  --   __newindex = function(_, key, value)
+  --     self.data[host_id][key] = value
+  --     self:write_file()
+  --   end,
+  -- })
 
-  return proxy
+  return self.data[host_id]
 end
 
 function NeovimRemoteWorkspaceConfig:delete_workspace(host_id)

@@ -27,6 +27,7 @@ function M.setup()
   vim.cmd([[set runtimepath=$VIMRUNTIME]])
   vim.opt.runtimepath:append(M.root())
   vim.opt.packpath = { M.root(".tests/site") }
+  vim.opt.termguicolors = true
 
   M.load("MunifTanjim/nui.nvim")
   M.load("nvim-lua/plenary.nvim")
@@ -34,6 +35,9 @@ function M.setup()
   M.load("nvim-telescope/telescope.nvim")
 
   require("remote-nvim").setup()
+  require("notify").setup({
+    background_colour = "#000000",
+  })
 end
 
 M.setup()

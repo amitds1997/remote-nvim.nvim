@@ -135,7 +135,7 @@ describe("Provider", function()
         assert.equals(provider._remote_xdg_config_path, ("%s/workspaces/%s/.config"):format(remote_home, workspace_id))
         assert.equals(provider._remote_xdg_cache_path, ("%s/workspaces/%s/.cache"):format(remote_home, workspace_id))
         assert.equals(
-          provider._remote_xdg_share_path,
+          provider._remote_xdg_data_path,
           ("%s/workspaces/%s/.local/share"):format(remote_home, workspace_id)
         )
         assert.equals(
@@ -152,26 +152,29 @@ describe("Provider", function()
     end)
   end)
 
-  describe("should handle running commands", function()
-    local provider, notifier_stub
+  describe("should handle running commands and uploads correctly", function()
+    local provider, notifier_stub, executor_job_status_stub
     local desc = "Test command"
 
     before_each(function()
       provider = Provider("localhost")
       notifier_stub = stub(provider.notifier, "notify")
+      executor_job_status_stub = stub(provider.executor, "last_job_status")
     end)
 
     it("when they succeed", function()
-      provider:run_command("uname", desc)
-
+      executor_job_status_stub.returns(0)
+      provider:_handle_job_completion(desc)
       assert
         .stub(notifier_stub).was
         .called_with(provider.notifier, ("'%s' succeeded."):format(desc), vim.log.levels.INFO)
     end)
 
     it("when they fail", function()
+      executor_job_status_stub.returns(23)
+
       assert.error_matches(function()
-        provider:run_command("unme", desc)
+        provider:_handle_job_completion(desc)
       end, ("'%s' failed"):format(desc))
 
       assert
@@ -323,5 +326,17 @@ describe("Provider", function()
         .stub(run_command_stub).was
         .called_with(match.is_ref(provider), "rm -rf ~/.remote-nvim", "Delete remote nvim from remote host")
     end)
+  end)
+
+  it("should handle resetting correctly", function()
+    local provider = Provider("localhost")
+    provider._setup_running = true
+    provider._remote_server_process_id = 2100
+    provider._local_free_port = 52212
+
+    provider:reset()
+    assert.equals(provider._setup_running, false)
+    assert.equals(provider._remote_server_process_id, nil)
+    assert.equals(provider._local_free_port, nil)
   end)
 end)

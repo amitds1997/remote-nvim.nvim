@@ -60,22 +60,6 @@ function M.generate_random_string(length)
   return random_string
 end
 
----Get an ephemeral free port on the local machine
----@return string port A free ephemeral port available for TCP connections
-function M.find_free_port()
-  local socket = vim.loop.new_tcp()
-
-  socket:bind("127.0.0.1", 0)
-  local result = socket.getsockname(socket)
-  socket:close()
-
-  if not result then
-    error("Failed to find a free port")
-  end
-
-  return tostring(result["port"])
-end
-
 ---Generate an identifier for a host given name and connection options
 ---@param host string Host name to be connected to
 ---@param conn_options string Connection options required for connecting to host

@@ -19,8 +19,6 @@ function SSHProvider:initialize(host, conn_opts)
   self.notifier = Notifier({
     title = ("Remote Nvim: %s"):format(self.unique_host_id),
   })
-
-  self:_setup_workspace_variables()
 end
 
 ---Generate host identifer using host and port on host
