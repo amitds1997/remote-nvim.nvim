@@ -31,7 +31,7 @@ local function select_ssh_host_from_workspace_config(opts)
 
   local previewer = previewers.new_buffer_previewer({
     define_preview = function(self, entry)
-      local host_config = workspace_config:get_workspace_config_data(entry.value)
+      local host_config = workspace_config:get_workspace_config(entry.value)
 
       -- Find the longest key length
       local max_key_length = 0
@@ -83,7 +83,7 @@ local function select_ssh_host_from_workspace_config(opts)
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
           local host_identifier = selection.value
-          local workspace_data = workspace_config:get_workspace_config_data(host_identifier)
+          local workspace_data = workspace_config:get_workspace_config(host_identifier)
           remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
             or RemoteNeovimSSHProvider:new(workspace_data.host, workspace_data.connection_options)
           remote_nvim.sessions[host_identifier]:set_up_remote()

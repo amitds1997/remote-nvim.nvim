@@ -18,7 +18,7 @@ function M.RemoteStart(opts)
   if host_identifier == "" then
     require("telescope").extensions["remote-nvim"].connect()
   else
-    local workspace_config = remote_nvim.host_workspace_config:get_workspace_config_data(host_identifier)
+    local workspace_config = remote_nvim.host_workspace_config:get_workspace_config(host_identifier)
     remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
       or remote_nvim_ssh_provider:new(workspace_config.host, workspace_config.connection_options)
     remote_nvim.sessions[host_identifier]:set_up_remote()
@@ -55,7 +55,7 @@ function M.RemoteCleanup(opts)
     error("Please pass only one parameter at a time")
   end
   for _, host_id in ipairs(host_ids) do
-    local workspace_config = remote_nvim.host_workspace_config:get_workspace_config_data(host_id)
+    local workspace_config = remote_nvim.host_workspace_config:get_workspace_config(host_id)
 
     remote_nvim.sessions[host_id] = remote_nvim.sessions[host_id]
       or remote_nvim_ssh_provider:new(workspace_config.host, workspace_config.connection_options)

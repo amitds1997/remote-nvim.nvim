@@ -78,15 +78,6 @@ function NeovimRemoteWorkspaceConfig:get_workspace_config(host_id)
     self.data[host_id] = {}
   end
 
-  -- -- Create a proxy table that synchronizes changes to the JSON file
-  -- local proxy = setmetatable({}, {
-  --   __index = self.data[host_id],
-  --   __newindex = function(_, key, value)
-  --     self.data[host_id][key] = value
-  --     self:write_file()
-  --   end,
-  -- })
-
   return self.data[host_id]
 end
 
@@ -135,24 +126,6 @@ function NeovimRemoteWorkspaceConfig:add_host_config(host_id, workspace_config)
     return true
   end
   return false
-end
-
----Get workspace data for a host
----@param host_id string Host identifier to be fetched
----@return WorkspaceConfig config Workspace config for the host
-function NeovimRemoteWorkspaceConfig:get_workspace_config_data(host_id)
-  return self.data[host_id]
-end
-
-function NeovimRemoteWorkspaceConfig:print_workspace_config()
-  print("Workspace Configuration:")
-  for host_id, config in pairs(self.data) do
-    print("Host ID:", host_id)
-    for key, value in pairs(config) do
-      print("  " .. key .. ":", value)
-    end
-    print()
-  end
 end
 
 return NeovimRemoteWorkspaceConfig
