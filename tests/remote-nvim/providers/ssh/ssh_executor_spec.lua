@@ -112,7 +112,7 @@ describe("SSH Executor", function()
   end)
 
   describe("should correctly handle prompt", function()
-    local pi = stub(require("remote-nvim.providers.ssh.ssh_utils"), "get_user_input")
+    local pi = stub(require("remote-nvim.providers.utils"), "get_input")
     pi.returns("test")
     local chan_send = stub(vim.api, "nvim_chan_send")
 
@@ -138,7 +138,7 @@ describe("SSH Executor", function()
   end)
 
   describe("should correctly handle cached values", function()
-    local pi = stub(require("remote-nvim.providers.ssh.ssh_utils"), "get_user_input")
+    local pi = stub(require("remote-nvim.providers.utils"), "get_input")
     pi.returns("test")
     stub(vim.api, "nvim_chan_send")
 

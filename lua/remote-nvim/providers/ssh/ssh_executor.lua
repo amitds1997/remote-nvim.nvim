@@ -87,7 +87,7 @@ function SSHExecutor:_process_prompt(prompt)
     prompt_response = prompt.value
   else
     local label = prompt.input_prompt or ("Enter " .. prompt.match .. " ")
-    prompt_response = require("remote-nvim.providers.ssh.ssh_utils").get_user_input(label, prompt.type)
+    prompt_response = require("remote-nvim.providers.utils").get_input(label, prompt.type)
 
     -- Saving these prompt responses is handle in the job exit handler
     if prompt.value_type == "static" then

@@ -1,6 +1,20 @@
 local remote_neovim = require("remote-nvim")
 local M = {}
 
+---Get user input
+---@param input_label string Label for the input box
+---@param input_type? prompt_type What kind of value would be typed as input
+---@return string response User response
+function M.get_input(input_label, input_type)
+  input_type = input_type or "plain"
+
+  if input_type == "secret" then
+    return vim.fn.inputsecret(input_label)
+  else
+    return vim.fn.input(input_label)
+  end
+end
+
 ---Get selection handling coroutines
 ---@param choices string[]
 ---@param selection_opts table
