@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   release:
-    name: release
+    name: Generate release
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
