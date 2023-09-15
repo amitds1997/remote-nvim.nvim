@@ -61,7 +61,15 @@ M.default_opts = {
   remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
-    callback = nil,
+    callback = function(port, workspace_config)
+      require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), nil, {
+        on_exit_handler = function(_, exit_code)
+          if exit_code ~= 0 then
+            vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
+          end
+        end,
+      })
+    end,
     default_client_config = {
       col_percent = 0.9,
       row_percent = 0.9,

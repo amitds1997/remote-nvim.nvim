@@ -254,6 +254,193 @@ function Provider:_remote_neovim_binary_path()
   )
 end
 
+function Provider:_setup_remote()
+  if not self._setup_running then
+    self:verify_connection_to_host()
+
+    if not self:_remote_server_already_running() then
+      self._setup_running = true
+
+      -- Create necessary directories
+      local necessary_dirs = {
+        self._remote_workspaces_path,
+        self._remote_scripts_path,
+        self._remote_xdg_config_path,
+        self._remote_xdg_cache_path,
+        self._remote_xdg_state_path,
+        self._remote_xdg_data_path,
+      }
+      local mkdirs_cmds = {}
+      for _, dir in ipairs(necessary_dirs) do
+        table.insert(mkdirs_cmds, ("mkdir -p %s"):format(dir))
+      end
+      self:run_command(table.concat(mkdirs_cmds, " && "), "Create necessary directories")
+
+      -- Copy things required on remote
+      self:upload(
+        vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h"),
+        self._remote_neovim_home,
+        "Copy necessary files"
+      )
+
+      ---If we have custom scripts specified, copy them over
+      if remote_nvim.default_opts.neovim_install_script_path ~= remote_nvim.config.neovim_install_script_path then
+        self:upload(
+          remote_nvim.config.neovim_install_script_path,
+          self._remote_scripts_path,
+          "Copy user-specified files"
+        )
+      end
+
+      -- Set correct permissions and install Neovim
+      local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s]]):format(
+        self._remote_neovim_install_script_path,
+        self._remote_neovim_install_script_path,
+        self._remote_neovim_version,
+        self._remote_neovim_home
+      )
+      self:run_command(install_neovim_cmd, "Install Neovim if not exists")
+
+      -- Upload user neovim config, if necessary
+      if self:get_neovim_config_upload_preference() then
+        self:upload(remote_nvim.config.neovim_user_config_path, self._remote_xdg_config_path, "Copy user neovim config")
+      end
+
+      self._setup_running = false
+    end
+  else
+    self.notifier:notify_once(
+      "Another instance of setup is already running. Wait for it to complete.",
+      vim.log.levels.WARN
+    )
+  end
+end
+
+function Provider:_launch_remote_neovim_server()
+  if not self:_remote_server_already_running() then
+    -- Find free port on remote
+    local free_port_on_remote_cmd = ("%s -l %s"):format(
+      self:_remote_neovim_binary_path(),
+      utils.path_join(self._remote_is_windows, self._remote_scripts_path, "free_port_finder.lua")
+    )
+    self:run_command(free_port_on_remote_cmd, "Find free port on remote")
+    local remote_free_port_output = self.executor:job_stdout()
+    local remote_free_port = remote_free_port_output[#remote_free_port_output]
+
+    -- Find free port locally
+    self._local_free_port = provider_utils.find_free_port()
+
+    -- Launch Neovim server and port forward
+    local port_forward_opts = ([[-t -L %s:localhost:%s]]):format(self._local_free_port, remote_free_port)
+    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+      self._remote_xdg_config_path,
+      self._remote_xdg_data_path,
+      self._remote_xdg_state_path,
+      self._remote_xdg_cache_path,
+      self:_remote_neovim_binary_path(),
+      remote_free_port
+    )
+    provider_utils.run_code_in_coroutine(function()
+      self:run_command(remote_server_launch_cmd, "Launch remote server", port_forward_opts, function()
+        self:reset()
+      end)
+      self.notifier:notify("Remote server stopped", vim.log.levels.INFO, true)
+    end)
+    self._remote_server_process_id = self.executor._job_id
+    self.notifier:notify("Remote server launched", vim.log.levels.INFO, true)
+  end
+end
+
+function Provider:_wait_for_server_to_be_ready()
+  local cmd = ("nvim --server localhost:%s --remote-send ':echo<CR>'"):format(self._local_free_port)
+  local timeout = 20000 -- Wait for max 20 seconds for server to get ready
+
+  local timer = vim.loop.new_timer()
+  assert(timer ~= nil, "Timer object should not be nil")
+
+  local co = coroutine.running()
+  local function probe_server_readiness()
+    -- This is synchronous but that's fine because the command we are running should immediately return
+    local res = vim.fn.system(cmd)
+    if res == "" then
+      timer:stop()
+      timer:close()
+      if co ~= nil and coroutine.status(co) == "suspended" then
+        coroutine.resume(co)
+      end
+    else
+      vim.defer_fn(probe_server_readiness, 2000)
+      if co ~= nil and coroutine.status(co) == "running" then
+        coroutine.yield(co)
+      end
+    end
+  end
+
+  -- Start the timer
+  timer:start(timeout, 0, function()
+    self.notifier:notify(
+      ("Server did not come up on local in %s ms. Try again :("):format(timeout),
+      vim.log.levels.ERROR,
+      true
+    )
+    timer:stop()
+    timer:close()
+    error(("Server did not come up on local in %s ms. Try again :("):format(timeout))
+  end)
+  probe_server_readiness()
+end
+
+function Provider:_get_local_client_start_preference()
+  if self.workspace_config.client_auto_start == nil then
+    local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
+      prompt = "Start local client?",
+    })
+
+    -- Handle choices
+    if choice == "Yes (always)" then
+      self.workspace_config.client_auto_start = true
+      remote_nvim.host_workspace_config:update_host_record(
+        self.unique_host_id,
+        "client_auto_start",
+        self.workspace_config.client_auto_start
+      )
+    elseif choice == "No (never)" then
+      self.workspace_config.client_auto_start = false
+      remote_nvim.host_workspace_config:update_host_record(
+        self.unique_host_id,
+        "client_auto_start",
+        self.workspace_config.client_auto_start
+      )
+    else
+      self.workspace_config.client_auto_start = (choice == "Yes" and true) or false
+    end
+  end
+
+  return self.workspace_config.client_auto_start
+end
+
+function Provider:_launch_local_neovim_client()
+  if self:_get_local_client_start_preference() then
+    self:_wait_for_server_to_be_ready()
+
+    remote_nvim.config.local_client_config.callback(
+      self._local_free_port,
+      remote_nvim.host_workspace_config:get_workspace_config(self.unique_host_id)
+    )
+  else
+    self.notifier:notify("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO, true)
+  end
+end
+
+function Provider:launch_neovim()
+  provider_utils.run_code_in_coroutine(function()
+    self:_setup_workspace_variables()
+    self:_setup_remote()
+    self:_launch_remote_neovim_server()
+    self:_launch_local_neovim_client()
+  end)
+end
+
 function Provider:clean_up_remote_host()
   provider_utils.run_code_in_coroutine(function()
     self:verify_connection_to_host()
