@@ -60,7 +60,7 @@ M.default_opts = {
   remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
-    callback = function(port, workspace_config)
+    callback = function(port, _)
       require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), nil, {
         on_exit_handler = function(_, exit_code)
           if exit_code ~= 0 then

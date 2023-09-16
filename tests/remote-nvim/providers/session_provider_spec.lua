@@ -1,4 +1,5 @@
 describe("Session provider", function()
+  local assert = require("luassert")
   local stub = require("luassert.stub")
   local SessionProvider = require("remote-nvim.providers.session_provider")
   local session_provider
@@ -22,7 +23,7 @@ describe("Session provider", function()
 
   it("should error if an unknown provider type is provided", function()
     assert.error_matches(function()
-      local provider = session_provider:get_or_initialize_session("unknown", "localhost", "-p 9111")
+      session_provider:get_or_initialize_session("unknown", "localhost", "-p 9111")
     end, "Unknown provider type")
   end)
 

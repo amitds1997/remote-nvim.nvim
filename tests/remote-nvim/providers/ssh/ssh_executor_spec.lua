@@ -1,3 +1,4 @@
+local assert = require("luassert")
 local stub = require("luassert.stub")
 
 describe("SSH Executor", function()

@@ -1,4 +1,4 @@
-local match = require("luassert.match")
+local assert = require("luassert")
 local stub = require("luassert.stub")
 local utils = require("remote-nvim.providers.utils")
 

@@ -1,5 +1,6 @@
 describe("SSH Provider", function()
   local SSHProvider = require("remote-nvim.providers.ssh.ssh_provider")
+  local assert = require("luassert")
   local stub = require("luassert.stub")
   local remote_nvim = require("remote-nvim")
   local host_record_exists_stub, get_workspace_config_stub

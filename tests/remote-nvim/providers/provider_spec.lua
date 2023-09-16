@@ -1,4 +1,5 @@
 describe("Provider", function()
+  local assert = require("luassert")
   local remote_nvim = require("remote-nvim")
   local Provider = require("remote-nvim.providers.provider")
   local stub = require("luassert.stub")

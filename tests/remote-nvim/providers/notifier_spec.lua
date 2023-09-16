@@ -1,5 +1,6 @@
 describe("Notifier service", function()
   local Notifier = require("remote-nvim.providers.notifier")
+  local assert = require("luassert")
   local stub = require("luassert.stub")
   local spy = require("luassert.spy")
   local mock = require("luassert.mock")
@@ -17,7 +18,7 @@ describe("Notifier service", function()
   end)
 
   describe("should handle notification flow correctly", function()
-    local start_notification_stub, stop_notification_stub, update_notification_stub
+    local start_notification_stub, stop_notification_stub
 
     before_each(function()
       stop_notification_stub = stub(notifier, "_stop_persistent_notification")

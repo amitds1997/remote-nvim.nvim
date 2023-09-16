@@ -1,4 +1,6 @@
+local assert = require("luassert")
 local spy = require("luassert.spy")
+local stub = require("luassert.stub")
 
 describe("Base executor", function()
   local Executor = require("remote-nvim.providers.executor")
@@ -8,9 +10,9 @@ describe("Base executor", function()
   local base_executor
   before_each(function()
     base_executor = Executor("example-host", "")
-    base_executor.upload = function(...) end
-    base_executor.download = function(...) end
-    base_executor.run_command = function(...) end
+    stub(base_executor, "upload")
+    stub(base_executor, "download")
+    stub(base_executor, "run_command")
   end)
 
   it("should fail if job status is called before running job", function()

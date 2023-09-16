@@ -34,6 +34,7 @@ end
 ---@param localSrcPath string Local path from which data would be uploaded
 ---@param remoteDestPath string Path on host where data would be uploaded
 ---@param cb? function Callback to call on upload completion
+-- selene: allow(unused_variable)
 function Executor:upload(localSrcPath, remoteDestPath, cb)
   error("Not implemented")
 end
@@ -42,6 +43,7 @@ end
 ---@param remoteSrcPath string Remote path where data is located
 ---@param localDestPath string Local path where data will be downloaded
 ---@param cb function Callback to call on download completion
+-- selene: allow(unused_variable)
 function Executor:download(remoteSrcPath, localDestPath, cb)
   error("Not implemented")
 end
