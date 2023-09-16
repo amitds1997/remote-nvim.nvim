@@ -116,6 +116,18 @@ function NeovimRemoteWorkspaceConfig:update_host_record(host_id, key, value)
   return true
 end
 
+---Get workspaces
+---@param workspace_provider_type? string Provider type for the workspace
+function NeovimRemoteWorkspaceConfig:get_all_workspaces(workspace_provider_type)
+  if workspace_provider_type == nil then
+    return self.data
+  else
+    return vim.tbl_filter(function(workspace)
+      return workspace.type == workspace_provider_type
+    end, self.data)
+  end
+end
+
 ---Add new host workspace configuration to the config
 ---@param host_id string Host identifier for the remote host
 ---@param workspace_config WorkspaceConfig Workspace configuration for the host
