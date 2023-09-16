@@ -24,7 +24,7 @@ M.MIN_NEOVIM_VERSION = "v0.8.0"
 ---@class RemoteNeovimSSHPrompts
 ---@field match string Text that input should be matched against to identify need for stdin
 ---@field type prompt_type Is the input to be provided a secret?
----@field input_prompt string What should be shown as input prompt when requesting user for input
+---@field input_prompt? string What should be shown as input prompt when requesting user for input
 ---@field value_type prompt_value_type Is the prompt value going to remain same throughout a session, if yes, it can be cached
 ---@field value string Default value to fill in for the prompt, if any
 
@@ -44,7 +44,6 @@ M.default_opts = {
       {
         match = "password:",
         type = "secret",
-        input_prompt = "Enter password: ",
         value_type = "static",
         value = "",
       },

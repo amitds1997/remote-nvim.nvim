@@ -19,7 +19,7 @@
 ---@field _remote_xdg_cache_path  string Get workspace specific XDG cache path
 ---@field _remote_neovim_config_path  string Get neovim configuration path on the remote host
 ---@field _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
-local Provider = require("remote-nvim.providers.middleclass")("Provider")
+local Provider = require("remote-nvim.middleclass")("Provider")
 
 local Executor = require("remote-nvim.providers.executor")
 local Notifier = require("remote-nvim.providers.notifier")

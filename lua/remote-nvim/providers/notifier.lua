@@ -7,7 +7,7 @@ local notify = require("notify")
 ---@field current_notification table Current notification object
 ---@field current_spinner_idx number Current icon index in spinner frame
 ---@field close_icons NotificationCloseIcons Notification close icons
-local Notifier = require("remote-nvim.providers.middleclass")("Notifier")
+local Notifier = require("remote-nvim.middleclass")("Notifier")
 
 ---@class NotificationCloseIcons
 ---@field success string Icon for success

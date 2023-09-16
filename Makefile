@@ -17,3 +17,6 @@ check:
 .PHONY: clean
 clean:
 	rm -rf .tests/
+
+.PHONY: clean-test
+clean-test: clean test
