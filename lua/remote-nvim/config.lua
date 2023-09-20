@@ -5,7 +5,12 @@ function ConfigProvider:initialize()
   self._config_path = Path:new({ vim.fn.stdpath("data"), require("remote-nvim.utils").PLUGIN_NAME, "workspace.json" })
   self._config_path:touch({ mode = 493, parents = true }) -- Ensure that the path exists
 
-  self._config_data = vim.json.decode(self._config_path:read())
+  local config_data = self._config_path:read()
+  if config_data == "" then
+    self._config_data = {}
+  else
+    self._config_data = vim.json.decode(config_data)
+  end
 end
 
 function ConfigProvider:get_workspace_config(host_id, provider_type)
