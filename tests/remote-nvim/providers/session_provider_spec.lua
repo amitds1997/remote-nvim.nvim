@@ -29,10 +29,12 @@ describe("Session provider", function()
 
   it("should return saved configurations", function()
     session_provider.remote_workspaces_config = vim.empty_dict()
-    local get_workspaces_stub = stub(session_provider.remote_workspaces_config, "get_all_workspaces")
+    local get_workspace_config_stub = stub(session_provider.remote_workspaces_config, "get_workspace_config")
     local provider_type = "ssh"
 
     session_provider:get_saved_host_configs(provider_type)
-    assert.stub(get_workspaces_stub).was.called_with(session_provider.remote_workspaces_config, provider_type)
+    assert
+      .stub(get_workspace_config_stub).was
+      .called_with(session_provider.remote_workspaces_config, nil, provider_type)
   end)
 end)

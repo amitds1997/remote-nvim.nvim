@@ -1,4 +1,3 @@
-local RemoteHostWorkspaceConfig = require("remote-nvim.config")
 local util = require("remote-nvim.utils")
 local M = {}
 
@@ -97,13 +96,9 @@ M.setup = function(opts)
     return vim.notify("remote-nvim.nvim requires Neovim >= 0.8.0", vim.log.levels.ERROR, { title = "remote-nvim.nvim" })
   end
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
-  M.config.ssh_config.ssh_binary = util.find_binary(M.config.ssh_config.ssh_binary)
-  M.config.ssh_config.scp_binary = util.find_binary(M.config.ssh_config.scp_binary)
-
-  M.host_workspace_config = RemoteHostWorkspaceConfig:new()
-  ---@type table<string,NeovimSSHProvider>
-  M.sessions = {}
-
+  M.config.ssh_config.ssh_binary = M.config.ssh_config.ssh_binary
+  M.config.ssh_config.scp_binary = M.config.ssh_config.scp_binary
+  M.session_provider = require("remote-nvim.providers.session_provider"):new()
   require("remote-nvim.command")
 end
 

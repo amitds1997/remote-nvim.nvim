@@ -3,13 +3,11 @@ describe("SSH Provider", function()
   local assert = require("luassert")
   local stub = require("luassert.stub")
   local remote_nvim = require("remote-nvim")
-  local host_record_exists_stub, get_workspace_config_stub
+  local get_workspace_config_stub
 
   before_each(function()
-    host_record_exists_stub = stub(remote_nvim.host_workspace_config, "host_record_exists")
-    get_workspace_config_stub = stub(remote_nvim.host_workspace_config, "get_workspace_config")
+    get_workspace_config_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "get_workspace_config")
 
-    host_record_exists_stub.returns(true)
     get_workspace_config_stub.returns({
       provider = "ssh",
       host = "localhost",

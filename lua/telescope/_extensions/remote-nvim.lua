@@ -170,7 +170,7 @@ The current known host parser only deals with exact host matches. If you have sp
 You get the gist. Just remove `ssh` from the beginning of what you would normally type, and you should be golden.]],
     },
   }
-  if not (#remote_nvim.host_workspace_config:get_all_host_ids() > 0) then
+  if not (#remote_nvim.session_provider.remote_workspaces_config:get_all_host_ids() > 0) then
     table.remove(possible_ssh_options, 1)
   end
 

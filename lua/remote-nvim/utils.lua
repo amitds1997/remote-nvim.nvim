@@ -35,13 +35,7 @@ end
 ---Get the root path of the plugin
 ---@return string root_dir Returns the path to the plugin's root
 function M.get_package_root()
-  local root_dir
-  for dir in vim.fs.parents(debug.getinfo(1).source:sub(2)) do
-    if vim.fn.isdirectory(M.path_join(M.is_windows, dir, "lua", "remote-nvim")) == 1 then
-      root_dir = dir
-    end
-  end
-  return root_dir
+  return vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h")
 end
 
 ---Generate a random string of given length
