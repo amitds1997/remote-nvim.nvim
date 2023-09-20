@@ -9,8 +9,8 @@ local SSHExecutor = require("remote-nvim.providers.ssh.ssh_executor")
 ---Initialize SSH provider instance
 ---@param host string
 ---@param conn_opts? string|table
-function SSHProvider:initialize(host, conn_opts)
-  SSHProvider.super:initialize(host, conn_opts)
+function SSHProvider:init(host, conn_opts)
+  SSHProvider.super:init(host, conn_opts)
 
   self.conn_opts = self:_cleanup_conn_options(self.conn_opts)
   self.executor = SSHExecutor(self.host, self.conn_opts)

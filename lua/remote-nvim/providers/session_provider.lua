@@ -1,7 +1,7 @@
 ---@class SessionProvider: Object
 local SessionProvider = require("remote-nvim.middleclass")("SessionProvider")
 
-function SessionProvider:initialize()
+function SessionProvider:init()
   self.sessions = {}
   self.remote_workspaces_config = require("remote-nvim.config"):new()
 end

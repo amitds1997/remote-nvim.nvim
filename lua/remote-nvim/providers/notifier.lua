@@ -30,7 +30,7 @@ local default_notification_opts = {
 
 ---Initialize a notification handler
 ---@param opts NotifierOpts Notification options
-function Notifier:initialize(opts)
+function Notifier:init(opts)
   ---@type NotifierOpts
   opts = vim.tbl_deep_extend("force", default_notification_opts, opts or {})
 

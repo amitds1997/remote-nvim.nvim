@@ -12,8 +12,8 @@ local SSHExecutor = require("remote-nvim.providers.executor"):subclass("SSHExecu
 ---Initialize SSH executor instance
 ---@param host string Host name
 ---@param conn_opts string Connection options
-function SSHExecutor:initialize(host, conn_opts)
-  SSHExecutor.super:initialize(host, conn_opts)
+function SSHExecutor:init(host, conn_opts)
+  SSHExecutor.super:init(host, conn_opts)
 
   self.ssh_conn_opts = self.conn_opts
   self.scp_conn_opts = self.conn_opts == "" and "-r" or self.conn_opts:gsub("%-p", "-P") .. " -r"

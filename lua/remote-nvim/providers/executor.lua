@@ -13,7 +13,7 @@ local Executor = require("remote-nvim.middleclass")("Executor")
 ---Initialize executor instance
 ---@param host string Host name
 ---@param conn_opts string Connection options (passed when connecting)
-function Executor:initialize(host, conn_opts)
+function Executor:init(host, conn_opts)
   self.host = host
   self.conn_opts = conn_opts
 

@@ -31,7 +31,7 @@ local utils = require("remote-nvim.utils")
 ---Create new provider instance
 ---@param host string
 ---@param conn_opts? string|table
-function Provider:initialize(host, conn_opts)
+function Provider:init(host, conn_opts)
   assert(host ~= nil, "Host must be provided")
   self.host = host
 
