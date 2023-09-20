@@ -1,5 +1,5 @@
 local constants = require("remote-nvim.constants")
-local util = require("remote-nvim.utils")
+local utils = require("remote-nvim.utils")
 local M = {}
 
 ---@class RemoteNeovimConfig
@@ -53,8 +53,13 @@ M.default_opts = {
       },
     },
   },
-  neovim_install_script_path = util.path_join(util.is_windows, util.get_package_root(), "scripts", "neovim_install.sh"),
-  remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
+  neovim_install_script_path = utils.path_join(
+    utils.is_windows,
+    utils.get_package_root(),
+    "scripts",
+    "neovim_install.sh"
+  ),
+  remote_neovim_install_home = utils.path_join(utils.is_windows, "~", ".remote-nvim"),
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
     callback = function(port, _)
@@ -85,7 +90,7 @@ M.default_opts = {
     },
   },
   log = {
-    filepath = util.path_join(util.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),
+    filepath = utils.path_join(utils.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),
     level = vim.log.levels.INFO,
     max_size = 1024 * 1024 * 2, -- 2MB
   },
@@ -103,6 +108,8 @@ M.setup = function(opts)
   M.config.ssh_config.scp_binary = M.config.ssh_config.scp_binary
   M.session_provider = require("remote-nvim.providers.session_provider"):new()
   require("remote-nvim.command")
+
+  utils.truncate_log()
 end
 
 return M

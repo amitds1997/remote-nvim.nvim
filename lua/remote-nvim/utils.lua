@@ -143,4 +143,12 @@ M.generate_equally_spaced_columns = function(token_arr, num)
   return formatted_lines
 end
 
+M.truncate_log = function()
+  local remote_nvim = require("remote-nvim")
+  local stat = vim.loop.fs_stat(remote_nvim.config.log.filepath)
+  if stat and stat.size > remote_nvim.config.log.max_size then
+    io.open(remote_nvim.config.log.filepath, "w+"):close()
+  end
+end
+
 return M
