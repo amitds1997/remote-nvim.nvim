@@ -28,7 +28,6 @@ describe("Session provider", function()
   end)
 
   it("should return saved configurations", function()
-    session_provider.remote_workspaces_config = vim.empty_dict()
     local get_workspace_config_stub = stub(session_provider.remote_workspaces_config, "get_workspace_config")
     local provider_type = "ssh"
 
