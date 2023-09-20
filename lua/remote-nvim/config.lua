@@ -2,7 +2,8 @@ local ConfigProvider = require("remote-nvim.middleclass")("ConfigProvider")
 local Path = require("plenary.path")
 
 function ConfigProvider:initialize()
-  self._config_path = Path:new({ vim.fn.stdpath("data"), require("remote-nvim.utils").PLUGIN_NAME, "workspace.json" })
+  self._config_path =
+    Path:new({ vim.fn.stdpath("data"), require("remote-nvim.constants").PLUGIN_NAME, "workspace.json" })
   self._config_path:touch({ mode = 493, parents = true }) -- Ensure that the path exists
 
   local config_data = self._config_path:read()

@@ -1,4 +1,3 @@
-local remote_neovim = require("remote-nvim")
 local M = {}
 
 ---Get user input
@@ -67,7 +66,8 @@ function M.get_neovim_versions()
 
     if version ~= "stable" and version ~= "nightly" then
       local major, minor, patch = version:match("v(%d+)%.(%d+)%.(%d+)")
-      local target_major, target_minor, target_patch = remote_neovim.MIN_NEOVIM_VERSION:match("v(%d+)%.(%d+)%.(%d+)")
+      local target_major, target_minor, target_patch =
+        require("remote-nvim.constants").MIN_NEOVIM_VERSION:match("v(%d+)%.(%d+)%.(%d+)")
 
       major = tonumber(major)
       minor = tonumber(minor)

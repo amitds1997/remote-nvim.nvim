@@ -1,8 +1,6 @@
+local constants = require("remote-nvim.constants")
 local util = require("remote-nvim.utils")
 local M = {}
-
-M.version = "0.0.1" -- x-release-please-version
-M.MIN_NEOVIM_VERSION = "v0.8.0"
 
 ---@class RemoteNeovimConfig
 ---@field ssh_config RemoteNeovimSSHConfig
@@ -85,6 +83,11 @@ M.default_opts = {
         bot = "─",
       },
     },
+  },
+  log = {
+    filepath = util.path_join(util.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),
+    level = vim.log.levels.INFO,
+    max_size = 1024 * 1024 * 2, -- 2MB
   },
 }
 

@@ -1,4 +1,4 @@
-local remote_nvim = require("remote-nvim")
+local constants = require("remote-nvim.constants")
 local utils = require("remote-nvim.utils")
 local M = {}
 
@@ -12,11 +12,11 @@ local function verify_binary(binary_name)
 end
 
 function M.check()
-  vim.health.start(utils.PLUGIN_NAME)
+  vim.health.start(constants.PLUGIN_NAME)
   local required_binaries = {
     "curl",
-    remote_nvim.config.ssh_config.ssh_binary,
-    remote_nvim.config.ssh_config.scp_binary,
+    constants.config.ssh_config.ssh_binary,
+    constants.config.ssh_config.scp_binary,
   }
   for _, bin_name in ipairs(required_binaries) do
     verify_binary(bin_name)

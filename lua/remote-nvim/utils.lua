@@ -1,24 +1,20 @@
 local M = {}
-
----Name of the plugin
-M.PLUGIN_NAME = "remote-nvim.nvim"
----Minimum Neovim version for the plugin
-M.MIN_NEOVIM_VERSION = "v0.8.0"
----Log level
-M.LOG_LEVEL = vim.fn.getenv("REMOTE_NVIM_LOG_LEVEL")
-if M.LOG_LEVEL == vim.NIL then
-  M.LOG_LEVEL = "info"
-end
+local constants = require("remote-nvim.constants")
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 
-M.logger = require("plenary.log").new({
-  plugin = M.PLUGIN_NAME,
-  level = M.LOG_LEVEL,
-  use_console = false,
-  outfile = string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "cache" }), M.PLUGIN_NAME),
-})
+---Get logger
+function M.get_logger()
+  local remote_nvim = require("remote-nvim")
+
+  return require("plenary.log").new({
+    plugin = constants.PLUGIN_NAME,
+    level = remote_nvim.config.log.level,
+    use_console = false,
+    outfile = remote_nvim.config.log.filepath,
+  })
+end
 
 ---Find if provided binary exists or not
 ---@param binary string|string[] Name of the binary to search on the runtime path
@@ -54,28 +50,12 @@ function M.generate_random_string(length)
   return random_string
 end
 
----Generate an identifier for a host given name and connection options
----@param host string Host name to be connected to
----@param conn_options string Connection options required for connecting to host
----@return string host_identifier Unique identifier created by combining host and port information
-function M.get_host_identifier(host, conn_options)
-  local host_config_identifier = host
-  if conn_options ~= nil then
-    local port = conn_options:match("-p%s*(%d+)")
-    if port ~= nil then
-      host_config_identifier = host_config_identifier .. ":" .. port
-    end
-  end
-  return host_config_identifier
-end
-
 ---Split string into a table of strings using a separator.
 ---Credits: https://github.com/nvim-neo-tree/neo-tree.nvim/blob/main/lua/neo-tree/utils.lua#L776-L789
 ---@param inputString string The string to split.
----@param is_windows boolean Is the remote systems a windows machine
+---@param sep string Separator by which to split the string
 ---@return table table A table of strings.
-M.split = function(inputString, is_windows)
-  local sep = is_windows and "\\" or "/"
+M.split = function(inputString, sep)
   local fields = {}
 
   local pattern = string.format("([^%s]+)", sep)
@@ -107,49 +87,11 @@ M.path_join = function(is_windows, ...)
     if arg == "" and #all_parts == 0 and not is_windows then
       all_parts = { "" }
     else
-      local arg_parts = M.split(arg, is_windows)
+      local arg_parts = M.split(arg, path_separator)
       vim.list_extend(all_parts, arg_parts)
     end
   end
   return table.concat(all_parts, path_separator)
-end
-
----Get Neovim versions that satisfy the minimum neovim version constraint
-M.get_neovim_versions = function()
-  local res = require("plenary.curl").get("https://api.github.com/repos/neovim/neovim/releases", {
-    headers = {
-      accept = "application/vnd.github+json",
-    },
-  })
-
-  local available_versions = { "stable" }
-  ---@diagnostic disable-next-line: param-type-mismatch
-  for _, version_info in ipairs(vim.fn.json_decode(res.body)) do
-    local version = version_info["tag_name"]
-
-    if version ~= "stable" and version ~= "nightly" then
-      local major, minor, patch = version:match("v(%d+)%.(%d+)%.(%d+)")
-      local target_major, target_minor, target_patch = M.MIN_NEOVIM_VERSION:match("v(%d+)%.(%d+)%.(%d+)")
-
-      major = tonumber(major)
-      minor = tonumber(minor)
-      patch = tonumber(patch)
-
-      target_major = tonumber(target_major)
-      target_minor = tonumber(target_minor)
-      target_patch = tonumber(target_patch)
-
-      if
-        major > target_major
-        or (major == target_major and minor > target_minor)
-        or (major == target_major and minor == target_minor and patch >= target_patch)
-      then
-        table.insert(available_versions, version)
-      end
-    end
-  end
-  table.insert(available_versions, "nightly")
-  return available_versions
 end
 
 ---Convert list into equally spaced columns of given number ready to be printed
