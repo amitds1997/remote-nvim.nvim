@@ -64,7 +64,7 @@ end
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(remote_nvim_workspaces_config:get_workspace_config(self.unique_host_id)) then
-    remote_nvim_workspaces_config:add_host_config(self.unique_host_id, {
+    remote_nvim_workspaces_config:add_workspace_config(self.unique_host_id, {
       provider = self.provider_type,
       host = self.host,
       connection_options = self.conn_opts,
@@ -78,16 +78,16 @@ function Provider:_setup_workspace_variables()
 
   -- Gather remote OS information
   if self.workspace_config.os == nil then
-    remote_nvim_workspaces_config:update_host_record(self.unique_host_id, "os", self:get_remote_os())
+    remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
+      os = self:get_remote_os(),
+    })
   end
 
   -- Gather remote neovim version, if not setup
   if self.workspace_config.neovim_version == nil then
-    remote_nvim_workspaces_config:update_host_record(
-      self.unique_host_id,
-      "neovim_version",
-      self:get_remote_neovim_version_preference()
-    )
+    remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
+      neovim_version = self:get_remote_neovim_version_preference(),
+    })
   end
 
   -- Set variables from the fetched configuration
@@ -220,18 +220,14 @@ function Provider:get_neovim_config_upload_preference()
     -- Handle choices
     if choice == "Yes (always)" then
       self.workspace_config.config_copy = true
-      remote_nvim_workspaces_config:update_host_record(
-        self.unique_host_id,
-        "config_copy",
-        self.workspace_config.config_copy
-      )
+      remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
+        config_copy = self.workspace_config.config_copy,
+      })
     elseif choice == "No (never)" then
       self.workspace_config.config_copy = false
-      remote_nvim_workspaces_config:update_host_record(
-        self.unique_host_id,
-        "config_copy",
-        self.workspace_config.config_copy
-      )
+      remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
+        config_copy = self.workspace_config.config_copy,
+      })
     else
       self.workspace_config.config_copy = (choice == "Yes" and true) or false
     end
@@ -400,18 +396,14 @@ function Provider:_get_local_client_start_preference()
     -- Handle choices
     if choice == "Yes (always)" then
       self.workspace_config.client_auto_start = true
-      remote_nvim_workspaces_config:update_host_record(
-        self.unique_host_id,
-        "client_auto_start",
-        self.workspace_config.client_auto_start
-      )
+      remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
+        client_auto_start = self.workspace_config.client_auto_start,
+      })
     elseif choice == "No (never)" then
       self.workspace_config.client_auto_start = false
-      remote_nvim_workspaces_config:update_host_record(
-        self.unique_host_id,
-        "client_auto_start",
-        self.workspace_config.client_auto_start
-      )
+      remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
+        client_auto_start = self.workspace_config.client_auto_start,
+      })
     else
       self.workspace_config.client_auto_start = (choice == "Yes" and true) or false
     end

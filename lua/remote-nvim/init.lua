@@ -45,7 +45,6 @@ M.default_opts = {
       {
         match = "continue connecting (yes/no/[fingerprint])?",
         type = "plain",
-        input_prompt = "Do you want to continue connection (yes/no)? ",
         value_type = "static",
         value = "",
       },

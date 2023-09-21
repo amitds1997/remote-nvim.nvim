@@ -87,7 +87,7 @@ function SSHExecutor:_process_prompt(prompt)
     prompt_response = prompt.value
   else
     local job_output = self:job_stdout()
-    local label = prompt.input_prompt or job_output[#job_output]
+    local label = prompt.input_prompt or ("%s "):format(job_output[#job_output])
     prompt_response = require("remote-nvim.providers.utils").get_input(label, prompt.type)
 
     -- Saving these prompt responses is handle in the job exit handler

@@ -37,13 +37,14 @@ describe("Provider", function()
   end)
 
   describe("should handle setting workspace variables", function()
-    local add_host_config_stub, get_workspace_config_stub, update_host_record_stub, detect_remote_os_stub, get_remote_neovim_version_preference_stub
+    local add_workspace_config, get_workspace_config_stub, update_workspace_config_stub, detect_remote_os_stub, get_remote_neovim_version_preference_stub
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
     before_each(function()
-      add_host_config_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "add_host_config")
+      add_workspace_config = stub(remote_nvim.session_provider.remote_workspaces_config, "add_workspace_config")
       get_workspace_config_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "get_workspace_config")
-      update_host_record_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "update_host_record")
+      update_workspace_config_stub =
+        stub(remote_nvim.session_provider.remote_workspaces_config, "update_workspace_config")
 
       provider = Provider("localhost", { "-p", "3011" })
       provider.unique_host_id = "localhost:3011"
@@ -63,7 +64,7 @@ describe("Provider", function()
         neovim_version = "stable",
         os = "Linux",
       })
-      update_host_record_stub:clear()
+      update_workspace_config_stub:clear()
     end)
 
     it("by creating new workspace config record when does not exist", function()
@@ -71,7 +72,7 @@ describe("Provider", function()
 
       provider:_setup_workspace_variables()
       assert
-        .stub(add_host_config_stub).was
+        .stub(add_workspace_config).was
         .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, {
           provider = provider.provider_type,
           host = provider.host,
@@ -98,9 +99,13 @@ describe("Provider", function()
       detect_remote_os_stub.returns("Linux")
 
       provider:_setup_workspace_variables()
-      assert
-        .stub(update_host_record_stub).was
-        .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, "os", "Linux")
+      assert.stub(update_workspace_config_stub).was.called_with(
+        remote_nvim.session_provider.remote_workspaces_config,
+        provider.unique_host_id,
+        match.is_same({
+          os = "Linux",
+        })
+      )
     end)
 
     it("by setting up remote Neovim if not set", function()
@@ -118,9 +123,11 @@ describe("Provider", function()
       get_remote_neovim_version_preference_stub.returns("stable")
 
       provider:_setup_workspace_variables()
-      assert
-        .stub(update_host_record_stub).was
-        .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, "neovim_version", "stable")
+      assert.stub(update_workspace_config_stub).was.called_with(
+        remote_nvim.session_provider.remote_workspaces_config,
+        provider.unique_host_id,
+        match.is_same({ neovim_version = "stable" })
+      )
     end)
 
     describe("by correctly setting workspace variables", function()
@@ -245,11 +252,12 @@ describe("Provider", function()
   end)
 
   describe("should handle config copy correctly", function()
-    local selection_stub, update_host_record_stub
+    local selection_stub, update_workspace_config_stub
 
     before_each(function()
       selection_stub = stub(provider, "get_selection")
-      update_host_record_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "update_host_record")
+      update_workspace_config_stub =
+        stub(remote_nvim.session_provider.remote_workspaces_config, "update_workspace_config")
     end)
 
     it("when the value is already known", function()
@@ -263,32 +271,36 @@ describe("Provider", function()
       selection_stub.returns("Yes (always)")
       assert.equals(provider:get_neovim_config_upload_preference(), true)
 
-      assert
-        .stub(update_host_record_stub).was
-        .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, "config_copy", true)
+      assert.stub(update_workspace_config_stub).was.called_with(
+        remote_nvim.session_provider.remote_workspaces_config,
+        provider.unique_host_id,
+        match.is_same({ config_copy = true })
+      )
     end)
 
     it("when the choice is 'No (never)'", function()
       selection_stub.returns("No (never)")
       assert.equals(provider:get_neovim_config_upload_preference(), false)
 
-      assert
-        .stub(update_host_record_stub).was
-        .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, "config_copy", false)
+      assert.stub(update_workspace_config_stub).was.called_with(
+        remote_nvim.session_provider.remote_workspaces_config,
+        provider.unique_host_id,
+        match.is_same({ config_copy = false })
+      )
     end)
 
     it("when the choice is 'Yes'", function()
       selection_stub.returns("Yes")
       assert.equals(provider:get_neovim_config_upload_preference(), true)
 
-      assert.stub(update_host_record_stub).was.not_called()
+      assert.stub(update_workspace_config_stub).was.not_called()
     end)
 
     it("when the choice is 'No'", function()
       selection_stub.returns("No")
       assert.equals(provider:get_neovim_config_upload_preference(), false)
 
-      assert.stub(update_host_record_stub).was.not_called()
+      assert.stub(update_workspace_config_stub).was.not_called()
     end)
   end)
 
@@ -536,11 +548,12 @@ describe("Provider", function()
   end)
 
   describe("should handle local client start preference correctly", function()
-    local selection_stub, update_host_record_stub
+    local selection_stub, update_workspace_config_stub
 
     before_each(function()
       selection_stub = stub(provider, "get_selection")
-      update_host_record_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "update_host_record")
+      update_workspace_config_stub =
+        stub(remote_nvim.session_provider.remote_workspaces_config, "update_workspace_config")
     end)
 
     it("when the value is already known", function()
@@ -554,32 +567,36 @@ describe("Provider", function()
       selection_stub.returns("Yes (always)")
       assert.equals(provider:_get_local_client_start_preference(), true)
 
-      assert
-        .stub(update_host_record_stub).was
-        .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, "client_auto_start", true)
+      assert.stub(update_workspace_config_stub).was.called_with(
+        remote_nvim.session_provider.remote_workspaces_config,
+        provider.unique_host_id,
+        match.is_same({ client_auto_start = true })
+      )
     end)
 
     it("when the choice is 'No (never)'", function()
       selection_stub.returns("No (never)")
       assert.equals(provider:_get_local_client_start_preference(), false)
 
-      assert
-        .stub(update_host_record_stub).was
-        .called_with(remote_nvim.session_provider.remote_workspaces_config, provider.unique_host_id, "client_auto_start", false)
+      assert.stub(update_workspace_config_stub).was.called_with(
+        remote_nvim.session_provider.remote_workspaces_config,
+        provider.unique_host_id,
+        match.is_same({ client_auto_start = false })
+      )
     end)
 
     it("when the choice is 'Yes'", function()
       selection_stub.returns("Yes")
       assert.equals(provider:_get_local_client_start_preference(), true)
 
-      assert.stub(update_host_record_stub).was.not_called()
+      assert.stub(update_workspace_config_stub).was.not_called()
     end)
 
     it("when the choice is 'No'", function()
       selection_stub.returns("No")
       assert.equals(provider:_get_local_client_start_preference(), false)
 
-      assert.stub(update_host_record_stub).was.not_called()
+      assert.stub(update_workspace_config_stub).was.not_called()
     end)
   end)
 

@@ -14,7 +14,7 @@ function M.float_term(cmd, exit_cb, popup_options)
       height = "100%",
     },
     zindex = 100,
-  }, popup_options)
+  }, popup_options or {})
 
   local popup = require("nui.popup")(popup_options)
   popup:mount()
