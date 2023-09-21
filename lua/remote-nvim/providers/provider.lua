@@ -6,7 +6,7 @@
 ---@field provider_type provider_type Type of provider
 ---@field _local_neovim_install_script_path string Local path where Neovim installation script is stored
 ---@field _remote_neovim_home string Directory where all remote neovim data would be stored on host
----@field _remote_os os_type Remote host's OS
+---@field _remote_os string Remote host's OS
 ---@field _remote_neovim_version string Neovim version on the remote host
 ---@field _remote_is_windows boolean Flag indicating whether the remote system is windows
 ---@field _remote_workspace_id string Workspace ID associated with remote neovim
@@ -41,6 +41,7 @@ function Provider:init(host, conn_opts)
     conn_opts = conn_opts or ""
   end
   self.conn_opts = self:_cleanup_conn_options(conn_opts)
+  self.logger = utils.get_logger()
 
   -- These should be overriden in implementing classes
   self.unique_host_id = nil
@@ -78,15 +79,17 @@ function Provider:_setup_workspace_variables()
 
   -- Gather remote OS information
   if self.workspace_config.os == nil then
+    self.workspace_config.os = self:get_remote_os()
     remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
-      os = self:get_remote_os(),
+      os = self.workspace_config.os,
     })
   end
 
   -- Gather remote neovim version, if not setup
   if self.workspace_config.neovim_version == nil then
+    self.workspace_config.neovim_version = self:get_remote_neovim_version_preference()
     remote_nvim_workspaces_config:update_workspace_config(self.unique_host_id, {
-      neovim_version = self:get_remote_neovim_version_preference(),
+      neovim_version = self.workspace_config.neovim_version,
     })
   end
 
@@ -473,12 +476,14 @@ end
 ---@param command string
 ---@param desc string Description of the command running
 function Provider:run_command(command, desc, ...)
+  self.logger.fmt_debug("%s: Running %s", self.provider_type, command)
   self.notifier:notify(("'%s' running..."):format(desc))
   self.executor:run_command(command, ...)
   self:_handle_job_completion(desc)
 end
 
 function Provider:upload(local_path, remote_path, desc)
+  self.logger.fmt_debug("%s: Uploading %s to %s on remote", self.provider_type, local_path, remote_path)
   self.notifier:notify(("'%s' upload running..."):format(desc))
   self.executor:upload(local_path, remote_path)
   self:_handle_job_completion(desc)

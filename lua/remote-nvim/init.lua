@@ -69,7 +69,7 @@ M.default_opts = {
   },
   log = {
     filepath = utils.path_join(utils.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),
-    level = vim.log.levels.INFO,
+    level = "info",
     max_size = 1024 * 1024 * 2, -- 2MB
   },
 }

@@ -41,7 +41,7 @@ vim.api.nvim_create_user_command("RemoteStart", M.RemoteStart, {
 function M.RemoteLog()
   vim.api.nvim_cmd({
     cmd = "tabnew",
-    args = { require("remote-nvim.utils").logger.outfile },
+    args = { remote_nvim.config.log.filepath },
   }, {})
 end
 

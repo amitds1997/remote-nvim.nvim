@@ -13,6 +13,11 @@ function M.get_logger()
     level = remote_nvim.config.log.level,
     use_console = false,
     outfile = remote_nvim.config.log.filepath,
+    fmt_msg = function(_, mode_name, src_path, src_line, msg)
+      local nameupper = mode_name:upper()
+      local lineinfo = vim.fn.fnamemodify(src_path, ":.") .. ":" .. src_line
+      return string.format("%-6s%s %s: %s\n", nameupper, os.date(), lineinfo, msg)
+    end,
   })
 end
 
