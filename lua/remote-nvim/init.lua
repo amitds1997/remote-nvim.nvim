@@ -15,8 +15,6 @@ local M = {}
 
 ---@class LocalClientConfig
 ---@field callback function<string, WorkspaceConfig> Function that would be called upon to start a Neovim client if not nil
----@field default_client_config FloatWindowOpts Configuration to be applied to the default client that would be launched
---if callback is nil
 
 ---@class RemoteNeovimSSHPrompts
 ---@field match string Text that input should be matched against to identify need for stdin
@@ -55,7 +53,7 @@ M.default_opts = {
   },
   neovim_install_script_path = utils.path_join(
     utils.is_windows,
-    utils.get_package_root(),
+    vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h"),
     "scripts",
     "neovim_install.sh"
   ),
@@ -63,31 +61,12 @@ M.default_opts = {
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
     callback = function(port, _)
-      require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), nil, {
-        on_exit_handler = function(_, exit_code)
-          if exit_code ~= 0 then
-            vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
-          end
-        end,
-      })
+      require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), function(exit_code)
+        if exit_code ~= 0 then
+          vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
+        end
+      end)
     end,
-    default_client_config = {
-      col_percent = 0.9,
-      row_percent = 0.9,
-      win_opts = {
-        winblend = 5,
-      },
-      border_opts = {
-        topleft = "╭",
-        topright = "╮",
-        top = "─",
-        left = "│",
-        right = "│",
-        botleft = "╰",
-        botright = "╯",
-        bot = "─",
-      },
-    },
   },
   log = {
     filepath = utils.path_join(utils.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),

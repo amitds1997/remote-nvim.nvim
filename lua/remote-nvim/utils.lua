@@ -28,12 +28,6 @@ function M.find_binary(binary)
   error("Binary " .. binary .. " not found.")
 end
 
----Get the root path of the plugin
----@return string root_dir Returns the path to the plugin's root
-function M.get_package_root()
-  return vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h")
-end
-
 ---Generate a random string of given length
 ---@param length integer Length of the string to be generated
 ---@return string random_string Random string of the given length

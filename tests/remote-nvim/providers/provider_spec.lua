@@ -430,7 +430,7 @@ describe("Provider", function()
         -- copy scripts
         assert.stub(upload_stub).was.called_with(
           match.is_ref(provider),
-          ("%s/%s"):format(require("remote-nvim.utils").get_package_root(), "scripts"),
+          require("plenary.path"):new("scripts"):absolute(),
           "~/.remote-nvim",
           "Copy necessary files"
         )

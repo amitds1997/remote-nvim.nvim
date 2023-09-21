@@ -13,14 +13,18 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
       pull-requests: write
     steps:
       - uses: google-github-actions/release-please-action@v3
         id: release
         with:
-          command: release-pr
           release-type: simple
           package-name: remote-nvim.nvim
+          include-v-in-tag: true
+          bump-minor-pre-major: true
+          bump-patch-for-minor-pre-major: true
+          pull-request-title-pattern: 'chore: release ${version}'
           extra-files: |-
             lua/remote-nvim/init.lua
