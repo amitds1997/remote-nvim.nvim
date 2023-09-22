@@ -1,6 +1,6 @@
 ---@class remote-nvim.ConfigProvider: remote-nvim.Object
 ---@field private _config_path table Plenary path object representing configuration path
----@field private _config_data table<string, table<string, string>> Configuration data
+---@field private _config_data table<string, remote-nvim.providers.WorkspaceConfig> Configuration data
 local ConfigProvider = require("remote-nvim.middleclass")("ConfigProvider")
 local Path = require("plenary.path")
 
@@ -22,7 +22,7 @@ end
 ---Get configuration data by host or provider type
 ---@param host_id string? Host identifier
 ---@param provider_type string? Provider type for the configuration records
----@return table<string, table<string,string>|string> wk_config Workspace configuration filtered by provided type
+---@return table<string,remote-nvim.providers.WorkspaceConfig>|remote-nvim.providers.WorkspaceConfig wk_config Workspace configuration filtered by provided type
 function ConfigProvider:get_workspace_config(host_id, provider_type)
   local workspace_config
   if provider_type then
@@ -51,8 +51,8 @@ end
 
 ---Add a workspace config record
 ---@param host_id string Host identifier
----@param ws_config table<string, string> Workspace config to be added
----@return table<string, string> wk_config Added host configuration
+---@param ws_config remote-nvim.providers.WorkspaceConfig Workspace config to be added
+---@return remote-nvim.providers.WorkspaceConfig wk_config Added host configuration
 function ConfigProvider:add_workspace_config(host_id, ws_config)
   assert(ws_config ~= nil, "Workspace config cannot be nil")
   local wk_config = self:update_workspace_config(host_id, ws_config)
@@ -62,8 +62,8 @@ end
 
 ---Update workspace configuration given host identifier
 ---@param host_id string Host identifier for the configuration record
----@param ws_config table<string, string>? Workspace configuration that should be merged with existing record
----@return table<string, string>? wk_config nil, if record is deleted, else the updated workspace configuration
+---@param ws_config remote-nvim.providers.WorkspaceConfig? Workspace configuration that should be merged with existing record
+---@return remote-nvim.providers.WorkspaceConfig? wk_config nil, if record is deleted, else the updated workspace configuration
 function ConfigProvider:update_workspace_config(host_id, ws_config)
   if ws_config then
     self._config_data[host_id] = vim.tbl_extend("force", self:get_workspace_config(host_id), ws_config)

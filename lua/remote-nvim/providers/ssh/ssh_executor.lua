@@ -1,12 +1,12 @@
----@class SSHExecutor: remote-nvim.providers.Executor
+---@class remote-nvim.providers.ssh.SSHExecutor: remote-nvim.providers.Executor
 ---@field super remote-nvim.providers.Executor
 ---@field ssh_conn_opts string Connection options for SSH command
 ---@field scp_connection_options string Connection options to SCP command
 ---@field ssh_binary string Binary to use for SSH operations
 ---@field scp_binary string Binary to use for SCP operations
----@field protected _ssh_prompts RemoteNeovimSSHPrompts[] SSH prompts registered for processing for input
----@field protected _job_stdout_processed_idx number Last index processed by output processor
----@field protected _job_prompt_responses table<string,string> Responses for prompts provided by user during the job
+---@field private _ssh_prompts remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt[] SSH prompts registered for processing for input
+---@field private _job_stdout_processed_idx number Last index processed by output processor
+---@field private _job_prompt_responses table<string,string> Responses for prompts provided by user during the job
 local SSHExecutor = require("remote-nvim.providers.executor"):subclass("SSHExecutor")
 
 ---Initialize SSH executor instance
@@ -27,6 +27,7 @@ function SSHExecutor:init(host, conn_opts)
   self._job_prompt_responses = {}
 end
 
+---Reset ssh executor
 function SSHExecutor:reset()
   SSHExecutor.super:reset()
 
@@ -75,7 +76,7 @@ end
 
 ---@private
 ---Handle when the SSH job requires a job input
----@param prompt RemoteNeovimSSHPrompts
+---@param prompt remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt
 function SSHExecutor:_process_prompt(prompt)
   self._job_stdout_processed_idx = #self._job_stdout
   local prompt_response

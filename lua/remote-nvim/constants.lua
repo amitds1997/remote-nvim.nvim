@@ -1,4 +1,5 @@
 -- Type instances that did not find a place anywhere else
+
 ---@alias plenary.logger table Plenary logger instance
 
 return {

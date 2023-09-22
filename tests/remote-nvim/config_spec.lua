@@ -1,11 +1,12 @@
-local ConfigProvider = require("remote-nvim.config")
-local stub = require("luassert.stub")
-
+---@diagnostic disable:invisible
 describe("Config", function()
+  local assert = require("luassert.assert")
+  local ConfigProvider = require("remote-nvim.config")
+  ---@type remote-nvim.ConfigProvider
   local config_provider
+
   before_each(function()
     config_provider = ConfigProvider()
-    stub(config_provider._config_path, "write")
     config_provider._config_data = {
       ["localhost:9111"] = {
         workspace_id = "4QdRIosKG6",
@@ -94,10 +95,9 @@ describe("Config", function()
   end)
 
   describe("should add host configuration properly", function()
-    local host_id, wk_config, update_workspace_config_stub, get_workspace_config_stub
+    local host_id, wk_config
+
     before_each(function()
-      update_workspace_config_stub = stub(config_provider, "update_workspace_config")
-      get_workspace_config_stub = stub(config_provider, "get_workspace_config")
       host_id = "localhost:9112"
       wk_config = {
         workspace_id = "4QdRIosKG6",
@@ -108,27 +108,35 @@ describe("Config", function()
       }
     end)
 
+    after_each(function()
+      config_provider:remove_workspace_config(host_id)
+    end)
+
     it("when no configuration is provided", function()
       assert.error_matches(function()
+        ---@diagnostic disable-next-line:param-type-mismatch
         config_provider:add_workspace_config(host_id, nil)
       end, "Workspace config cannot be nil")
     end)
 
     it("when configuration is provided", function()
-      get_workspace_config_stub.returns(wk_config)
-      update_workspace_config_stub.returns(wk_config)
+      assert.are.same(config_provider:get_workspace_config(host_id), {})
       config_provider:add_workspace_config(host_id, wk_config)
-
-      assert.stub(update_workspace_config_stub).was.called_with(config_provider, host_id, wk_config)
+      assert.are.same(config_provider:get_workspace_config(host_id), wk_config)
     end)
   end)
 
   it("should remove host configuration properly", function()
-    local update_workspace_config = stub(config_provider, "update_workspace_config")
     local host_id = "localhost:9112"
-
-    config_provider:remove_workspace_config(host_id)
-    assert.stub(update_workspace_config).was.called_with(config_provider, host_id, nil)
+    local wk_config = {
+      workspace_id = "4QdRIosKG6",
+      remote_neovim_home = "~/.remote-nvim",
+      host = "localhost",
+      provider = "ssh",
+      connection_options = "-p 9112",
+    }
+    assert.are.same(config_provider:add_workspace_config(host_id, wk_config), wk_config)
+    assert.are.same(config_provider:remove_workspace_config(host_id), nil)
   end)
 
   describe("should update host configuration properly", function()

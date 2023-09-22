@@ -1,4 +1,4 @@
-local assert = require("luassert")
+local assert = require("luassert.assert")
 local stub = require("luassert.stub")
 
 describe("SSH Executor", function()
@@ -23,15 +23,14 @@ describe("SSH Executor", function()
     },
   }
 
-  local executor
-  local other_executor
+  local executor, other_executor, executor_run_job_stub, other_executor_run_job_stub
   before_each(function()
     executor = SSHExecutor(host, conn_opts)
     executor._ssh_prompts = prompts
-    stub(executor, "run_executor_job")
+    executor_run_job_stub = stub(executor, "run_executor_job")
 
     other_executor = SSHExecutor(host, other_conn_opts)
-    stub(other_executor, "run_executor_job")
+    other_executor_run_job_stub = stub(other_executor, "run_executor_job")
   end)
 
   describe("should correctly generate scp connection options", function()
@@ -48,13 +47,13 @@ describe("SSH Executor", function()
     it("for default port SCP", function()
       executor:upload("local-path", "remote-path")
       local scp_command = "scp -r local-path remote-host:remote-path"
-      assert.stub(executor.run_executor_job).was.called_with(executor, scp_command, nil)
+      assert.stub(executor_run_job_stub).was.called_with(executor, scp_command, nil)
     end)
 
     it("for specified port SCP", function()
       other_executor:upload("local-path", "remote-path")
       local other_scp_command = "scp -P 2310 -r local-path remote-host:remote-path"
-      assert.stub(other_executor.run_executor_job).was.called_with(other_executor, other_scp_command, nil)
+      assert.stub(other_executor_run_job_stub).was.called_with(other_executor, other_scp_command, nil)
     end)
   end)
 
@@ -62,13 +61,13 @@ describe("SSH Executor", function()
     it("for default port SCP", function()
       executor:download("remote-path", "local-path")
       local scp_command = "scp -r remote-host:remote-path local-path"
-      assert.stub(executor.run_executor_job).was.called_with(executor, scp_command, nil)
+      assert.stub(executor_run_job_stub).was.called_with(executor, scp_command, nil)
     end)
 
     it("for specified port SCP", function()
       other_executor:download("remote-path", "local-path")
       local other_scp_command = "scp -P 2310 -r remote-host:remote-path local-path"
-      assert.stub(other_executor.run_executor_job).was.called_with(other_executor, other_scp_command, nil)
+      assert.stub(other_executor_run_job_stub).was.called_with(other_executor, other_scp_command, nil)
     end)
   end)
 
@@ -76,13 +75,13 @@ describe("SSH Executor", function()
     it("for simple commands", function()
       executor:run_command("uname")
       local ssh_command = "ssh remote-host 'uname'"
-      assert.stub(executor.run_executor_job).was.called_with(executor, ssh_command, nil)
+      assert.stub(executor_run_job_stub).was.called_with(executor, ssh_command, nil)
     end)
 
     it("for commands that require shell escaping", function()
       executor:run_command("echo '12'")
       local ssh_command = [[ssh remote-host 'echo '\''12'\''']]
-      assert.stub(executor.run_executor_job).was.called_with(executor, ssh_command, nil)
+      assert.stub(executor_run_job_stub).was.called_with(executor, ssh_command, nil)
     end)
   end)
 

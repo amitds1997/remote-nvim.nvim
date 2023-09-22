@@ -1,25 +1,6 @@
 describe("SSH Provider", function()
   local SSHProvider = require("remote-nvim.providers.ssh.ssh_provider")
-  local assert = require("luassert")
-  local stub = require("luassert.stub")
-  local remote_nvim = require("remote-nvim")
-  local get_workspace_config_stub
-
-  before_each(function()
-    get_workspace_config_stub = stub(remote_nvim.session_provider.remote_workspaces_config, "get_workspace_config")
-
-    get_workspace_config_stub.returns({
-      provider = "ssh",
-      host = "localhost",
-      connection_options = "",
-      remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
-      config_copy = nil,
-      client_auto_start = nil,
-      workspace_id = "NA",
-      neovim_version = "stable",
-      os = "Linux",
-    })
-  end)
+  local assert = require("luassert.assert")
 
   it("should remove 'ssh' prefix from connection options (if present)", function()
     local ssh_provider = SSHProvider("localhost", "ssh localhost -p 3011")

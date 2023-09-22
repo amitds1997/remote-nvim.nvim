@@ -26,6 +26,8 @@ function Executor:reset()
   self._job_stdout = {}
 end
 
+-- selene: allow(unused_variable)
+
 ---Upload data to the host
 ---@param localSrcPath string Local path from which data would be uploaded
 ---@param remoteDestPath string Path on host where data would be uploaded
@@ -34,6 +36,8 @@ end
 function Executor:upload(localSrcPath, remoteDestPath, cb)
   error("Not implemented")
 end
+
+-- selene: allow(unused_variable)
 
 ---Download data from host
 ---@param remoteSrcPath string Remote path where data is located
@@ -98,6 +102,12 @@ end
 ---@param exit_code number Exit code of the job running on the executor
 function Executor:process_job_completion(exit_code)
   self._job_exit_code = exit_code
+end
+
+---Get last/current job ID
+---@return integer? job_id
+function Executor:last_job_id()
+  return self._job_id
 end
 
 ---Get last job's status (exit code)

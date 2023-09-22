@@ -1,4 +1,5 @@
----@class SSHProvider: Provider
+---@class remote-nvim.providers.ssh.SSHProvider: remote-nvim.providers.Provider
+---@field super remote-nvim.providers.Provider
 ---@field host string Name of the host
 ---@field conn_opts string Connection options
 local SSHProvider = require("remote-nvim.providers.provider"):subclass("SSHProvider")

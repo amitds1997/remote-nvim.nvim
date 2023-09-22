@@ -3,6 +3,7 @@
 ---@field private _DESCRIPTION string Description of the implementation
 ---@field private _URL string URL of the project
 ---@field private _LICENSE string License info
+---@field super remote-nvim.Object Parent class if exists
 ---@field new fun(self: remote-nvim.Object, ...): remote-nvim.Object Create new instance of the class
 ---@field class fun(name: string, super:remote-nvim.Object?): remote-nvim.Object Create a new class
 ---@field subclass fun(self: remote-nvim.Object, name: string): remote-nvim.Object Generate a subclass

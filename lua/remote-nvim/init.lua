@@ -1,9 +1,12 @@
+---@class remote-nvim.RemoteNeovim
+---@field default_opts remote-nvim.config.PluginConfig Default plugin configuration
+---@field config remote-nvim.config.PluginConfig Plugin configuration
+---@field session_provider remote-nvim.providers.SessionProvider Session provider for each unique host
+---@field setup fun(opts: remote-nvim.config.PluginConfig) Setup the plugin
+local M = {}
+
 local constants = require("remote-nvim.constants")
 local utils = require("remote-nvim.utils")
----@class remote-nvim.RemoteNeovim
----@field config remote-nvim.config.PluginConfig Plugin configuration
----@field session_provider SessionProvider Session provider for each unique host
-local M = {}
 
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
@@ -22,7 +25,7 @@ local M = {}
 ---@field ssh_prompts remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt[] List of SSH prompts that should be considered for input
 
 ---@class remote-nvim.config.RemoteConfig.LocalClientConfig
----@field callback function<string, ProviderConfig> Function that would be called upon to start a Neovim client if not nil
+---@field callback function<string, remote-nvim.providers.WorkspaceConfig> Function that would be called upon to start a Neovim client if not nil
 
 ---@class remote-nvim.config.PluginConfig.LogConfig
 ---@field filepath string Location of log file
@@ -38,7 +41,6 @@ local M = {}
 ---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig Configuration for the local client
 ---@field log remote-nvim.config.PluginConfig.LogConfig Plugin logging options
 
----@type remote-nvim.config.PluginConfig
 M.default_opts = {
   ssh_config = {
     ssh_binary = "ssh",
