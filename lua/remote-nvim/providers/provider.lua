@@ -214,7 +214,7 @@ function Provider:get_remote_neovim_version_preference()
   return self._remote_neovim_version
 end
 
-function Provider:get_neovim_config_upload_preference()
+function Provider:_get_neovim_config_upload_preference()
   if self.workspace_config.config_copy == nil then
     local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
       prompt = ("Copy config at '%s' to remote host? "):format(remote_nvim.config.neovim_user_config_path),
@@ -302,7 +302,7 @@ function Provider:_setup_remote()
       self:run_command(install_neovim_cmd, "Install Neovim if not exists")
 
       -- Upload user neovim config, if necessary
-      if self:get_neovim_config_upload_preference() then
+      if self:_get_neovim_config_upload_preference() then
         self:upload(remote_nvim.config.neovim_user_config_path, self._remote_xdg_config_path, "Copy user neovim config")
       end
 
@@ -340,7 +340,7 @@ function Provider:_launch_remote_neovim_server()
       self:_remote_neovim_binary_path(),
       remote_free_port
     )
-    provider_utils.run_code_in_coroutine(function()
+    self:_run_code_in_coroutine(function()
       self:run_command(remote_server_launch_cmd, "Launch remote server", port_forward_opts, function()
         self:reset()
       end)
@@ -348,6 +348,22 @@ function Provider:_launch_remote_neovim_server()
     end)
     self._remote_server_process_id = self.executor._job_id
     self.notifier:notify("Remote server launched", vim.log.levels.INFO, true)
+  end
+end
+
+---Run code in a coroutine
+---@param fn function Function to run inside the coroutine
+function Provider:_run_code_in_coroutine(fn)
+  local co = coroutine.create(function()
+    local success, res_or_err = pcall(fn)
+    if not success then
+      self.logger.error(res_or_err)
+      self.notifier:notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR, true)
+    end
+  end)
+  local success, res_or_err = coroutine.resume(co)
+  if not success then
+    self.notifier:notify(res_or_err, vim.log.levels.ERROR, true)
   end
 end
 
@@ -429,7 +445,7 @@ function Provider:_launch_local_neovim_client()
 end
 
 function Provider:launch_neovim()
-  provider_utils.run_code_in_coroutine(function()
+  self:_run_code_in_coroutine(function()
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
@@ -438,7 +454,7 @@ function Provider:launch_neovim()
 end
 
 function Provider:clean_up_remote_host()
-  provider_utils.run_code_in_coroutine(function()
+  self:_run_code_in_coroutine(function()
     self:verify_connection_to_host()
     local deletion_choices = {
       "Delete neovim workspace (Choose if multiple people use the same user account)",

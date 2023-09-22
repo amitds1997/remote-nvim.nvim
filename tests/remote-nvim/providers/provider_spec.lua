@@ -263,13 +263,13 @@ describe("Provider", function()
     it("when the value is already known", function()
       for _, value in ipairs({ true, false }) do
         provider.workspace_config.config_copy = value
-        assert.equals(provider:get_neovim_config_upload_preference(), value)
+        assert.equals(provider:_get_neovim_config_upload_preference(), value)
       end
     end)
 
     it("when the choice is 'Yes (always)'", function()
       selection_stub.returns("Yes (always)")
-      assert.equals(provider:get_neovim_config_upload_preference(), true)
+      assert.equals(provider:_get_neovim_config_upload_preference(), true)
 
       assert.stub(update_workspace_config_stub).was.called_with(
         remote_nvim.session_provider.remote_workspaces_config,
@@ -280,7 +280,7 @@ describe("Provider", function()
 
     it("when the choice is 'No (never)'", function()
       selection_stub.returns("No (never)")
-      assert.equals(provider:get_neovim_config_upload_preference(), false)
+      assert.equals(provider:_get_neovim_config_upload_preference(), false)
 
       assert.stub(update_workspace_config_stub).was.called_with(
         remote_nvim.session_provider.remote_workspaces_config,
@@ -291,14 +291,14 @@ describe("Provider", function()
 
     it("when the choice is 'Yes'", function()
       selection_stub.returns("Yes")
-      assert.equals(provider:get_neovim_config_upload_preference(), true)
+      assert.equals(provider:_get_neovim_config_upload_preference(), true)
 
       assert.stub(update_workspace_config_stub).was.not_called()
     end)
 
     it("when the choice is 'No'", function()
       selection_stub.returns("No")
-      assert.equals(provider:get_neovim_config_upload_preference(), false)
+      assert.equals(provider:_get_neovim_config_upload_preference(), false)
 
       assert.stub(update_workspace_config_stub).was.not_called()
     end)
@@ -424,7 +424,7 @@ describe("Provider", function()
           neovim_version = "stable",
           os = "Linux",
         })
-        config_upload_preference_stub = stub(provider, "get_neovim_config_upload_preference")
+        config_upload_preference_stub = stub(provider, "_get_neovim_config_upload_preference")
         config_upload_preference_stub.returns(true)
         provider:_setup_workspace_variables()
       end)

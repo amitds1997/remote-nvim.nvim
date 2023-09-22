@@ -90,21 +90,6 @@ function M.get_neovim_versions()
   return available_versions
 end
 
----Run code in a coroutine
----@param fn function Function to run inside the coroutine
----@param err_fn? function Error handling function
-function M.run_code_in_coroutine(fn, err_fn)
-  local co = coroutine.create(fn)
-  local success, err = coroutine.resume(co)
-  if not success then
-    if err_fn ~= nil then
-      err_fn(err)
-    else
-      error("Coroutine failed with error " .. err)
-    end
-  end
-end
-
 ---Get an ephemeral free port on the local machine
 ---@return string port A free ephemeral port available for TCP connections
 function M.find_free_port()
