@@ -93,8 +93,6 @@ M.setup = function(opts)
     return vim.notify("remote-nvim.nvim requires Neovim >= 0.8.0", vim.log.levels.ERROR, { title = "remote-nvim.nvim" })
   end
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
-  M.config.ssh_config.ssh_binary = M.config.ssh_config.ssh_binary
-  M.config.ssh_config.scp_binary = M.config.ssh_config.scp_binary
   M.session_provider = require("remote-nvim.providers.session_provider")()
   require("remote-nvim.command")
 
