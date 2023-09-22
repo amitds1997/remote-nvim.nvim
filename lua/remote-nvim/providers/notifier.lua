@@ -1,23 +1,23 @@
 local notify = require("notify")
 
----@class Notifier
+---@class remote-nvim.providers.Notifier
 ---@field title string Title of the notification box
 ---@field spinner_frames string[] Spinner frames to use as notification icon
 ---@field hide_from_history boolean Notifications generated should be hidden from history
 ---@field current_notification table Current notification object
 ---@field current_spinner_idx number Current icon index in spinner frame
----@field close_icons NotificationCloseIcons Notification close icons
+---@field close_icons remote-nvim.providers.Notifier.NotificationCloseIcons Notification close icons
 local Notifier = require("remote-nvim.middleclass")("Notifier")
 
----@class NotificationCloseIcons
+---@class remote-nvim.providers.Notifier.NotificationCloseIcons
 ---@field success string Icon for success
 ---@field failure string Icon for failure
 
----@class NotifierOpts
+---@class remote-nvim.providers.Notifier.NotifierOpts
 ---@field title string Title of the notification box
 ---@field spinner_frames string[] Spinner icons to cycle through
 ---@field hide_from_history boolean Should hide notification from notification history?
----@field close_icons NotificationCloseIcons Closing icons
+---@field close_icons remote-nvim.providers.Notifier.NotificationCloseIcons Closing icons
 local default_notification_opts = {
   title = "Remote Neovim",
   spinner_frames = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" },
@@ -28,10 +28,10 @@ local default_notification_opts = {
   },
 }
 
+---@private
 ---Initialize a notification handler
----@param opts NotifierOpts Notification options
+---@param opts remote-nvim.providers.Notifier.NotifierOpts Notification options
 function Notifier:init(opts)
-  ---@type NotifierOpts
   opts = vim.tbl_deep_extend("force", default_notification_opts, opts or {})
 
   self.title = opts.title
@@ -39,14 +39,17 @@ function Notifier:init(opts)
   self.hide_from_history = opts.hide_from_history
   self.close_icons = opts.close_icons
 
-  self:reset()
+  self:_reset()
 end
 
-function Notifier:reset()
+---@private
+---Reset the notifitier state
+function Notifier:_reset()
   self.current_spinner_idx = nil
   self.current_notification = nil
 end
 
+---@private
 ---Format the message correctly in the notification window
 ---@param msg string Message to be formatted
 ---@return string formatted_msg Formatted message
@@ -72,9 +75,10 @@ function Notifier:_update_notification()
   end
 end
 
+---@private
 ---Start a persistent notification
 ---@param msg string Message to display in the notification
----@param level? number Level at which the notification should be shown
+---@param level number? Level at which the notification should be shown
 function Notifier:_start_persistent_notification(msg, level)
   self.current_spinner_idx = 1
   self.current_notification = notify(self:_format_msg(msg), level or vim.log.levels.INFO, {
@@ -86,9 +90,10 @@ function Notifier:_start_persistent_notification(msg, level)
   self:_update_notification()
 end
 
+---@private
 ---Stop the persistent notification
 ---@param msg string Message to show at the very end
----@param level? number Log level of the notification
+---@param level number? Log level of the notification
 function Notifier:_stop_persistent_notification(msg, level)
   local is_error = (level == vim.log.levels.ERROR)
   local opts = {
@@ -98,13 +103,13 @@ function Notifier:_stop_persistent_notification(msg, level)
     timeout = 3000,
   }
   self.current_notification = notify(self:_format_msg(msg), level, opts)
-  self:reset()
+  self:_reset()
 end
 
----Update the shown notification
----@param msg string Message to be updated in the notification
----@param level? number Log level of the notification
----@param stop_notification? boolean Stop the persistent notification
+---Show notification
+---@param msg string Message for the notification
+---@param level number? Log level of the notification
+---@param stop_notification boolean? Stop the persistent notification
 function Notifier:notify(msg, level, stop_notification)
   stop_notification = stop_notification or false
 
@@ -122,7 +127,7 @@ end
 
 ---Show notification once and be done
 ---@param msg string Message to display in the notification
----@param level? number Logging level
+---@param level number? Logging level
 function Notifier:notify_once(msg, level)
   notify(self:_format_msg(msg), level or vim.log.levels.INFO, {
     title = self.title,

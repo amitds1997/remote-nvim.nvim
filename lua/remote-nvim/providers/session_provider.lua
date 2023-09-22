@@ -1,9 +1,9 @@
----@class SessionProvider: Object
+---@class SessionProvider: remote-nvim.Object
 local SessionProvider = require("remote-nvim.middleclass")("SessionProvider")
 
 function SessionProvider:init()
   self.sessions = {}
-  self.remote_workspaces_config = require("remote-nvim.config"):new()
+  self.remote_workspaces_config = require("remote-nvim.config")()
 end
 
 function SessionProvider:get_or_initialize_session(type, host, conn_opts)
@@ -25,7 +25,7 @@ function SessionProvider:get_active_sessions()
 end
 
 ---Provides saved configurations for the given provider type
----@param provider_type? string
+---@param provider_type string?
 function SessionProvider:get_saved_host_configs(provider_type)
   return self.remote_workspaces_config:get_workspace_config(nil, provider_type)
 end

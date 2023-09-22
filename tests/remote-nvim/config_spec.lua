@@ -94,9 +94,10 @@ describe("Config", function()
   end)
 
   describe("should add host configuration properly", function()
-    local host_id, wk_config, update_workspace_config
+    local host_id, wk_config, update_workspace_config_stub, get_workspace_config_stub
     before_each(function()
-      update_workspace_config = stub(config_provider, "update_workspace_config")
+      update_workspace_config_stub = stub(config_provider, "update_workspace_config")
+      get_workspace_config_stub = stub(config_provider, "get_workspace_config")
       host_id = "localhost:9112"
       wk_config = {
         workspace_id = "4QdRIosKG6",
@@ -114,8 +115,11 @@ describe("Config", function()
     end)
 
     it("when configuration is provided", function()
+      get_workspace_config_stub.returns(wk_config)
+      update_workspace_config_stub.returns(wk_config)
       config_provider:add_workspace_config(host_id, wk_config)
-      assert.stub(update_workspace_config).was.called_with(config_provider, host_id, wk_config)
+
+      assert.stub(update_workspace_config_stub).was.called_with(config_provider, host_id, wk_config)
     end)
   end)
 

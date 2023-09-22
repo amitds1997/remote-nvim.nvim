@@ -50,8 +50,8 @@ describe("Provider", function()
       provider.unique_host_id = "localhost:3011"
       provider.provider_type = "test-provider"
 
-      detect_remote_os_stub = stub(provider, "get_remote_os")
-      get_remote_neovim_version_preference_stub = stub(provider, "get_remote_neovim_version_preference")
+      detect_remote_os_stub = stub(provider, "_get_remote_os")
+      get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
 
       get_workspace_config_stub.returns({
         provider = provider.provider_type,
@@ -231,23 +231,23 @@ describe("Provider", function()
     it("when output is not correct", function()
       output_stub.returns({})
       selection_stub.returns("Linux")
-      assert.equals(provider:get_remote_os(), "Linux")
+      assert.equals(provider:_get_remote_os(), "Linux")
     end)
 
     it("when it is Linux OS", function()
       output_stub.returns({ "Linux" })
-      assert.equals(provider:get_remote_os(), "Linux")
+      assert.equals(provider:_get_remote_os(), "Linux")
     end)
 
     it("when it is MacOS", function()
       output_stub.returns({ "Darwin" })
-      assert.equals(provider:get_remote_os(), "macOS")
+      assert.equals(provider:_get_remote_os(), "macOS")
     end)
 
     it("when it is any another OS", function()
       output_stub.returns({ "Windows" })
       selection_stub.returns("Windows")
-      assert.equals(provider:get_remote_os(), "Windows")
+      assert.equals(provider:_get_remote_os(), "Windows")
     end)
   end)
 
@@ -311,7 +311,7 @@ describe("Provider", function()
       _ = stub(remote_nvim.session_provider.remote_workspaces_config, "delete_workspace")
       run_command_stub = stub(provider, "run_command")
       selection_stub = stub(provider, "get_selection")
-      _ = stub(provider, "verify_connection_to_host")
+      _ = stub(provider, "_verify_connection_to_host")
     end)
 
     it("when asked to cleanup remote workspace", function()
@@ -346,7 +346,7 @@ describe("Provider", function()
     provider._remote_server_process_id = 2100
     provider._local_free_port = 52212
 
-    provider:reset()
+    provider:_reset()
     assert.equals(provider._setup_running, false)
     assert.equals(provider._remote_server_process_id, nil)
     assert.equals(provider._local_free_port, nil)

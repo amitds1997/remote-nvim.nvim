@@ -1,5 +1,9 @@
 local M = {}
 
+---Generate a floating window, given the window options, running the provided command
+---@param cmd string Command to run in the floating window
+---@param exit_cb fun(exit_code: integer) Callback called when launched program exits
+---@param popup_options nui_popup_options? Configuration options for floating window
 function M.float_term(cmd, exit_cb, popup_options)
   popup_options = vim.tbl_deep_extend("force", {
     enter = true,

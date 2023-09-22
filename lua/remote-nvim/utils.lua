@@ -5,6 +5,7 @@ local constants = require("remote-nvim.constants")
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 
 ---Get logger
+---@return plenary.logger logger Logger instance
 function M.get_logger()
   local remote_nvim = require("remote-nvim")
 
@@ -142,6 +143,7 @@ M.generate_equally_spaced_columns = function(token_arr, num)
   return formatted_lines
 end
 
+---Truncate the plugin log file
 M.truncate_log = function()
   local remote_nvim = require("remote-nvim")
   local stat = vim.loop.fs_stat(remote_nvim.config.log.filepath)

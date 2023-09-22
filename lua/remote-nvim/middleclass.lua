@@ -1,3 +1,11 @@
+---@class remote-nvim.Object
+---@field private _VERSION string Version of implementation
+---@field private _DESCRIPTION string Description of the implementation
+---@field private _URL string URL of the project
+---@field private _LICENSE string License info
+---@field new fun(self: remote-nvim.Object, ...): remote-nvim.Object Create new instance of the class
+---@field class fun(name: string, super:remote-nvim.Object?): remote-nvim.Object Create a new class
+---@field subclass fun(self: remote-nvim.Object, name: string): remote-nvim.Object Generate a subclass
 local middleclass = {
   _VERSION = "middleclass v4.1.1",
   _DESCRIPTION = "Object Orientation for Lua",
@@ -42,7 +50,7 @@ local function _createIndexWrapper(aClass, f)
       end
     end
   else -- if  type(f) == "table" then
-    return function(self, name)
+    return function(_, name)
       local value = aClass.__instanceDict[name]
 
       if value ~= nil then
@@ -78,6 +86,7 @@ end
 local function _tostring(self)
   return "class " .. self.name
 end
+
 local function _call(self, ...)
   return self:new(...)
 end
@@ -147,7 +156,7 @@ local DefaultMixin = {
     return "instance of " .. tostring(self.class)
   end,
 
-  init = function(self, ...) end,
+  init = function(_, ...) end,
 
   isInstanceOf = function(self, aClass)
     return type(aClass) == "table"
@@ -194,7 +203,7 @@ local DefaultMixin = {
       return subclass
     end,
 
-    subclassed = function(self, other) end,
+    subclassed = function(_, _) end,
 
     isSubclassOf = function(self, other)
       return type(other) == "table"

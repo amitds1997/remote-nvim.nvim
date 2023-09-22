@@ -2,7 +2,7 @@ local M = {}
 
 ---Get user input
 ---@param input_label string Label for the input box
----@param input_type? prompt_type What kind of value would be typed as input
+---@param input_type prompt_type? What kind of value would be typed as input
 ---@return string response User response
 function M.get_input(input_label, input_type)
   input_type = input_type or "plain"
@@ -17,7 +17,7 @@ end
 ---Get selection handling coroutines
 ---@param choices string[]
 ---@param selection_opts table
----@return string|nil selected_choice Selected choice
+---@return string? selected_choice Selected choice
 function M.get_selection(choices, selection_opts)
   local co = coroutine.running()
   local selection_made = false

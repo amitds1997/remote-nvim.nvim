@@ -1,13 +1,9 @@
----@class Object
----@field subclass function
----@field super table
-
----@class Executor: Object
+---@class remote-nvim.providers.Executor: remote-nvim.Object
 ---@field host string Host name
 ---@field conn_opts string Connection options (passed when connecting)
----@field _job_id integer|nil Job ID of the current job
----@field _job_exit_code integer|nil Exit code of the job on the executor
----@field _job_stdout string[] Job output (if job is running)
+---@field protected _job_id integer? Job ID of the current job
+---@field protected _job_exit_code integer? Exit code of the job on the executor
+---@field protected _job_stdout string[] Job output (if job is running)
 local Executor = require("remote-nvim.middleclass")("Executor")
 
 ---Initialize executor instance
@@ -33,8 +29,8 @@ end
 ---Upload data to the host
 ---@param localSrcPath string Local path from which data would be uploaded
 ---@param remoteDestPath string Path on host where data would be uploaded
----@param cb? function Callback to call on upload completion
--- selene: allow(unused_variable)
+---@param cb function? Callback to call on upload completion
+---@diagnostic disable-next-line: unused-local
 function Executor:upload(localSrcPath, remoteDestPath, cb)
   error("Not implemented")
 end
@@ -42,15 +38,15 @@ end
 ---Download data from host
 ---@param remoteSrcPath string Remote path where data is located
 ---@param localDestPath string Local path where data will be downloaded
----@param cb function Callback to call on download completion
--- selene: allow(unused_variable)
+---@param cb function? Callback to call on download completion
+---@diagnostic disable-next-line: unused-local
 function Executor:download(remoteSrcPath, localDestPath, cb)
   error("Not implemented")
 end
 
 ---Run command on host
 ---@param command string Command to run on the remote host
----@param cb? function Callback to call on job completion
+---@param cb function? Callback to call on job completion
 function Executor:run_command(command, cb)
   return self:run_executor_job(command, cb)
 end
@@ -59,7 +55,7 @@ end
 ---@async
 ---Run the job over executor
 ---@param command string Command which should be started as a job
----@param cb? function Callback to be called on job completion
+---@param cb function? Callback to be called on job completion
 function Executor:run_executor_job(command, cb)
   local co = coroutine.running()
 

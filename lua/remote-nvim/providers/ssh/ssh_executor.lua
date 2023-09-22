@@ -1,12 +1,12 @@
----@class SSHExecutor: Executor
----@field super Executor
+---@class SSHExecutor: remote-nvim.providers.Executor
+---@field super remote-nvim.providers.Executor
 ---@field ssh_conn_opts string Connection options for SSH command
 ---@field scp_connection_options string Connection options to SCP command
 ---@field ssh_binary string Binary to use for SSH operations
 ---@field scp_binary string Binary to use for SCP operations
----@field _ssh_prompts RemoteNeovimSSHPrompts[] SSH prompts registered for processing for input
----@field _job_stdout_processed_idx number Last index processed by output processor
----@field _job_prompt_responses table<string,string> Responses for prompts provided by user during the job
+---@field protected _ssh_prompts RemoteNeovimSSHPrompts[] SSH prompts registered for processing for input
+---@field protected _job_stdout_processed_idx number Last index processed by output processor
+---@field protected _job_prompt_responses table<string,string> Responses for prompts provided by user during the job
 local SSHExecutor = require("remote-nvim.providers.executor"):subclass("SSHExecutor")
 
 ---Initialize SSH executor instance
@@ -37,7 +37,7 @@ end
 ---Upload data from local path to remote path
 ---@param localSrcPath string Local path
 ---@param remoteDestPath string Remote path
----@param cb? function Callback to call after job completion
+---@param cb function? Callback to call after job completion
 function SSHExecutor:upload(localSrcPath, remoteDestPath, cb)
   local remotePath = ("%s:%s"):format(self.host, remoteDestPath)
   local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, localSrcPath, remotePath)
@@ -48,7 +48,7 @@ end
 ---Download data from remote path to local path
 ---@param remoteSrcPath string Remote path
 ---@param localDescPath string Local path
----@param cb? function Callback to call after job completion
+---@param cb function? Callback to call after job completion
 function SSHExecutor:download(remoteSrcPath, localDescPath, cb)
   local remotePath = ("%s:%s"):format(self.host, remoteSrcPath)
   local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, remotePath, localDescPath)
@@ -58,8 +58,8 @@ end
 
 ---Run command on the remote host
 ---@param command string Command to be run on the remote host
----@param additional_conn_opts? string Additional command options to be added to connections opts
----@param cb? function Callback to call after job completion
+---@param additional_conn_opts string? Additional command options to be added to connections opts
+---@param cb function? Callback to call after job completion
 function SSHExecutor:run_command(command, additional_conn_opts, cb)
   -- Append additional connection options (if any)
   local conn_opts = additional_conn_opts == nil and self.ssh_conn_opts

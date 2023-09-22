@@ -1,35 +1,44 @@
 local constants = require("remote-nvim.constants")
 local utils = require("remote-nvim.utils")
+---@class remote-nvim.RemoteNeovim
+---@field config remote-nvim.config.PluginConfig Plugin configuration
+---@field session_provider SessionProvider Session provider for each unique host
 local M = {}
-
----@class RemoteNeovimConfig
----@field ssh_config RemoteNeovimSSHConfig
----@field neovim_install_script_path string Local path where neovim installation script is stored
----@field remote_neovim_install_home string Where should remote neovim install and save configurations on the remote server
----@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
---server is stored. This is assumed to be a directory and entire directory would be copied over
----@field local_client_config LocalClientConfig Configuration for the local client
 
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
 
----@class LocalClientConfig
----@field callback function<string, WorkspaceConfig> Function that would be called upon to start a Neovim client if not nil
-
----@class RemoteNeovimSSHPrompts
+---@class remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt
 ---@field match string Text that input should be matched against to identify need for stdin
 ---@field type prompt_type Is the input to be provided a secret?
----@field input_prompt? string What should be shown as input prompt when requesting user for input
+---@field input_prompt string? What should be shown as input prompt when requesting user for input
 ---@field value_type prompt_value_type Is the prompt value going to remain same throughout a session, if yes, it can be cached
 ---@field value string Default value to fill in for the prompt, if any
 
----@class RemoteNeovimSSHConfig
+---@class remote-nvim.config.PluginConfig.SSHConfig
 ---@field ssh_binary string Name of binary on runtime path for ssh
 ---@field scp_binary string Name of binary on runtime path for scp
 ---@field ssh_config_file_paths string[] Location of SSH configuration files that you want the plugin to consider
----@field ssh_prompts RemoteNeovimSSHPrompts[] List of SSH prompts that should be considered for input
+---@field ssh_prompts remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt[] List of SSH prompts that should be considered for input
 
----@type RemoteNeovimConfig
+---@class remote-nvim.config.RemoteConfig.LocalClientConfig
+---@field callback function<string, ProviderConfig> Function that would be called upon to start a Neovim client if not nil
+
+---@class remote-nvim.config.PluginConfig.LogConfig
+---@field filepath string Location of log file
+---@field level string Logging level
+---@field max_size integer Max file size, after which it will be truncated
+
+---@class remote-nvim.config.PluginConfig
+---@field ssh_config remote-nvim.config.PluginConfig.SSHConfig SSH configuration
+---@field neovim_install_script_path string Local path where neovim installation script is stored
+---@field remote_neovim_install_home string Where should remote neovim install and save configurations on the remote server
+---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
+--server is stored. This is assumed to be a directory and entire directory would be copied over
+---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig Configuration for the local client
+---@field log remote-nvim.config.PluginConfig.LogConfig Plugin logging options
+
+---@type remote-nvim.config.PluginConfig
 M.default_opts = {
   ssh_config = {
     ssh_binary = "ssh",
@@ -75,7 +84,7 @@ M.default_opts = {
 }
 
 ---Setup for the plugin
----@param opts RemoteNeovimConfig User configuration parameters for the plugin
+---@param opts remote-nvim.config.PluginConfig User provided plugin configuration
 ---@return nil
 M.setup = function(opts)
   if vim.fn.has("nvim-0.8.0") ~= 1 then
@@ -84,7 +93,7 @@ M.setup = function(opts)
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
   M.config.ssh_config.ssh_binary = M.config.ssh_config.ssh_binary
   M.config.ssh_config.scp_binary = M.config.ssh_config.scp_binary
-  M.session_provider = require("remote-nvim.providers.session_provider"):new()
+  M.session_provider = require("remote-nvim.providers.session_provider")()
   require("remote-nvim.command")
 
   utils.truncate_log()
