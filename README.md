@@ -1,7 +1,7 @@
 # 🚀 Remote Nvim
 
-**remote-nvim.nvim** brings the [Remote development using SSH](https://code.visualstudio.com/docs/remote/ssh)
-in VSCode to Neovim. If you use this plugin along with [devpod](https://github.com/loft-sh/devpod),
+**remote-nvim.nvim** brings the [remote development (similar to VSCode)](https://code.visualstudio.com/docs/remote/remote-overview)
+to Neovim. If you use this plugin along with [devpod](https://github.com/loft-sh/devpod),
 this also enables Dev Containers development natively from Neovim using this
 plugin.
 
@@ -41,7 +41,8 @@ lot though).** 🚧
 
 ## ✨ Features
 
-- [x] Automatic installation of Neovim on remote
+- [x] Automatically install Neovim on remote
+- [x] No changes to your system environment
 - [x] Automatic copying over your local Neovim configuration
 - [x] Remember past sessions so that we can easily connect back to them
 - [x] Control over how to launch your local client
@@ -52,8 +53,7 @@ so choose!)
 - [x] Support to clean up everything on your remote
 - [x] Support for dev containers (using [devpod](https://github.com/loft-sh/devpod))
 - [ ] Remote development inside Docker container
-- [ ] Complete installation over SSH (without using internet on remote;
-basically download locally and copy over the installation over SSH)
+- [ ] Installation using local network when remote does not have access to internet
 
 ## 📥 Installation
 
@@ -223,16 +223,12 @@ client both die. You can read the [discussion here](https://github.com/neovim/ne
 to figure out your own way forward to just close a TUI or else just relaunch the
 session using `:RemoteStart`. It should be fast, after setup, if you are on a
 good network.
-- When we launch the remote server, it is associated with the Neovim instance it
-is launched from. Closing that Neovim instance would close the server as well.
-- This plugin does not introduce any changes in your PATH variables on remote
-server. Instead it runs with by modifying the `XDG_*` variables when launching
-your remote Neovim instance so that your entire data is contained inside your
-remote neovim folder. So, take care when using any operations that depend on it.
+- Launched remote server is bound to your Neovim instance. If you close your local
+instance, the remote server will also get closed.
 - Sometimes, our Neovim configurations are buggy and when your client launches,
 you would see a fresh, clean Neovim installation (assuming you copied your
 Neovim config over). This is no fault with the plugin. Run `:messages` to see
-what went wrong. Usually, `git` or some other important binary is not available
+what went wrong. Usually, `git` or some other necessary binary might be unavailable
 on the remote in some docker systems.
 
 ## Credits
