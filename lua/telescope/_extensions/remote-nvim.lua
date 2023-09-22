@@ -3,12 +3,10 @@ local previewers = require("telescope.previewers")
 local remote_nvim = require("remote-nvim")
 local telescope = require("telescope")
 local conf = require("telescope.config").values
-local RemoteNeovimSSHProvider = require("remote-nvim.providers.ssh.ssh_provider")
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
-local remote_nvim_utils = require("remote-nvim.utils")
 
 -- Build host file from parsed hosts from plugin
 local function build_preview_host(host)
@@ -27,11 +25,11 @@ end
 
 local function select_ssh_host_from_workspace_config(opts)
   opts = opts or {}
-  local workspace_config = require("remote-nvim").host_workspace_config
+  local config_provider = remote_nvim.session_provider:get_config_provider()
 
   local previewer = previewers.new_buffer_previewer({
     define_preview = function(self, entry)
-      local host_config = workspace_config:get_workspace_config(entry.value)
+      local host_config = config_provider:get_workspace_config(entry.value)
 
       -- Find the longest key length
       local max_key_length = 0
@@ -56,7 +54,7 @@ local function select_ssh_host_from_workspace_config(opts)
       prompt_title = "Connect to saved workspace",
       previewer = previewer,
       finder = finders.new_table({
-        results = workspace_config:get_all_host_ids(),
+        results = vim.tbl_keys(config_provider:get_workspace_config()),
         entry_maker = function(entry)
           return {
             display = function(input)
@@ -83,10 +81,11 @@ local function select_ssh_host_from_workspace_config(opts)
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
           local host_identifier = selection.value
-          local workspace_data = workspace_config:get_workspace_config(host_identifier)
-          remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
-            or RemoteNeovimSSHProvider:new(workspace_data.host, workspace_data.connection_options)
-          remote_nvim.sessions[host_identifier]:set_up_remote()
+          ---@type remote-nvim.providers.WorkspaceConfig
+          local workspace_data = config_provider:get_workspace_config(host_identifier)
+          remote_nvim.session_provider
+            :get_or_initialize_session("ssh", workspace_data.host, workspace_data.connection_options)
+            :launch_neovim()
         end)
         return true
       end,
@@ -130,8 +129,7 @@ local function select_ssh_host_from_ssh_config(opts)
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
           local host = selection.value["Host"]
-          remote_nvim.sessions[host] = remote_nvim.sessions[host] or RemoteNeovimSSHProvider:new(host)
-          remote_nvim.sessions[host]:set_up_remote()
+          remote_nvim.session_provider:get_or_initialize_session("ssh", host, ""):launch_neovim()
         end)
         return true
       end,
@@ -170,7 +168,7 @@ The current known host parser only deals with exact host matches. If you have sp
 You get the gist. Just remove `ssh` from the beginning of what you would normally type, and you should be golden.]],
     },
   }
-  if not (#remote_nvim.session_provider.remote_workspaces_config:get_all_host_ids() > 0) then
+  if not (#vim.tbl_keys(remote_nvim.session_provider:get_saved_host_configs("ssh")) > 0) then
     table.remove(possible_ssh_options, 1)
   end
 
@@ -231,11 +229,7 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
             if ssh_host == "" then
               return
             end
-
-            local host_identifier = remote_nvim_utils.get_host_identifier(ssh_host, ssh_args)
-            remote_nvim.sessions[host_identifier] = remote_nvim.sessions[host_identifier]
-              or RemoteNeovimSSHProvider:new(ssh_host, ssh_args)
-            remote_nvim.sessions[host_identifier]:set_up_remote()
+            remote_nvim.session_provider:get_or_initialize_session("ssh", ssh_host, ssh_args)
           end
         end)
         return true
