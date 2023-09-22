@@ -82,18 +82,6 @@ describe("Config", function()
     end)
   end)
 
-  it("should fetch existing host identifiers correctly", function()
-    local host_ids = config_provider:get_host_ids()
-
-    -- We sort them both since map -> array does not guarantee order and is not important for us
-    table.sort(host_ids)
-    local expected_host_ids = { "localhost:9111", "test-container", "vscode-remote-try-node.devpod" }
-    table.sort(expected_host_ids)
-
-    assert.is_true(vim.tbl_islist(host_ids))
-    assert.are.same(host_ids, expected_host_ids)
-  end)
-
   describe("should add host configuration properly", function()
     local host_id, wk_config
 

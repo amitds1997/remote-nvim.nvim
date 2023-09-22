@@ -34,9 +34,15 @@ function SessionProvider:get_active_sessions()
   return self.sessions
 end
 
+---Get config provider
+---@return remote-nvim.ConfigProvider
+function SessionProvider:get_config_provider()
+  return self.remote_workspaces_config
+end
+
 ---Provides saved configurations for the given provider type
----@param provider_type string?
----@return table<string, string|table<string, string>>
+---@param provider_type provider_type?
+---@return table<string, remote-nvim.providers.WorkspaceConfig>
 function SessionProvider:get_saved_host_configs(provider_type)
   return self.remote_workspaces_config:get_workspace_config(nil, provider_type)
 end

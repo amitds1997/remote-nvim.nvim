@@ -63,8 +63,7 @@ function Provider:init(host, conn_opts)
   end
   self.conn_opts = self:_cleanup_conn_options(conn_opts)
   self.logger = utils.get_logger()
-  ---@type remote-nvim.ConfigProvider
-  self._config_provider = require("remote-nvim.config")()
+  self._config_provider = remote_nvim.session_provider:get_config_provider()
 
   -- These should be overriden in implementing classes
 
@@ -154,6 +153,10 @@ end
 ---@private
 ---Reset provider state
 function Provider:_reset()
+  if self:is_remote_server_running() then
+    vim.fn.jobstop(self._remote_server_process_id)
+    self.notifier:notify("Remote Neovim server stopped", vim.log.levels.INFO, true)
+  end
   self._setup_running = false
   self._remote_server_process_id = nil
   self._local_free_port = nil
@@ -281,10 +284,9 @@ function Provider:_get_neovim_config_upload_preference()
   return self._host_config.config_copy
 end
 
----@private
 ---Verify if the server is already running or not
 ---@return boolean
-function Provider:_remote_server_already_running()
+function Provider:is_remote_server_running()
   return self._remote_server_process_id ~= nil and (vim.fn.jobwait({ self._remote_server_process_id }, 0)[1] == -1)
 end
 
@@ -308,7 +310,7 @@ function Provider:_setup_remote()
   if not self._setup_running then
     self:_verify_connection_to_host()
 
-    if not self:_remote_server_already_running() then
+    if not self:is_remote_server_running() then
       self._setup_running = true
 
       -- Create necessary directories
@@ -369,7 +371,7 @@ end
 ---@private
 ---Launch remote neovim server
 function Provider:_launch_remote_neovim_server()
-  if not self:_remote_server_already_running() then
+  if not self:is_remote_server_running() then
     -- Find free port on remote
     local free_port_on_remote_cmd = ("%s -l %s"):format(
       self:_remote_neovim_binary_path(),
@@ -513,6 +515,11 @@ function Provider:launch_neovim()
   end)
 end
 
+---Stop running Neovim instance (if any)
+function Provider:stop_neovim()
+  self:_reset()
+end
+
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
@@ -538,6 +545,7 @@ function Provider:clean_up_remote_host()
   end)
 
   self._config_provider:remove_workspace_config(self.unique_host_id)
+  self:_reset()
 end
 
 ---@private

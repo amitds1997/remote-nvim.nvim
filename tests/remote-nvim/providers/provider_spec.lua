@@ -289,21 +289,42 @@ describe("Provider", function()
     end)
   end)
 
-  it("should handle resetting correctly", function()
-    provider._setup_running = true
-    provider._remote_server_process_id = 2100
-    provider._local_free_port = "52212"
+  describe("should handle resetting correctly", function()
+    local jobwait_stub
+    before_each(function()
+      jobwait_stub = stub(vim.fn, "jobwait")
+      jobwait_stub.returns({ -1 })
+    end)
 
-    provider:_reset()
-    assert.equals(provider._setup_running, false)
-    assert.equals(provider._remote_server_process_id, nil)
-    assert.equals(provider._local_free_port, nil)
+    it("when remote server is running", function()
+      local jobstop_stub = stub(vim.fn, "jobstop")
+      provider._setup_running = true
+      provider._remote_server_process_id = 2100
+      provider._local_free_port = "52212"
+
+      provider:_reset()
+      assert.equals(provider._setup_running, false)
+      assert.equals(provider._remote_server_process_id, nil)
+      assert.equals(provider._local_free_port, nil)
+      assert.stub(jobstop_stub).was.called()
+    end)
+
+    it("when remote server is not running", function()
+      provider._setup_running = true
+      provider._remote_server_process_id = nil
+      provider._local_free_port = "52212"
+
+      provider:_reset()
+      assert.equals(provider._setup_running, false)
+      assert.equals(provider._remote_server_process_id, nil)
+      assert.equals(provider._local_free_port, nil)
+    end)
   end)
 
   describe("should determine correctly if remote server is running", function()
     it("when we do not have a registered process id", function()
       provider._remote_server_process_id = nil
-      assert.equals(provider:_remote_server_already_running(), false)
+      assert.equals(provider:is_remote_server_running(), false)
     end)
 
     describe("when we have a registered process", function()
@@ -316,12 +337,12 @@ describe("Provider", function()
 
       it("and it is still running", function()
         job_wait_stub.returns({ -1 })
-        assert.equals(provider:_remote_server_already_running(), true)
+        assert.equals(provider:is_remote_server_running(), true)
       end)
 
       it("but it is no longer running", function()
         job_wait_stub.returns({ 0 })
-        assert.equals(provider:_remote_server_already_running(), false)
+        assert.equals(provider:is_remote_server_running(), false)
       end)
     end)
   end)
@@ -440,9 +461,9 @@ describe("Provider", function()
   end)
 
   describe("should handle launching remote neovim server correctly", function()
-    local remote_server_already_running_stub, run_command_stub
+    local is_remote_server_running_stub, run_command_stub
     before_each(function()
-      remote_server_already_running_stub = stub(provider, "_remote_server_already_running")
+      is_remote_server_running_stub = stub(provider, "is_remote_server_running")
       run_command_stub = stub(provider, "run_command")
 
       provider._config_provider:add_workspace_config(provider.unique_host_id, {
@@ -464,16 +485,15 @@ describe("Provider", function()
     end)
 
     it("when a remote server is already running", function()
-      remote_server_already_running_stub.returns(true)
+      is_remote_server_running_stub.returns(true)
       provider:_launch_remote_neovim_server()
       assert.stub(run_command_stub).was.not_called()
     end)
 
     it("when launching a remote server", function()
-      assert:set_parameter("TableFormatLevel", 0)
       local output_stub = stub(provider.executor, "job_stdout")
       local local_free_port_stub = stub(require("remote-nvim.providers.utils"), "find_free_port")
-      remote_server_already_running_stub.returns(false)
+      is_remote_server_running_stub.returns(false)
       output_stub.returns({ 32123 })
       local_free_port_stub.returns(52232)
 

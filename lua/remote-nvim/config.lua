@@ -21,7 +21,7 @@ end
 
 ---Get configuration data by host or provider type
 ---@param host_id string? Host identifier
----@param provider_type string? Provider type for the configuration records
+---@param provider_type provider_type? Provider type for the configuration records
 ---@return table<string,remote-nvim.providers.WorkspaceConfig>|remote-nvim.providers.WorkspaceConfig wk_config Workspace configuration filtered by provided type
 function ConfigProvider:get_workspace_config(host_id, provider_type)
   local workspace_config
@@ -41,12 +41,6 @@ function ConfigProvider:get_workspace_config(host_id, provider_type)
   end
 
   return workspace_config
-end
-
----Get all host identifiers
----@return string[] host_id_list List of host identifiers
-function ConfigProvider:get_host_ids()
-  return vim.tbl_keys(self._config_data)
 end
 
 ---Add a workspace config record
