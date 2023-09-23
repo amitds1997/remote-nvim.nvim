@@ -137,16 +137,32 @@ describe("Provider", function()
   end)
 
   describe("should handle running commands and uploads correctly", function()
+    local executor_job_status_stub
+    local desc = "Test command"
+
+    before_each(function()
+      executor_job_status_stub = stub(provider.executor, "last_job_status")
+    end)
+
     it("when they succeed", function()
-      assert.has.no_errors(function()
-        provider:run_command("echo OK", "Successful command")
-      end)
+      executor_job_status_stub.returns(0)
+      provider:_handle_job_completion(desc)
+      assert
+        .stub(notifier_stub).was
+        .called_with(provider.notifier, ("'%s' succeeded."):format(desc), vim.log.levels.INFO)
     end)
 
     it("when they fail", function()
-      assert.has.errors(function()
-        provider:run_command("ehco OK", "Run echo command")
+      executor_job_status_stub.returns(255)
+
+      local co = coroutine.create(function()
+        provider:_handle_job_completion(desc)
       end)
+      coroutine.resume(co)
+
+      assert
+        .stub(notifier_stub).was
+        .called_with(provider.notifier, ("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
     end)
   end)
 
@@ -296,19 +312,6 @@ describe("Provider", function()
       jobwait_stub.returns({ -1 })
     end)
 
-    it("when remote server is running", function()
-      local jobstop_stub = stub(vim.fn, "jobstop")
-      provider._setup_running = true
-      provider._remote_server_process_id = 2100
-      provider._local_free_port = "52212"
-
-      provider:_reset()
-      assert.equals(provider._setup_running, false)
-      assert.equals(provider._remote_server_process_id, nil)
-      assert.equals(provider._local_free_port, nil)
-      assert.stub(jobstop_stub).was.called()
-    end)
-
     it("when remote server is not running", function()
       provider._setup_running = true
       provider._remote_server_process_id = nil
@@ -319,6 +322,19 @@ describe("Provider", function()
       assert.equals(provider._remote_server_process_id, nil)
       assert.equals(provider._local_free_port, nil)
     end)
+  end)
+
+  it("should stop running remote server if needed", function()
+    local system_stub = stub(vim.fn, "system")
+    provider._setup_running = true
+    provider._remote_server_process_id = 2100
+    provider._local_free_port = "52212"
+
+    provider:stop_neovim()
+    assert.equals(provider._setup_running, false)
+    assert.equals(provider._remote_server_process_id, nil)
+    assert.equals(provider._local_free_port, nil)
+    assert.stub(system_stub).was.called()
   end)
 
   describe("should determine correctly if remote server is running", function()

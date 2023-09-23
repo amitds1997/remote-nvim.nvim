@@ -229,7 +229,7 @@ You get the gist. Just remove `ssh` from the beginning of what you would normall
             if ssh_host == "" then
               return
             end
-            remote_nvim.session_provider:get_or_initialize_session("ssh", ssh_host, ssh_args)
+            remote_nvim.session_provider:get_or_initialize_session("ssh", ssh_host, ssh_args):launch_neovim()
           end
         end)
         return true

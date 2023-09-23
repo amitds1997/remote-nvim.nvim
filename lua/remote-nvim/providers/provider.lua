@@ -153,10 +153,6 @@ end
 ---@private
 ---Reset provider state
 function Provider:_reset()
-  if self:is_remote_server_running() then
-    vim.fn.jobstop(self._remote_server_process_id)
-    self.notifier:notify("Remote Neovim server stopped", vim.log.levels.INFO, true)
-  end
   self._setup_running = false
   self._remote_server_process_id = nil
   self._local_free_port = nil
@@ -517,6 +513,10 @@ end
 
 ---Stop running Neovim instance (if any)
 function Provider:stop_neovim()
+  if self:is_remote_server_running() then
+    local cmd = ("nvim --server localhost:%s --remote-send ':q<CR>'"):format(self._local_free_port)
+    vim.fn.system(cmd)
+  end
   self:_reset()
 end
 
@@ -540,21 +540,27 @@ function Provider:clean_up_remote_host()
     elseif cleanup_choice == deletion_choices[2] then
       self:run_command(("rm -rf %s"):format(self._remote_neovim_home), "Delete remote nvim from remote host")
     end
+    self.notifier:notify("Cleanup on remote host completed", vim.log.levels.INFO, true)
 
-    self.notifier:notify("Cleanup on remote host completed")
+    self._config_provider:remove_workspace_config(self.unique_host_id)
+    self:stop_neovim()
   end)
-
-  self._config_provider:remove_workspace_config(self.unique_host_id)
-  self:_reset()
 end
 
 ---@private
 ---Handle job completion
 ---@param desc string Description of the job
 function Provider:_handle_job_completion(desc)
-  if self.executor:last_job_status() ~= 0 then
+  local exit_code = self.executor:last_job_status()
+  if exit_code ~= 0 then
     self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
-    error(("'%s' failed"):format(desc))
+    local co = coroutine.running()
+    if co then
+      self.logger.error(debug.traceback(co, ("'%s' failed."):format(desc)))
+      coroutine.yield()
+    else
+      error(("'%s' failed"):format(desc))
+    end
   else
     self.notifier:notify(("'%s' succeeded."):format(desc), vim.log.levels.INFO)
   end
