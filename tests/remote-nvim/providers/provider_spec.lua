@@ -7,35 +7,37 @@ describe("Provider", function()
   local match = require("luassert.match")
   ---@type remote-nvim.providers.Provider
   local provider
+  local provider_host
   local notifier_stub
 
   before_each(function()
-    provider = Provider("localhost")
+    provider_host = require("remote-nvim.utils").generate_random_string(6)
+    provider = Provider(provider_host)
     notifier_stub = stub(provider.notifier, "notify")
   end)
 
   describe("should handle array-type connections options", function()
     it("when it is not empty", function()
-      provider = Provider("localhost", { "-p", "3011", "-t", "-x" })
+      provider = Provider(provider_host, { "-p", "3011", "-t", "-x" })
       assert.equals(provider.conn_opts, "-p 3011 -t -x")
     end)
 
     it("when it is an empty array", function()
-      provider = Provider("localhost", {})
+      provider = Provider(provider_host, {})
       assert.equals(provider.conn_opts, "")
     end)
   end)
 
   it("should handle missing connection options correctly", function()
-    provider = Provider("localhost")
+    provider = Provider(provider_host)
     assert.equals(provider.conn_opts, "")
 
-    provider = Provider("localhost", nil)
+    provider = Provider(provider_host, nil)
     assert.equals(provider.conn_opts, "")
   end)
 
   it("should handle string connection options correctly", function()
-    provider = Provider("localhost", "-p 3011 -t -x")
+    provider = Provider(provider_host, "-p 3011 -t -x")
     assert.equals(provider.conn_opts, "-p 3011 -t -x")
   end)
 
@@ -44,7 +46,7 @@ describe("Provider", function()
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
     before_each(function()
-      provider = Provider("localhost", { "-p", "3011" })
+      provider = Provider(provider_host, { "-p", "3011" })
       detect_remote_os_stub = stub(provider, "_get_remote_os")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
 
@@ -395,7 +397,7 @@ describe("Provider", function()
 
         provider._config_provider:add_workspace_config(provider.unique_host_id, {
           provider = "local",
-          host = "localhost",
+          host = provider_host,
           connection_options = "",
           remote_neovim_home = "~/.remote-nvim",
           config_copy = true,
@@ -484,7 +486,7 @@ describe("Provider", function()
 
       provider._config_provider:add_workspace_config(provider.unique_host_id, {
         provider = "local",
-        host = "localhost",
+        host = provider_host,
         connection_options = "",
         remote_neovim_home = "~/.remote-nvim",
         config_copy = true,
