@@ -539,10 +539,12 @@ end
 ---Launch Neovim
 function Provider:launch_neovim()
   self:_run_code_in_coroutine(function()
+    self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
     self:_launch_local_neovim_client()
+    self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
   end)
 end
 
@@ -595,7 +597,10 @@ function Provider:_handle_job_completion(desc)
     self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
     local co = coroutine.running()
     if co then
-      self.logger.error(debug.traceback(co, ("'%s' failed."):format(desc)))
+      self.logger.error(
+        debug.traceback(co, ("'%s' failed."):format(desc)),
+        ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(self.executor:job_stdout(), "\n"))
+      )
       coroutine.yield()
     else
       error(("'%s' failed"):format(desc))
