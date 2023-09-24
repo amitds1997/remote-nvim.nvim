@@ -527,6 +527,7 @@ end
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
+    self:_setup_workspace_variables()
     self:_verify_connection_to_host()
     local deletion_choices = {
       "Delete neovim workspace (Choose if multiple people use the same user account)",
