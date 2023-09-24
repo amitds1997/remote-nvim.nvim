@@ -22,10 +22,12 @@ function SessionProvider:get_or_initialize_session(type, host, conn_opts)
   else
     error("Unknown provider type")
   end
-  if self.sessions[provider.unique_host_id] == nil then
-    self.sessions[provider.unique_host_id] = provider
+
+  local host_id = provider:get_unique_host_id()
+  if self.sessions[host_id] == nil then
+    self.sessions[host_id] = provider
   end
-  return self.sessions[provider.unique_host_id]
+  return self.sessions[host_id]
 end
 
 ---Get all active sessions

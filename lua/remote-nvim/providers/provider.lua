@@ -158,11 +158,10 @@ function Provider:_reset()
   self._local_free_port = nil
 end
 
----@protected
 ---Generate host identifer using host and port on host
 ---@return string host_id Unique identifier for the host
 function Provider:get_unique_host_id()
-  error("Not implemented")
+  return self.unique_host_id
 end
 
 ---@private
@@ -355,10 +354,12 @@ function Provider:_setup_remote()
       end
 
       self._setup_running = false
+    else
+      self.notifier:notify("Neovim server is already running. Not starting a new one")
     end
   else
     self.notifier:notify_once(
-      "Another instance of setup is already running. Wait for it to complete.",
+      "Another instance of setup is already running. Wait for it to complete",
       vim.log.levels.WARN
     )
   end
@@ -376,8 +377,15 @@ function Provider:_launch_remote_neovim_server()
     self:run_command(free_port_on_remote_cmd, "Find free port on remote")
     local remote_free_port_output = self.executor:job_stdout()
     local remote_free_port = remote_free_port_output[#remote_free_port_output]
+    self.logger.fmt_debug("[%s][%s] Remote free port: %s", self.provider_type, self.unique_host_id, remote_free_port)
 
     self._local_free_port = provider_utils.find_free_port()
+    self.logger.fmt_debug(
+      "[%s][%s] Local  free port: %s",
+      self.provider_type,
+      self.unique_host_id,
+      self._local_free_port
+    )
 
     -- Launch Neovim server and port forward
     local port_forward_opts = ([[-t -L %s:localhost:%s]]):format(self._local_free_port, remote_free_port)
@@ -579,7 +587,7 @@ end
 ---@param command string
 ---@param desc string Description of the command running
 function Provider:run_command(command, desc, ...)
-  self.logger.fmt_debug("%s: Running %s", self.provider_type, command)
+  self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
   self.notifier:notify(("'%s' running..."):format(desc))
   self.executor:run_command(command, ...)
   self:_handle_job_completion(desc)
@@ -591,7 +599,13 @@ end
 ---@param remote_path string Path on the remote
 ---@param desc string Description of the command running
 function Provider:upload(local_path, remote_path, desc)
-  self.logger.fmt_debug("%s: Uploading %s to %s on remote", self.provider_type, local_path, remote_path)
+  self.logger.fmt_debug(
+    "[%s][%s] Uploading %s to %s on remote",
+    self.provider_type,
+    self.unique_host_id,
+    local_path,
+    remote_path
+  )
   self.notifier:notify(("'%s' upload running..."):format(desc))
   self.executor:upload(local_path, remote_path)
   self:_handle_job_completion(desc)

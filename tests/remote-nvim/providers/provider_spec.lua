@@ -383,7 +383,7 @@ describe("Provider", function()
         .stub(notify_once_stub).was
         .called_with(
           provider.notifier,
-          "Another instance of setup is already running. Wait for it to complete.",
+          "Another instance of setup is already running. Wait for it to complete",
           vim.log.levels.WARN
         )
     end)
