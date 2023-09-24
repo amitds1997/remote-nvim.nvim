@@ -60,6 +60,9 @@ M.default_opts = {
       },
     },
   },
+  docker_config = {
+    docker_binary = "docker",
+  },
   neovim_install_script_path = utils.path_join(
     utils.is_windows,
     vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h"),
