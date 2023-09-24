@@ -10,7 +10,7 @@ concurrency:
 jobs:
   release:
     name: Generate release
-    if: ${{ github.ref == 'refs/heads/main' }}
+    # if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
