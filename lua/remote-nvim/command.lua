@@ -20,9 +20,13 @@ function M.RemoteStart(opts)
   else
     ---@type remote-nvim.providers.WorkspaceConfig
     local workspace_config = remote_nvim.session_provider:get_config_provider():get_workspace_config(host_identifier)
-    remote_nvim.session_provider
-      :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
-      :launch_neovim()
+    if vim.tbl_isempty(workspace_config) then
+      vim.notify("Unknown host identifier. Run :RemoteStart to connect to a new host", vim.log.levels.ERROR)
+    else
+      remote_nvim.session_provider
+        :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
+        :launch_neovim()
+    end
   end
 end
 
@@ -60,9 +64,14 @@ function M.RemoteCleanup(opts)
   for _, host_id in ipairs(host_ids) do
     ---@type remote-nvim.providers.WorkspaceConfig
     local workspace_config = remote_nvim.session_provider:get_config_provider():get_workspace_config(host_id)
-    remote_nvim.session_provider
-      :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
-      :clean_up_remote_host()
+
+    if vim.tbl_isempty(workspace_config) then
+      vim.notify("Unknown host identifier. Run :RemoteStart to connect to a new host", vim.log.levels.ERROR)
+    else
+      remote_nvim.session_provider
+        :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
+        :clean_up_remote_host()
+    end
   end
 end
 
@@ -136,6 +145,7 @@ vim.api.nvim_create_user_command("RemoteConfigDel", function(opts)
   for _, host_id in ipairs(host_identifiers) do
     remote_nvim.session_provider:get_config_provider():remove_workspace_config(host_id)
   end
+  vim.notify("Workspace configuration(s) deleted")
 end, {
   desc = "Delete cached workspace record",
   nargs = "+",
