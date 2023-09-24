@@ -54,7 +54,7 @@ describe("Provider", function()
         provider = "local",
         host = provider.host,
         connection_options = provider.conn_opts,
-        remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+        remote_neovim_home = ".remote-nvim",
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = workspace_id,
@@ -78,7 +78,7 @@ describe("Provider", function()
         provider = "local",
         host = provider.host,
         connection_options = provider.conn_opts,
-        remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+        remote_neovim_home = provider._remote_neovim_home,
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = workspace_id,
@@ -109,7 +109,7 @@ describe("Provider", function()
 
     it("by correctly setting workspace variables", function()
       provider:_setup_workspace_variables()
-      local remote_home = remote_nvim.config.remote_neovim_install_home
+      local remote_home = provider._remote_neovim_home
 
       assert.equals(provider._remote_os, "Linux")
       assert.equals(provider._remote_is_windows, false)
@@ -200,7 +200,7 @@ describe("Provider", function()
         provider = provider.provider_type,
         host = provider.host,
         connection_options = provider.conn_opts,
-        remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+        remote_neovim_home = ".remote-nvim",
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = "ajdfkafd",
@@ -270,7 +270,7 @@ describe("Provider", function()
         provider = provider.provider_type,
         host = provider.host,
         connection_options = provider.conn_opts,
-        remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+        remote_neovim_home = ".remote-nvim",
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = "ajdfkafd",
@@ -290,7 +290,7 @@ describe("Provider", function()
       provider:clean_up_remote_host()
       assert.stub(run_command_stub).was.called_with(
         match.is_ref(provider),
-        "rm -rf ~/.remote-nvim/workspaces/ajdfkafd",
+        ("rm -rf %s"):format(provider._remote_workspace_id_path),
         "Delete remote nvim workspace from remote host"
       )
       assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
@@ -300,9 +300,11 @@ describe("Provider", function()
       selection_stub.returns("Delete remote neovim from remote host (Nuke it!)")
 
       provider:clean_up_remote_host()
-      assert
-        .stub(run_command_stub).was
-        .called_with(match.is_ref(provider), "rm -rf ~/.remote-nvim", "Delete remote nvim from remote host")
+      assert.stub(run_command_stub).was.called_with(
+        match.is_ref(provider),
+        ("rm -rf %s"):format(provider._remote_neovim_home),
+        "Delete remote nvim from remote host"
+      )
       assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
     end)
   end)
@@ -545,7 +547,7 @@ describe("Provider", function()
         provider = provider.provider_type,
         host = provider.host,
         connection_options = provider.conn_opts,
-        remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+        remote_neovim_home = ".remote-nvim",
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = "ajdfkafd",
@@ -611,7 +613,7 @@ describe("Provider", function()
         provider = provider.provider_type,
         host = provider.host,
         connection_options = provider.conn_opts,
-        remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+        remote_neovim_home = ".remote-nvim",
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = "ajdfkafd",

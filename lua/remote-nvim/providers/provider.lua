@@ -93,7 +93,7 @@ function Provider:_setup_workspace_variables()
       provider = self.provider_type,
       host = self.host,
       connection_options = self.conn_opts,
-      remote_neovim_home = remote_nvim.config.remote_neovim_install_home,
+      remote_neovim_home = nil,
       config_copy = nil,
       client_auto_start = nil,
       workspace_id = utils.generate_random_string(10),
@@ -122,10 +122,20 @@ function Provider:_setup_workspace_variables()
   self._remote_os = self._host_config.os
   self._remote_is_windows = self._remote_os == "Windows" and true or false
   self._remote_neovim_version = self._host_config.neovim_version
-  self._remote_workspace_id = self._host_config.workspace_id
+
+  -- Set remote neovim home path
+
+  if self._host_config.remote_neovim_home == nil then
+    self._host_config.remote_neovim_home =
+      utils.path_join(self._remote_is_windows, self:_get_remote_user_home(), ".remote-nvim")
+    self._config_provider:update_workspace_config(self.unique_host_id, {
+      remote_neovim_home = self._host_config.remote_neovim_home,
+    })
+  end
 
   -- Set up remaining workspace variables
 
+  self._remote_workspace_id = self._host_config.workspace_id
   self._remote_neovim_home = self._host_config.remote_neovim_home
   self._remote_workspaces_path = utils.path_join(self._remote_is_windows, self._remote_neovim_home, "workspaces")
   self._remote_scripts_path = utils.path_join(self._remote_is_windows, self._remote_neovim_home, "scripts")
@@ -195,6 +205,19 @@ function Provider:_get_remote_os()
   end
 
   return self._remote_os
+end
+
+---@private
+---Get user's home directory on the remote host
+---@return string home_path User's home directory path
+function Provider:_get_remote_user_home()
+  if self._remote_neovim_home == nil then
+    self:run_command("echo $HOME", "Get remote user's home directory")
+    local cmd_out_lines = self.executor:job_stdout()
+    self._remote_neovim_home = cmd_out_lines[#cmd_out_lines]
+  end
+
+  return self._remote_neovim_home
 end
 
 ---@protected
