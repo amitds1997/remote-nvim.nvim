@@ -532,6 +532,10 @@ function Provider:clean_up_remote_host()
     local cleanup_choice = self:get_selection(deletion_choices, {
       prompt = "Choose what should be cleaned up?",
     })
+
+    -- Stop neovim first to avoid interference from running plugins and services
+    self:stop_neovim()
+
     if cleanup_choice == deletion_choices[1] then
       self:run_command(
         ("rm -rf %s"):format(self._remote_workspace_id_path),
@@ -543,7 +547,6 @@ function Provider:clean_up_remote_host()
     self.notifier:notify("Cleanup on remote host completed", vim.log.levels.INFO, true)
 
     self._config_provider:remove_workspace_config(self.unique_host_id)
-    self:stop_neovim()
   end)
 end
 
