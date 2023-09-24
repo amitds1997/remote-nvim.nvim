@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.0.1...v0.1.0) (2023-09-24)
+
+
+### Bug Fixes
+
+* handle when ui.select is synchronous ([#38](https://github.com/amitds1997/remote-nvim.nvim/issues/38)) ([da88176](https://github.com/amitds1997/remote-nvim.nvim/commit/da881769f9136620e6ce4691e4bfb953d9fc6361))
+* remove deprecated function call ([#35](https://github.com/amitds1997/remote-nvim.nvim/issues/35)) ([6be08bd](https://github.com/amitds1997/remote-nvim.nvim/commit/6be08bd6ae90faebea0ceb59059d0ad182ed6e16))
+
+
+### Miscellaneous Chores
+
+* release 0.1.0 ([8cf267e](https://github.com/amitds1997/remote-nvim.nvim/commit/8cf267e19b27546fa63ee99c6ab97fe3f4068fe4))
+
 ## 0.0.1 (2023-08-09)
 
 
