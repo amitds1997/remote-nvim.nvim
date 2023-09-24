@@ -1,4 +1,4 @@
-*remote-nvim.txt*      For Neovim >= 0.8.0      Last change: 2023 September 23
+*remote-nvim.txt*      For Neovim >= 0.8.0      Last change: 2023 September 24
 
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
