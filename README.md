@@ -132,11 +132,6 @@ These are the default values. Alter them as needed for your personal use.
   -- It should accept the same inputs as the packaged install script though)
   neovim_install_script_path = util.path_join(util.is_windows,
   util.get_package_root(), "scripts", "neovim_install.sh"),
-  -- Where should everything that Remote Neovim does on remote be stored. By
-  -- default, it stores everything inside ~/.remote-nvim so as long as you
-  -- delete that folder, you essentially wipe out everything that remote-nvim
-  -- has over there.
-  remote_neovim_install_home = util.path_join(util.is_windows, "~", ".remote-nvim"),
   -- Where is your personal Neovim config stored?
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
@@ -167,9 +162,11 @@ These are the default values. Alter them as needed for your personal use.
       },
     },
   },
-
 }
 ```
+
+On remote, the installation happens inside the `.remote-nvim` folder in the user's
+home directory.
 
 ## 📌 Usage
 

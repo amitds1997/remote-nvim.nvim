@@ -35,7 +35,6 @@ local utils = require("remote-nvim.utils")
 ---@class remote-nvim.config.PluginConfig
 ---@field ssh_config remote-nvim.config.PluginConfig.SSHConfig SSH configuration
 ---@field neovim_install_script_path string Local path where neovim installation script is stored
----@field remote_neovim_install_home string Where should remote neovim install and save configurations on the remote server
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
 ---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig Configuration for the local client
@@ -67,7 +66,6 @@ M.default_opts = {
     "scripts",
     "neovim_install.sh"
   ),
-  remote_neovim_install_home = utils.path_join(utils.is_windows, "~", ".remote-nvim"),
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
     callback = function(port, _)
