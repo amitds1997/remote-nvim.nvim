@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   install_test:
-    name: Test run Neovim installation
+    name: Test Neovim install
     strategy:
       fail-fast: false
       matrix:

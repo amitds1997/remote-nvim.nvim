@@ -7,7 +7,5 @@
 
 ## Backlog
 
-- [ ] Cleanup code
-- [ ] Add unit tests
 - [ ] Add CONTRIBUTING.md
 - [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)

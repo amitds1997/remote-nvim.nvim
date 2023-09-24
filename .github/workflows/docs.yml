@@ -1,5 +1,5 @@
 ---
-name: CI
+name: Docs
 on:  # yamllint disable-line rule:truthy
   pull_request:
     paths: [README.md]

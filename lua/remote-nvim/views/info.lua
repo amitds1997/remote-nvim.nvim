@@ -2,8 +2,8 @@ local Layout = require("nui.layout")
 local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local Popup = require("nui.popup")
+---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
-local logger = require("remote-nvim.utils").logger
 local utils = require("remote-nvim.utils")
 
 local M = {}
@@ -14,34 +14,32 @@ local function RemoteInfoNodes()
 
   local nodes = {
     NuiTree.Node({ text = "Global info" }, {
-      NuiTree.Node({ text = ("Log location: %s"):format(logger.outfile) }),
+      NuiTree.Node({ text = ("Local Neovim version: %s"):format(neovim_version) }),
+      NuiTree.Node({ text = ("Log location: %s"):format(remote_nvim.config.log.filepath) }),
     }),
     NuiTree.Node({ text = "" }),
   }
 
   -- Remote OS, Local port, Remote port, Remote Neovim version, workspace ID
-  for host_id, session in pairs(remote_nvim.sessions) do
-    if session.remote_port_forwarding_job_id ~= nil then
+  for host_id, session in pairs(remote_nvim.session_provider:get_active_sessions()) do
+    if session:is_remote_server_running() then
       local general_info = NuiTree.Node({
-        text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session.local_free_port),
+        ---@diagnostic disable-next-line:invisible
+        text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session._local_free_port),
       })
 
-      local local_node = NuiTree.Node({ text = "Local" }, {
-        NuiTree.Node({ text = ("Port: %s"):format(session.local_free_port) }),
-        NuiTree.Node({ text = ("Neovim version: %s"):format(neovim_version) }),
-        NuiTree.Node({ text = "" }),
-      })
+      ---@type remote-nvim.providers.WorkspaceConfig
+      local workspace_config = remote_nvim.session_provider:get_config_provider():get_workspace_config(host_id)
       local remote_node = NuiTree.Node({ text = "Remote" }, {
-        NuiTree.Node({ text = ("Port: %s"):format(session.remote_free_port) }),
-        NuiTree.Node({ text = ("Neovim version: %s"):format(session.remote_neovim_version) }),
-        NuiTree.Node({ text = ("Workspace path: %s"):format(session.remote_workspace_id_path) }),
-        NuiTree.Node({ text = ("Remote OS: %s"):format(session.remote_os) }),
+        NuiTree.Node({ text = ("Neovim version: %s"):format(workspace_config.neovim_version) }),
+        NuiTree.Node({ text = ("Remote OS: %s"):format(workspace_config.os) }),
+        NuiTree.Node({ text = ("Remote home path: %s"):format(workspace_config.remote_neovim_home) }),
+        NuiTree.Node({ text = ("Remote workspace ID: %s"):format(workspace_config.workspace_id) }),
       })
       table.insert(
         nodes,
         NuiTree.Node({ text = ("Host ID: %s"):format(host_id) }, {
           general_info,
-          local_node,
           remote_node,
           NuiTree.Node({ text = "" }),
         })
