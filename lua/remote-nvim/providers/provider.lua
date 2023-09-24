@@ -462,28 +462,32 @@ end
 ---Get preference if the local client should be launched or not
 ---@return boolean preference Should we launch local client?
 function Provider:_get_local_client_start_preference()
-  if self._host_config.client_auto_start == nil then
+  local should_start_client = self._host_config.client_auto_start
+  if should_start_client == nil then
     local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
       prompt = "Start local client?",
     })
 
     -- Handle choices
     if choice == "Yes (always)" then
-      self._host_config.client_auto_start = true
+      should_start_client = true
+      self._host_config.client_auto_start = should_start_client
       self._config_provider:update_workspace_config(self.unique_host_id, {
-        client_auto_start = self._host_config.client_auto_start,
+        client_auto_start = should_start_client,
       })
     elseif choice == "No (never)" then
-      self._host_config.client_auto_start = false
+      should_start_client = false
+      self._host_config.client_auto_start = should_start_client
       self._config_provider:update_workspace_config(self.unique_host_id, {
-        client_auto_start = self._host_config.client_auto_start,
+        client_auto_start = should_start_client,
       })
     else
-      self._host_config.client_auto_start = (choice == "Yes" and true) or false
+      should_start_client = (choice == "Yes" and true) or false
     end
   end
 
-  return self._host_config.client_auto_start
+  ---@type boolean
+  return should_start_client
 end
 
 ---@private
