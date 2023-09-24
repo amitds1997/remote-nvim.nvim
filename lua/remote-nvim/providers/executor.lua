@@ -8,10 +8,10 @@ local Executor = require("remote-nvim.middleclass")("Executor")
 
 ---Initialize executor instance
 ---@param host string Host name
----@param conn_opts string Connection options (passed when connecting)
+---@param conn_opts? string Connection options (passed when connecting)
 function Executor:init(host, conn_opts)
   self.host = host
-  self.conn_opts = conn_opts
+  self.conn_opts = conn_opts or ""
 
   self._job_id = nil
   self._job_exit_code = nil
