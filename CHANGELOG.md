@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.0...v0.1.1) (2023-09-28)
+
+
+### Bug Fixes
+
+* determine user's home directory on remote robustly ([#49](https://github.com/amitds1997/remote-nvim.nvim/issues/49)) ([f8db042](https://github.com/amitds1997/remote-nvim.nvim/commit/f8db0420e6d28d93cd23efd7fa6e1b5fdbb726ad))
+* **provider:** fix E5560 when calling vim.ui.select() ([#53](https://github.com/amitds1997/remote-nvim.nvim/issues/53)) ([f299fb1](https://github.com/amitds1997/remote-nvim.nvim/commit/f299fb14e49cf0060911016290742bae847e1dc7)), closes [#52](https://github.com/amitds1997/remote-nvim.nvim/issues/52)
+
 ## [0.1.0](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.0.1...v0.1.0) (2023-09-24)
 
 
