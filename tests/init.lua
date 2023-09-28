@@ -38,7 +38,11 @@ function M.setup()
   M.load("rcarriga/nvim-notify")
   M.load("nvim-telescope/telescope.nvim")
 
-  require("remote-nvim").setup()
+  require("remote-nvim").setup({
+    log = {
+      level = "debug",
+    },
+  })
   require("notify").setup({
     background_colour = "#000000",
   })

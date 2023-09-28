@@ -23,12 +23,14 @@ function M.get_selection(choices, selection_opts)
   local selection_made = false
   local selected_choice = nil
 
-  vim.ui.select(choices, selection_opts, function(choice)
-    selection_made = true
-    selected_choice = choice
-    if co then
-      coroutine.resume(co)
-    end
+  vim.schedule(function()
+    vim.ui.select(choices, selection_opts, function(choice)
+      selection_made = true
+      selected_choice = choice
+      if co then
+        coroutine.resume(co)
+      end
+    end)
   end)
 
   if co and not selection_made then

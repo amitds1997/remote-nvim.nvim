@@ -635,6 +635,9 @@ function Provider:upload(local_path, remote_path, desc)
     remote_path
   )
   self.notifier:notify(("'%s' upload running..."):format(desc))
+  if not require("plenary.path"):new({ local_path }):exists() then
+    error(("Local path '%s' does not exist"):format(local_path))
+  end
   self.executor:upload(local_path, remote_path)
   self:_handle_job_completion(desc)
 end
