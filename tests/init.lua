@@ -41,6 +41,7 @@ function M.setup()
   require("remote-nvim").setup({
     log = {
       level = "debug",
+      max_size = 0,
     },
   })
   require("notify").setup({
