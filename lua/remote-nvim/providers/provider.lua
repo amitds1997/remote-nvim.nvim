@@ -378,7 +378,7 @@ function Provider:_setup_remote()
 
       self._setup_running = false
     else
-      self.notifier:notify("Neovim server is already running. Not starting a new one")
+      self.notifier:notify_once("Neovim server is already running. Not starting a new one")
     end
   else
     self.notifier:notify_once(
