@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.1...v0.1.2) (2023-10-29)
+
+
+### Bug Fixes
+
+* **health:** Checkhealth was broken due to an incorrect call ([#59](https://github.com/amitds1997/remote-nvim.nvim/issues/59)) ([5c56a70](https://github.com/amitds1997/remote-nvim.nvim/commit/5c56a700028b0f6e18810d86f218c8abb14b8842))
+
 ## [0.1.1](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.0...v0.1.1) (2023-09-28)
 
 
