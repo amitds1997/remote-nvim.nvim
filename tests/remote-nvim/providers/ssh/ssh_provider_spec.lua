@@ -15,8 +15,14 @@ describe("SSH Provider", function()
     local ssh_provider = SSHProvider("localhost", "localhost -p 3011")
     assert.equals(ssh_provider.conn_opts, "-p 3011")
 
-    ssh_provider = SSHProvider("localhost", " localhost ")
+    ssh_provider = SSHProvider("localhost", " localhost")
     assert.equals(ssh_provider.conn_opts, "")
+
+    ssh_provider = SSHProvider("localhost", "localhost ")
+    assert.equals(ssh_provider.conn_opts, "")
+
+    ssh_provider = SSHProvider("user@localhost", "user@localhost")
+    assert.equals("", ssh_provider.conn_opts)
   end)
 
   it("should remove '-N' ssh option from connection options (if present)", function()
