@@ -31,14 +31,18 @@ end
 ---@param conn_opts string
 ---@return string cleaned_conn_opts Cleaned up SSH options
 function SSHProvider:_cleanup_conn_options(conn_opts)
-  local host_expression = self.host:gsub("([^%w])", "%%%1")
-  return vim.trim(
-    conn_opts
-      :gsub("^%s*ssh%s*", "") -- Remove "ssh" prefix if it exists
-      :gsub("%s+", " ") -- Replace multiple whitespaces by a single one
-      :gsub(host_expression .. " ", " ") -- Remove hostname from connection string
-      :gsub("%-N", "") -- "-N" restrics command execution so we do not do it
-  )
+  local filtered_conn_opts = vim.tbl_filter(function(elem)
+    -- We filter following keywords and patterns
+    -- Any empty string, "-N" and hostname as a keyword in the connection options
+    return elem ~= self.host and elem ~= "-N" and elem ~= ""
+  end, vim.split(conn_opts, "%s", { trimempty = true }))
+
+  -- If the connection options begin with "ssh", remove "ssh"
+  if #filtered_conn_opts > 0 and filtered_conn_opts[1] == require("remote-nvim").config.ssh_config.ssh_binary then
+    table.remove(filtered_conn_opts, 1)
+  end
+
+  return table.concat(filtered_conn_opts, " ")
 end
 
 return SSHProvider
