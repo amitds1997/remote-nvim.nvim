@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.2...v0.1.3) (2023-11-02)
+
+
+### Bug Fixes
+
+* **notification:** Notification does not go away if server is already running ([#61](https://github.com/amitds1997/remote-nvim.nvim/issues/61)) ([4e65b1b](https://github.com/amitds1997/remote-nvim.nvim/commit/4e65b1bfa4d0aa05bb6a134af8091ca982e71492))
+* **provider:** Fix hostname parsing in connection options ([#64](https://github.com/amitds1997/remote-nvim.nvim/issues/64)) ([e57a2f8](https://github.com/amitds1997/remote-nvim.nvim/commit/e57a2f890727bd77af096487826680a594766e1f))
+
 ## [0.1.2](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.1...v0.1.2) (2023-10-29)
 
 
