@@ -10,6 +10,7 @@ local utils = require("remote-nvim.utils")
 
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
+---@alias devcontainer_cfg_search_style "current_dir_only"|"recurse_up"|"none"
 
 ---@class remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt
 ---@field match string Text that input should be matched against to identify need for stdin
@@ -17,6 +18,11 @@ local utils = require("remote-nvim.utils")
 ---@field input_prompt string? What should be shown as input prompt when requesting user for input
 ---@field value_type prompt_value_type Is the prompt value going to remain same throughout a session, if yes, it can be cached
 ---@field value string Default value to fill in for the prompt, if any
+
+---@class remote-nvim.config.PluginConfig.DevpodConfig
+---@field binary string Name of binary on runtime path for dev container
+---@field ssh_config_path string Configuration path where devpod SSH configurations would be stored
+---@field search_style devcontainer_cfg_search_style Where to search for devcontainer configuration
 
 ---@class remote-nvim.config.PluginConfig.SSHConfig
 ---@field ssh_binary string Name of binary on runtime path for ssh
@@ -33,6 +39,7 @@ local utils = require("remote-nvim.utils")
 ---@field max_size integer Max file size, after which it will be truncated
 
 ---@class remote-nvim.config.PluginConfig
+---@field devpod remote-nvim.config.PluginConfig.DevpodConfig Devcontainer configuration
 ---@field ssh_config remote-nvim.config.PluginConfig.SSHConfig SSH configuration
 ---@field neovim_install_script_path string Local path where neovim installation script is stored
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
@@ -41,6 +48,11 @@ local utils = require("remote-nvim.utils")
 ---@field log remote-nvim.config.PluginConfig.LogConfig Plugin logging options
 
 M.default_opts = {
+  devpod = {
+    binary = "devpod",
+    ssh_config_path = utils.path_join(utils.is_windows, vim.fn.stdpath("data"), "ssh_config"),
+    search_style = "current_dir_only",
+  },
   ssh_config = {
     ssh_binary = "ssh",
     scp_binary = "scp",
