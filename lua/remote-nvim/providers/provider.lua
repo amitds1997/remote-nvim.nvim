@@ -40,6 +40,7 @@
 ---@field private _remote_neovim_config_path  string Get neovim configuration path on the remote host
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
+---@field protected _remote_working_dir string? Working directory on the remote server
 local Provider = require("remote-nvim.middleclass")("Provider")
 
 local Executor = require("remote-nvim.providers.executor")
@@ -74,6 +75,9 @@ function Provider:init(host, conn_opts)
     title = "Remote Nvim",
   })
 
+  -- Remote configuration members
+  self._remote_working_dir = nil
+
   ---@diagnostic disable-next-line: missing-fields
   self._host_config = {}
   self:_reset()
@@ -89,6 +93,7 @@ end
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(self._config_provider:get_workspace_config(self.unique_host_id)) then
+    self.logger.debug("Did not find any existing configuration. Creating one now..")
     self._config_provider:add_workspace_config(self.unique_host_id, {
       provider = self.provider_type,
       host = self.host,
@@ -98,6 +103,8 @@ function Provider:_setup_workspace_variables()
       client_auto_start = nil,
       workspace_id = utils.generate_random_string(10),
     })
+  else
+    self.logger.debug("Found an existing configuration. Re-using the same configuration..")
   end
   self._host_config = self._config_provider:get_workspace_config(self.unique_host_id)
 
@@ -404,7 +411,7 @@ function Provider:_launch_remote_neovim_server()
 
     self._local_free_port = provider_utils.find_free_port()
     self.logger.fmt_debug(
-      "[%s][%s] Local  free port: %s",
+      "[%s][%s] Local free port: %s",
       self.provider_type,
       self.unique_host_id,
       self._local_free_port
@@ -420,6 +427,12 @@ function Provider:_launch_remote_neovim_server()
       self:_remote_neovim_binary_path(),
       remote_free_port
     )
+
+    -- If we have a specified working directory, we launch there
+    if self._remote_working_dir then
+      remote_server_launch_cmd = ("%s --cmd ':cd %s'"):format(remote_server_launch_cmd, self._remote_working_dir)
+    end
+
     self:_run_code_in_coroutine(function()
       self:run_command(remote_server_launch_cmd, "Launch remote server", port_forward_opts, function()
         self:_reset()
@@ -431,7 +444,7 @@ function Provider:_launch_remote_neovim_server()
   end
 end
 
----@private
+---@protected
 ---Run code in a coroutine
 ---@param fn function Function to run inside the coroutine
 function Provider:_run_code_in_coroutine(fn)
@@ -536,15 +549,20 @@ function Provider:_launch_local_neovim_client()
   end
 end
 
+---@protected
+function Provider:_launch_neovim()
+  self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
+  self:_setup_workspace_variables()
+  self:_setup_remote()
+  self:_launch_remote_neovim_server()
+  self:_launch_local_neovim_client()
+  self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
+end
+
 ---Launch Neovim
 function Provider:launch_neovim()
   self:_run_code_in_coroutine(function()
-    self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
-    self:_setup_workspace_variables()
-    self:_setup_remote()
-    self:_launch_remote_neovim_server()
-    self:_launch_local_neovim_client()
-    self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
+    self:_launch_neovim()
   end)
 end
 

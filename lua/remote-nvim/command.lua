@@ -1,17 +1,8 @@
+local contains = require("remote-nvim.utils").contains
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
 local M = {}
-
--- Define a function to check if an element exists in a list
-local function contains(list, element)
-  for _, value in ipairs(list) do
-    if value == element then
-      return true
-    end
-  end
-  return false
-end
 
 function M.RemoteStart(opts)
   local host_identifier = opts.args
