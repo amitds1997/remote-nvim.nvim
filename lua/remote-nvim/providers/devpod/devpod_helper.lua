@@ -31,6 +31,9 @@ return {
     name = name:gsub("^/", "")
     return get_devpod_provider({ name, "--source", source }, working_dir)
   end,
+  launch_devpod_workspace = function(workspace)
+    return get_devpod_provider({ workspace })
+  end,
   is_devcontainer_dir = function()
     ---@type remote-nvim.RemoteNeovim
     local remote_nvim = require("remote-nvim")
