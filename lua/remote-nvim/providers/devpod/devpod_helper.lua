@@ -1,22 +1,47 @@
+---@type remote-nvim.RemoteNeovim
+local remote_nvim = require("remote-nvim")
+local devpod_binary = remote_nvim.config.devpod.binary
+
 ---Get correctly initialized devpod provider instance
 ---@param launch_opts table Options to pass to the DevpodProvider
 ---@param working_dir string? Working directory to set when launching the client
+---@param provider string? Name of the devpod provider
 ---@return remote-nvim.providers.devpod.DevpodProvider
-local function get_devpod_provider(launch_opts, working_dir)
+local function get_devpod_provider(launch_opts, working_dir, provider)
   local DevpodProvider = require("remote-nvim.providers.devpod.devpod_provider")
+
+  if provider then
+    -- If the provider does not exist, let's create it
+    local provider_output = vim.json.decode(vim.fn.system(("%s provider list --output json"):format(devpod_binary)))
+    if not require("remote-nvim.utils").contains(vim.tbl_keys(provider_output), provider) then
+      vim.fn.system(("%s provider add %s"):format(devpod_binary, provider))
+    end
+
+    table.insert(launch_opts, ("--provider=%s"):format(provider))
+  end
+
+  if remote_nvim.config.devpod.dotfiles then
+    table.insert(launch_opts, ("--dotfiles=%s"):format(remote_nvim.config.devpod.dotfiles))
+  end
+
+  if remote_nvim.config.devpod.gpg_agent_forwarding then
+    table.insert(launch_opts, "--gpg-agent-forwarding")
+  end
+
   local opts = { launch_opts = launch_opts }
   if working_dir then
     opts.working_dir = working_dir
   end
+
   return DevpodProvider(nil, opts)
 end
 
 return {
   launch_devcontainer = function(path)
-    return get_devpod_provider({ path })
+    return get_devpod_provider({ path }, nil, "docker")
   end,
   launch_image = function(image)
-    return get_devpod_provider({ image })
+    return get_devpod_provider({ image }, nil, "docker")
   end,
   launch_container = function(container_id)
     local source = ("container:%s"):format(container_id)
@@ -29,14 +54,12 @@ return {
       )
     )
     name = name:gsub("^/", "")
-    return get_devpod_provider({ name, "--source", source }, working_dir)
+    return get_devpod_provider({ name, "--source", source }, working_dir, "docker")
   end,
   launch_devpod_workspace = function(workspace)
     return get_devpod_provider({ workspace })
   end,
   is_devcontainer_dir = function()
-    ---@type remote-nvim.RemoteNeovim
-    local remote_nvim = require("remote-nvim")
     local utils = require("remote-nvim.utils")
     local search_style = remote_nvim.config.devpod.search_style
     local Path = require("plenary.path"):new(".")

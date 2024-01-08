@@ -16,8 +16,13 @@ function DevpodProvider:init(_, opts)
   self.binary = remote_nvim.config.devpod.binary
   self.ssh_config_path = remote_nvim.config.devpod.ssh_config_path
 
-  self._up_default_opts =
-    { "--open-ide=false", "--ide=none", "--log-output=raw", ("--ssh-config=%s"):format(self.ssh_config_path) }
+  self._up_default_opts = {
+    "--open-ide=false",
+    "--configure-ssh=true",
+    "--ide=none",
+    "--log-output=raw",
+    ("--ssh-config=%s"):format(self.ssh_config_path),
+  }
   self.launch_opts = vim.list_extend(self._up_default_opts, opts.launch_opts or {})
   self.provider_type = "devpod"
   self.ssh_provider = nil

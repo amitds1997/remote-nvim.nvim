@@ -23,6 +23,8 @@ local utils = require("remote-nvim.utils")
 ---@field binary string Name of binary on runtime path for dev container
 ---@field ssh_config_path string Configuration path where devpod SSH configurations would be stored
 ---@field search_style devcontainer_cfg_search_style Where to search for devcontainer configuration
+---@field dotfiles string? Path/URI to dotfiles to use in the container
+---@field gpg_agent_forwarding boolean Should forward the local GPG Agent into workspace
 
 ---@class remote-nvim.config.PluginConfig.SSHConfig
 ---@field ssh_binary string Name of binary on runtime path for ssh
@@ -52,6 +54,8 @@ M.default_opts = {
     binary = "devpod",
     ssh_config_path = utils.path_join(utils.is_windows, vim.fn.stdpath("data"), "ssh_config"),
     search_style = "current_dir_only",
+    dotfiles = nil,
+    gpg_agent_forwarding = false,
   },
   ssh_config = {
     ssh_binary = "ssh",
