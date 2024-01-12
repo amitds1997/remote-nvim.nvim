@@ -53,7 +53,7 @@ M.default_opts = {
         value = "",
       },
       { -- FreeBSD Default SSH Prompt style
-        match = "Password is",
+        match = "Password for",
         type = "secret",
         value_type = "static",
         value = "",
