@@ -123,11 +123,14 @@ function install_neovim() {
 			exit 1
 		fi
 
+		os_name="$(uname)"
 		# Install Neovim based on the detected OS
-		if [[ "$(uname)" == "Linux" ]]; then
+		if [[ $os_name == "Linux" ]]; then
 			download_decompress_neovim_linux_appimage "$nvim_version"
-		elif [[ "$(uname)" == "Darwin" ]]; then
+		elif [[ $os_name == "Darwin" ]]; then
 			download_decompress_neovim_macOS "$nvim_version"
+		elif [[ $os_name == "FreeBSD" ]]; then
+			download_decompress_neovim_linux_appimage "$nvim_version"
 		else
 			echo "Unsupported operating system: $(uname)"
 			exit 1

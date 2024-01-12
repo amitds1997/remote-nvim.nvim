@@ -187,6 +187,8 @@ function Provider:_get_remote_os()
       self._remote_os = os
     elseif os == "Darwin" then
       self._remote_os = "macOS"
+    elseif os == "FreeBSD" then
+      self._remote_os = "FreeBSD"
     else
       local os_choices = {
         "Linux",
