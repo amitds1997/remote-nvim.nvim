@@ -64,7 +64,7 @@ function download_decompress_neovim_linux_appimage() {
 	rm -rf "$nvim_version_dir"
 	mkdir -p "$nvim_version_dir"/bin
 	mv -f "$temp_dir/squashfs-root"/* "$nvim_version_dir"
-	ln -sf "$nvim_version_dir"/AppRun "$nvim_binary"
+	ln -sf "$nvim_version_dir"/usr/bin/nvim "$nvim_binary"
 }
 
 # Function to download and decompress Neovim binary for macOS
