@@ -1,5 +1,6 @@
 ---@alias provider_type "ssh"|"docker"|"local"
 ---@alias os_type "macOS"|"Windows"|"Linux"
+---@alias neovim_install_method "default"|"build_from_source"|"link_to_system_neovim"
 
 ---@class remote-nvim.providers.WorkspaceConfig
 ---@field provider provider_type? Which provider is responsible for managing this workspace
@@ -9,6 +10,7 @@
 ---@field neovim_version string? Version of Neovim running on the remote
 ---@field connection_options string? Connection options needed to connect to the remote host
 ---@field remote_neovim_home string? Path on remote host where remote-neovim installs/configures things
+---@field remote_neovim_install_method neovim_install_method? How to install remote Neovim
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 
@@ -38,6 +40,7 @@
 ---@field private _remote_xdg_state_path  string Get workspace specific XDG state path
 ---@field private _remote_xdg_cache_path  string Get workspace specific XDG cache path
 ---@field private _remote_neovim_config_path  string Get neovim configuration path on the remote host
+---@field private _remote_neovim_install_method neovim_install_method Get neovim installation method
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
 local Provider = require("remote-nvim.middleclass")("Provider")
@@ -109,22 +112,11 @@ function Provider:_setup_workspace_variables()
     })
   end
 
-  -- Gather remote neovim version, if not setup
-  if self._host_config.neovim_version == nil then
-    self._host_config.neovim_version = self:_get_remote_neovim_version_preference()
-    self._config_provider:update_workspace_config(self.unique_host_id, {
-      neovim_version = self._host_config.neovim_version,
-    })
-  end
-
   -- Set variables from the fetched configuration
-
   self._remote_os = self._host_config.os
   self._remote_is_windows = self._remote_os == "Windows" and true or false
-  self._remote_neovim_version = self._host_config.neovim_version
 
   -- Set remote neovim home path
-
   if self._host_config.remote_neovim_home == nil then
     self._host_config.remote_neovim_home =
       utils.path_join(self._remote_is_windows, self:_get_remote_user_home(), ".remote-nvim")
@@ -160,6 +152,29 @@ function Provider:_setup_workspace_variables()
   self._remote_neovim_config_path = utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim")
 end
 
+function Provider:_setup_remote_neovim_variables()
+  if self._host_config.remote_neovim_install_method == nil then
+    if utils.contains({ "Linux", "macOS" }, self._host_config.os) then
+      self._remote_neovim_install_method = "default"
+    else
+      self._remote_neovim_install_method = self:_get_remote_neovim_install_method_preference()
+    end
+  else
+    self._remote_neovim_install_method = self._host_config.remote_neovim_install_method
+  end
+
+  -- Gather remote neovim version, if not setup
+  if self._host_config.neovim_version == nil then
+    if self._remote_neovim_install_method == "link_to_system_neovim" then
+      self._remote_neovim_version = "system"
+    else
+      self._remote_neovim_version = self:_get_remote_neovim_version_preference()
+    end
+  else
+    self._remote_neovim_version = self._host_config.neovim_version
+  end
+end
+
 ---@private
 ---Reset provider state
 function Provider:_reset()
@@ -183,24 +198,10 @@ function Provider:_get_remote_os()
     local cmd_out_lines = self.executor:job_stdout()
     local os = cmd_out_lines[#cmd_out_lines]
 
-    if os == "Linux" then
-      self._remote_os = os
-    elseif os == "Darwin" then
+    if os == "Darwin" then
       self._remote_os = "macOS"
-    elseif os == "FreeBSD" then
-      self._remote_os = "FreeBSD"
     else
-      local os_choices = {
-        "Linux",
-        "macOS",
-        "Windows",
-      }
-      self._remote_os = self:get_selection(os_choices, {
-        prompt = ("Choose remote OS (found OS '%s'): "):format(os),
-        format_item = function(item)
-          return ("Remote host is running %s"):format(item)
-        end,
-      })
+      self._remote_os = os
     end
 
     self.notifier:notify(("OS is %s"):format(self._remote_os), vim.log.levels.INFO, true)
@@ -233,6 +234,7 @@ function Provider:get_selection(choices, selection_opts)
   -- If the choice fails, we cannot move further so we stop the coroutine executing
   if choice == nil then
     self.notifier:notify("No selection made", vim.log.levels.WARN, true)
+    self._setup_running = false
     local co = coroutine.running()
     if co then
       return coroutine.yield()
@@ -252,10 +254,37 @@ function Provider:_verify_connection_to_host()
 end
 
 ---@private
+---Get neovim installation method on the remote host
+---@return neovim_install_method install_method Installation method
+function Provider:_get_remote_neovim_install_method_preference()
+  if self._host_config.remote_neovim_install_method == nil then
+    local install_options = {
+      ["build_from_source"] = "Build Neovim from source (Build pre-requisites are assumed to be installed)",
+      ["link_to_system_neovim"] = "Use system-wide Neovim (Neovim should be available on PATH using nvim)",
+    }
+
+    local remote_os = self:_get_remote_os()
+    if remote_os == "FreeBSD" then
+      install_options["default"] = "Use Linux appimage (Works if you have Linux Binary Compatibility turned on)"
+    end
+
+    local method_choices = vim.tbl_keys(install_options)
+    table.sort(method_choices)
+    self._remote_neovim_install_method = self:get_selection(method_choices, {
+      prompt = ("Could not determine installation method on %s. Choose installation method"):format(remote_os),
+      format_item = function(install_opt)
+        return install_options[install_opt]
+      end,
+    })
+  end
+  return self._remote_neovim_install_method
+end
+
+---@private
 ---Get neovim version to be run on the remote host
 ---@return string neovim_version Version running on the remote host
 function Provider:_get_remote_neovim_version_preference()
-  if self._remote_neovim_version == nil then
+  if self._host_config.neovim_version == nil then
     local valid_neovim_versions = provider_utils.get_neovim_versions()
 
     -- Get client version
@@ -365,13 +394,21 @@ function Provider:_setup_remote()
       end
 
       -- Set correct permissions and install Neovim
-      local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s]]):format(
+      local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s -m %s]]):format(
         self._remote_neovim_install_script_path,
         self._remote_neovim_install_script_path,
         self._remote_neovim_version,
-        self._remote_neovim_home
+        self._remote_neovim_home,
+        self._remote_neovim_install_method
       )
       self:run_command(install_neovim_cmd, "Install Neovim if not exists")
+
+      -- Installation completed successfully, we can save neovim version and installation method configuration
+      self._config_provider:update_workspace_config(self.unique_host_id, {
+        neovim_version = self._remote_neovim_version,
+        remote_neovim_install_method = self._remote_neovim_install_method,
+      })
+      self._host_config = self._config_provider:get_workspace_config(self.unique_host_id)
 
       -- Upload user neovim config, if necessary
       if self:_get_neovim_config_upload_preference() then
@@ -543,6 +580,7 @@ function Provider:launch_neovim()
   self:_run_code_in_coroutine(function()
     self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
     self:_setup_workspace_variables()
+    self:_setup_remote_neovim_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
     self:_launch_local_neovim_client()
@@ -603,6 +641,7 @@ function Provider:_handle_job_completion(desc)
         debug.traceback(co, ("'%s' failed."):format(desc)),
         ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(self.executor:job_stdout(), "\n"))
       )
+      self._setup_running = false
       coroutine.yield()
     else
       error(("'%s' failed"):format(desc))

@@ -82,7 +82,6 @@ describe("Provider", function()
         config_copy = nil,
         client_auto_start = nil,
         workspace_id = workspace_id,
-        neovim_version = "stable",
         os = "Linux",
       })
     end)
@@ -113,7 +112,6 @@ describe("Provider", function()
 
       assert.equals(provider._remote_os, "Linux")
       assert.equals(provider._remote_is_windows, false)
-      assert.equals(provider._remote_neovim_version, "stable")
       assert.equals(provider._remote_workspace_id, workspace_id)
       assert.equals(provider._remote_neovim_home, remote_home)
       assert.equals(provider._remote_workspaces_path, ("%s/workspaces"):format(remote_home))
@@ -406,9 +404,11 @@ describe("Provider", function()
           client_auto_start = nil,
           workspace_id = "akfdjakjfdk",
           neovim_version = "stable",
+          remote_neovim_install_method = "default",
           os = "Linux",
         })
         provider:_setup_workspace_variables()
+        provider:_setup_remote_neovim_variables()
       end)
 
       after_each(function()
@@ -436,7 +436,7 @@ describe("Provider", function()
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim",
+          "chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m default",
           "Install Neovim if not exists"
         )
 
@@ -495,9 +495,11 @@ describe("Provider", function()
         client_auto_start = nil,
         workspace_id = "ajfdalfj",
         neovim_version = "stable",
+        remote_neovim_install_method = "default",
         os = "Linux",
       })
       provider:_setup_workspace_variables()
+      provider:_setup_remote_neovim_variables()
     end)
 
     after_each(function()

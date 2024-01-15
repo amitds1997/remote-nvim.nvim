@@ -18,22 +18,15 @@ trap cleanup_function EXIT SIGTERM SIGINT
 # Function to display usage information
 function display_help() {
 	cat <<EOM
-Usage: $0 -v <nvim-version> -d <download-dir> [options]
+Usage: $0 -v <nvim-version> -d <download-dir> -m <install-method> [options]
 Options:
   -v       Specify the desired Neovim version to install.
   -d       Specify directory for storing Neovim binaries.
            NOTE: Installation would happen in 'nvim-downloads' subdirectory.
+  -m       Installation method. Can be: default, build_from_source, and link_to_system_neovim
   -f       Force installation. Would overwrite any existing installation.
   -h       Display this help message and exit.
 EOM
-}
-
-# Function to check if Neovim is available in the system's $PATH
-function check_neovim_in_path() {
-	if command -v nvim &>/dev/null; then
-		echo "Neovim already on PATH. Skipping installation..."
-		exit 0
-	fi
 }
 
 # Function to download files using curl or wget
@@ -45,6 +38,48 @@ function download() {
 		curl -fsSL -o "$output_file" "$url"
 	elif [ "$downloader" = "wget" ]; then
 		wget --quiet --output-document="$output_file" "$url"
+	fi
+}
+
+# Build Neovim from source and link it
+function build_from_source() {
+	local nvim_version="$1"
+	local download_url="https://github.com/neovim/neovim/archive/refs/tags/${nvim_version}.tar.gz"
+
+	echo "Downloading Neovim source..."
+	download "$download_url" "$temp_dir/nvim-source.tar.gz"
+
+	echo "Extracting Neovim source..."
+	tar -xzf "$temp_dir/nvim-source.tar.gz" -C "$temp_dir"
+
+	echo "Creating necessary directories..."
+	rm -rf "$nvim_version_dir"
+	mkdir -p "$nvim_version_dir"/bin
+
+	os_name=$(uname)
+	make="make"
+	if [[ $os_name == "FreeBSD" || $os_name == "OpenBSD" ]]; then
+		make="gmake"
+	fi
+
+	echo "Building Neovim..."
+	$make -C neovim-* CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="$nvim_version_dir" install
+
+	echo "Finishing up..."
+	cp -r ./neovim-*/ "$nvim_version_dir"
+	ln -sf "$nvim_version_dir"/build/bin/nvim "$nvim_binary"
+}
+
+# Link to system Neovim
+function link_to_system_neovim() {
+	if command -v nvim &>/dev/null; then
+		rm -rf "$nvim_version_dir"
+		mkdir -p "$nvim_version_dir"/bin
+		nvim_path=$(which nvim)
+		ln -sf "$nvim_path" "$nvim_binary"
+	else
+		echo "Error: Did not find Neovim on the path"
+		exit 1
 	fi
 }
 
@@ -88,11 +123,6 @@ function download_decompress_neovim_macOS() {
 
 # Function to install Neovim
 function install_neovim() {
-	# Check if Neovim is available globally in the system's $PATH
-	# if ! $force_installation; then
-	# 	check_neovim_in_path
-	# fi
-
 	# Check if the specified download directory exists
 	if [[ ! -d $remote_nvim_dir ]]; then
 		echo "Remote neovim directory does not exist. Creating it now..."
@@ -124,15 +154,25 @@ function install_neovim() {
 		fi
 
 		os_name="$(uname)"
-		# Install Neovim based on the detected OS
-		if [[ $os_name == "Linux" ]]; then
-			download_decompress_neovim_linux_appimage "$nvim_version"
-		elif [[ $os_name == "Darwin" ]]; then
-			download_decompress_neovim_macOS "$nvim_version"
-		elif [[ $os_name == "FreeBSD" ]]; then
-			download_decompress_neovim_linux_appimage "$nvim_version"
+
+		if [[ $install_method == "default" ]]; then
+			# Install Neovim based on the detected OS
+			if [[ $os_name == "Linux" ]]; then
+				download_decompress_neovim_linux_appimage "$nvim_version"
+			elif [[ $os_name == "Darwin" ]]; then
+				download_decompress_neovim_macOS "$nvim_version"
+			elif [[ $os_name == "FreeBSD" ]]; then
+				download_decompress_neovim_linux_appimage "$nvim_version"
+			else
+				echo "Unsupported operating system: $(uname)"
+				exit 1
+			fi
+		elif [[ $install_method == "build_from_source" ]]; then
+			build_from_source "$nvim_version"
+		elif [[ $install_method == "link_to_system_neovim" ]]; then
+			link_to_system_neovim
 		else
-			echo "Unsupported operating system: $(uname)"
+			echo "Unknown installation method. Available install methods: default, link_to_system_neovim or build_from_source"
 			exit 1
 		fi
 	fi
@@ -141,13 +181,16 @@ function install_neovim() {
 }
 
 # Parse command-line options
-while getopts "v:d:h:f" opt; do
+while getopts "v:d:h:m:f" opt; do
 	case $opt in
 	v)
 		nvim_version="$OPTARG"
 		;;
 	d)
 		remote_nvim_dir="$OPTARG"
+		;;
+	m)
+		install_method="$OPTARG"
 		;;
 	f)
 		force_installation=true
@@ -169,8 +212,18 @@ while getopts "v:d:h:f" opt; do
 done
 
 # Check if the required options are provided
-if [[ -z $nvim_version || -z $remote_nvim_dir ]]; then
+if [[ -z $nvim_version || -z $remote_nvim_dir || -z $install_method ]]; then
 	echo "Missing options. Use -h to see the usage."
+	exit 1
+fi
+
+if [[ $install_method == "link_to_system_neovim" ]]; then
+	if [[ $nvim_version != "system" ]]; then
+		echo "Only accepted Neovim version for linking to system Neovim is: system"
+		exit 1
+	fi
+elif [[ $nvim_version != "stable" && $nvim_version != "nightly" && ! $nvim_version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+	echo "Invalid version: $nvim_version"
 	exit 1
 fi
 
