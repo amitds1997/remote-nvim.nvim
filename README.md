@@ -14,23 +14,24 @@ lot though).** 🚧
 
 ## Demo
 
-[![Tutorial for remote-nvim.nvim plugin v0.0.1](http://img.youtube.com/vi/5qbDq1lGEx4/0.jpg)](http://www.youtube.com/watch?v=5qbDq1lGEx4
-"Remote development on Neovim using remote-nvim.nvim")
+[![Tutorial for remote-nvim.nvim plugin v0.0.1](http://img.youtube.com/vi/5qbDq1lGEx4/0.jpg)
+](http://www.youtube.com/watch?v=5qbDq1lGEx4 "Remote development on Neovim using
+remote-nvim.nvim")
 
 ## 📜 Requirements
 
 ### On your local machine 💻
 
 1. An OpenSSH client.
-2. Neovim >= 0.8.0
+2. Neovim >= 0.8.0 and `nvim` command on your PATH.
 3. Binaries: **curl**
 4. Following plugins:
-    1. [nui.nvim](https://github.com/MunifTanjim/nui.nvim) - For UI elements
-    2. [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) - For standard
-    functions
-    3. [nvim-notify](https://github.com/rcarriga/nvim-notify) - For progress notifications
-    4. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
-    For telescope extension (also the current default setup UI)
+   1. [nui.nvim](https://github.com/MunifTanjim/nui.nvim) - For UI elements
+   2. [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) - For standard
+      functions
+   3. [nvim-notify](https://github.com/rcarriga/nvim-notify) - For progress notifications
+   4. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
+      For telescope extension (also the current default setup UI)
 
 ### On your remote machine ☁️
 
@@ -48,7 +49,7 @@ lot though).** 🚧
 - [x] Control over how to launch your local client
 - [x] Support for password-based SSH authentication
 - [x] Automatic syncing of your local Neovim config on next run (or not, if you
-so choose!)
+  so choose!)
 - [x] Support to pick up hosts from your SSH configs
 - [x] Support to clean up everything on your remote
 - [x] Support for dev containers (using [devpod](https://github.com/loft-sh/devpod))
@@ -215,18 +216,18 @@ Remote Neovim sweeping broom.
 ## ⚠️ Caveats
 
 - Just because how Neovim server and client currently work, it is not possible
-to deterministically close a TUI so in case you do a `:q`, the server and the
-client both die. You can read the [discussion here](https://github.com/neovim/neovim/issues/23093)
-to figure out your own way forward to just close a TUI or else just relaunch the
-session using `:RemoteStart`. It should be fast, after setup, if you are on a
-good network.
+  to deterministically close a TUI so in case you do a `:q`, the server and the
+  client both die. You can read the [discussion here](https://github.com/neovim/neovim/issues/23093)
+  to figure out your own way forward to just close a TUI or else just relaunch the
+  session using `:RemoteStart`. It should be fast, after setup, if you are on a
+  good network.
 - Launched remote server is bound to your Neovim instance. If you close your local
-instance, the remote server will also get closed.
+  instance, the remote server will also get closed.
 - Sometimes, our Neovim configurations are buggy and when your client launches,
-you would see a fresh, clean Neovim installation (assuming you copied your
-Neovim config over). This is no fault with the plugin. Run `:messages` to see
-what went wrong. Usually, `git` or some other necessary binary might be unavailable
-on the remote in some docker systems.
+  you would see a fresh, clean Neovim installation (assuming you copied your
+  Neovim config over). This is no fault with the plugin. Run `:messages` to see
+  what went wrong. Usually, `git` or some other necessary binary might be unavailable
+  on the remote in some docker systems.
 
 ## Credits
 

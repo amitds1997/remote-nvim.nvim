@@ -1,4 +1,4 @@
-*remote-nvim.txt*      For Neovim >= 0.8.0      Last change: 2023 September 24
+*remote-nvim.txt*       For Neovim >= 0.8.0       Last change: 2024 January 16
 
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
@@ -31,8 +31,7 @@ though).**
 
 DEMO                                                        *remote-nvim-demo*
 
-
-<http://www.youtube.com/watch?v=5qbDq1lGEx4%20%22Remote%20development%20on%20Neovim%20using%20remote-nvim.nvim%22>
+<http://www.youtube.com/watch?v=5qbDq1lGEx4>
 
 
 REQUIREMENTS                                        *remote-nvim-requirements*
@@ -41,7 +40,7 @@ REQUIREMENTS                                        *remote-nvim-requirements*
 ON YOUR LOCAL MACHINE  ~
 
 1. AnOpenSSH client.
-2. Neovim >= 0.8.0
+2. Neovim >= 0.8.0 and `nvim` command on your PATH.
 3. Binaries: **curl**
 4. Following plugins:1. nui.nvim <https://github.com/MunifTanjim/nui.nvim> - For UI elements
 2. plenary.nvim <https://github.com/nvim-lua/plenary.nvim> - For standard
