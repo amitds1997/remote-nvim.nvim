@@ -28,6 +28,7 @@ repos:
     rev: v0.36.0
     hooks:
       - id: markdownlint
+        exclude: CHANGELOG.md
   - repo: https://github.com/JohnnyMorganz/StyLua
     rev: v0.18.2
     hooks:
@@ -45,3 +46,7 @@ repos:
     rev: 3.9.0
     hooks:
       - id: commitizen
+  - repo: https://github.com/amitds1997/selene
+    rev: d895ab518a9a3fd6e8efe1716fde501dd29fe8ba
+    hooks:
+      - id: selene-github

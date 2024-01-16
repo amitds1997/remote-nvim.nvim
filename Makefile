@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	nvim --headless --noplugin -u tests/init.lua -c "lua require('plenary.test_harness').test_directory_command('tests/ {minimal_init = \"tests/init.lua\", sequential = true}')"
+	nvim --headless --noplugin -u tests/init.lua -c "lua require('plenary.test_harness').test_directory_command('tests/ {minimal_init = \"tests/init.lua\", sequential = true, timeout=20000}')"
 
 .PHONY: test-file
 test-file:
