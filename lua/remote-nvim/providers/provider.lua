@@ -451,7 +451,7 @@ function Provider:_launch_remote_neovim_server()
 
     -- Launch Neovim server and port forward
     local port_forward_opts = ([[-t -L %s:localhost:%s]]):format(self._local_free_port, remote_free_port)
-    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen localhost:%s --headless]]):format(
       self._remote_xdg_config_path,
       self._remote_xdg_data_path,
       self._remote_xdg_state_path,
