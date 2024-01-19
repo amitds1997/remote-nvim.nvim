@@ -7,8 +7,10 @@ local Split = require("nui.split")
 ---@field private tree NuiTree
 ---@field private is_visible boolean
 ---@field private map_options table<string, any>
+---@field private help_bufnr number Buffer ID of the keymap help buffer
 ---@field private _active_section NuiTree.Node?
 ---@field private _active_run_number number Active run number
+---@field private _tree_start_linenr number What line number should the tree be rendered from
 local ProgressView = require("remote-nvim.middleclass")("ProgressView")
 
 function ProgressView:init()
@@ -28,6 +30,7 @@ function ProgressView:init()
       statuscolumn = "",
     },
   })
+  self.help_bufnr = vim.api.nvim_create_buf(false, true)
   self.tree = NuiTree({
     winid = self.split.winid,
     bufnr = self.split.bufnr,
@@ -46,9 +49,10 @@ function ProgressView:init()
       return line
     end,
   })
-  self._active_section = nil
   self.is_visible = false
+  self._active_section = nil
   self._active_run_number = 0
+  self._tree_start_linenr = 1
   self.map_options = { noremap = true, nowait = true }
   self:_set_keybindings()
 end
@@ -78,6 +82,19 @@ function ProgressView:start_run()
   local title = ("Run number %s"):format(self._active_run_number)
   if self._active_run_number == 1 then
     title = "Initial run"
+
+    local line = NuiLine()
+    line:append("Press")
+    line:append(" ? ", "DiagnosticInfo")
+    line:append("to view possible keybindings")
+
+    vim.bo[self.split.bufnr].readonly = false
+    vim.bo[self.split.bufnr].modifiable = true
+    line:render(self.split.bufnr, -1, self._tree_start_linenr)
+    NuiLine():render(self.split.bufnr, -1, self._tree_start_linenr + 1)
+    vim.bo[self.split.bufnr].readonly = true
+    vim.bo[self.split.bufnr].modifiable = false
+    self._tree_start_linenr = self._tree_start_linenr + 2
   end
 
   self.run_section = NuiTree.Node({
@@ -93,6 +110,47 @@ function ProgressView:start_run()
 end
 
 ---@private
+function ProgressView:_set_keybindings_help(keymaps)
+  local keymap_keys = vim.tbl_keys(keymaps)
+  local max_length = 0
+  for _, v in ipairs(keymap_keys) do
+    max_length = math.max(max_length, #v)
+  end
+
+  local line_nr = 1
+  local line = NuiLine()
+  line:append("Keymaps", "DiagnosticInfo")
+  line:render(self.help_bufnr, -1, line_nr)
+  NuiLine():render(self.help_bufnr, -1, line_nr + 1)
+  line_nr = line_nr + 2
+
+  for key, value in vim.spairs(keymaps) do
+    line = NuiLine()
+
+    line:append(" " .. key .. string.rep(" ", max_length - #key), "DiagnosticInfo")
+    line:append(" - " .. value.desc)
+    line:render(self.help_bufnr, -1, line_nr)
+    line_nr = line_nr + 1
+  end
+
+  local buf_options = {
+    bufhidden = "hide",
+    buflisted = false,
+    buftype = "nofile",
+    modifiable = false,
+    readonly = true,
+    swapfile = false,
+    undolevels = 0,
+  }
+  for key, val in pairs(buf_options) do
+    vim.api.nvim_set_option_value(key, val, {
+      buf = self.help_bufnr,
+    })
+  end
+  return keymap_keys
+end
+
+---@private
 function ProgressView:_collapse_all_nodes()
   local updated = false
 
@@ -101,7 +159,7 @@ function ProgressView:_collapse_all_nodes()
   end
 
   if updated then
-    self.tree:render()
+    self.tree:render(self._tree_start_linenr)
   end
 end
 
@@ -114,53 +172,103 @@ function ProgressView:_expand_all_nodes()
   end
 
   if updated then
-    self.tree:render()
+    self.tree:render(self._tree_start_linenr)
   end
 end
 
 ---@private
 function ProgressView:_set_keybindings()
-  self.split:map("n", "L", function()
-    self:_expand_all_nodes()
-  end, self.map_options)
+  local keymaps = {
+    L = {
+      action = function()
+        self:_expand_all_nodes()
+      end,
+      desc = "Expand all headings",
+    },
+    H = {
+      action = function()
+        self:_collapse_all_nodes()
+      end,
+      desc = "Collapse all headings",
+    },
+    l = {
+      action = function()
+        local node = self.tree:get_node()
+        assert(node ~= nil, "Node should not be nil")
 
-  self.split:map("n", "l", function()
-    local node = self.tree:get_node()
-    assert(node ~= nil, "Node should not be nil")
+        if node:expand() then
+          self.tree:render(self._tree_start_linenr)
+        end
+      end,
+      desc = "Expand current heading",
+    },
+    h = {
+      action = function()
+        local node = self.tree:get_node()
+        assert(node ~= nil, "Node should not be nil")
 
-    if node:expand() then
-      self.tree:render()
-    end
-  end, self.map_options)
+        if node:collapse() then
+          self.tree:render(self._tree_start_linenr)
+        end
+      end,
+      desc = "Collapse current heading",
+    },
+    q = {
+      action = function()
+        self:hide()
+      end,
+      desc = "Close log window",
+    },
+    ["<CR>"] = {
+      action = function()
+        local node = self.tree:get_node()
+        assert(node ~= nil, "Node should not be nil")
 
-  self.split:map("n", "H", function()
-    self:_collapse_all_nodes()
-  end, self.map_options)
+        if node:is_expanded() then
+          node:collapse()
+        else
+          node:expand()
+        end
+        self.tree:render(self._tree_start_linenr)
+      end,
+      desc = "Toggle expand/collapse state of current heading",
+    },
+    ["?"] = {
+      action = function()
+        local switch_to_buf_id = (vim.api.nvim_get_current_buf() == self.help_bufnr and self.split.bufnr)
+          or self.help_bufnr
+        vim.api.nvim_win_set_buf(self.split.winid, switch_to_buf_id)
+        local win_options = {
+          number = false,
+          relativenumber = false,
+          cursorcolumn = false,
+          foldcolumn = "0",
+          spell = false,
+          list = false,
+          signcolumn = "no",
+          colorcolumn = "",
+          statuscolumn = "",
+        }
+        if switch_to_buf_id == self.help_bufnr then
+          for key, value in pairs(win_options) do
+            vim.api.nvim_set_option_value(key, value, {
+              win = self.split.winid,
+            })
+          end
+        end
+      end,
+      desc = "Toggle help window",
+    },
+  }
 
-  self.split:map("n", "h", function()
-    local node = self.tree:get_node()
-    assert(node ~= nil, "Node should not be nil")
+  for key, val in pairs(keymaps) do
+    self.split:map("n", key, val.action, self.map_options)
+    local options = vim.deepcopy(self.map_options)
+    options["callback"] = val.action
+    vim.api.nvim_buf_set_keymap(self.help_bufnr, "n", key, "", options)
+  end
 
-    if node:collapse() then
-      self.tree:render()
-    end
-  end, self.map_options)
-
-  self.split:map("n", "q", function()
-    self:toggle()
-  end)
-
-  self.split:map("n", "<CR>", function()
-    local node = self.tree:get_node()
-    assert(node ~= nil, "Node should not be nil")
-
-    if node:is_expanded() then
-      node:collapse()
-    else
-      node:expand()
-    end
-    self.tree:render()
-  end)
+  self:_set_keybindings_help(keymaps)
 end
 
 ---@param title string Title for the section
@@ -183,7 +291,7 @@ function ProgressView:start_section(title, lines)
 
   -- Expand the now active section
   self._active_section:expand()
-  self.tree:render()
+  self.tree:render(self._tree_start_linenr)
 end
 
 --- Add line to the log view
@@ -191,7 +299,7 @@ end
 function ProgressView:add_line(line)
   assert(self._active_section ~= nil, "Active section should not be nil")
   self.tree:add_node(NuiTree.Node({ text = line }), self._active_section:get_id())
-  self.tree:render()
+  self.tree:render(self._tree_start_linenr)
 end
 
 return ProgressView

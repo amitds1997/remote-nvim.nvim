@@ -7,12 +7,18 @@
 
 ## Backlog
 
-- [ ] Add CONTRIBUTING.md
+- Add CONTRIBUTING.md
 
 ## To do
 
-- [ ] Save configuration only after we have successfully established connection e.g.
+- ProgressView
+  - Add tests
+  - Add highlighting to keymaps and improve overall aesthetics
+  - Add autoscrolling to ProgressView, autoscroll if on last line else don't scroll
+  - Improve section headers
+  - Output useful messages when required like "Remote server launched and accessible
+    at port XYZ"
+- Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
-- [ ] Add tests for progressview
-- [ ] Add another vertical split and show the shortcuts that should be pressed
-  active level
+- When you previously chose to not launch a client and you re-run `:RemoteStart`,
+  allow choice to launch a client.

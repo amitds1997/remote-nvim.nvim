@@ -210,8 +210,6 @@ function Provider:_get_remote_os()
         end,
       })
     end
-
-    vim.notify(("OS is %s"):format(self._remote_os), vim.log.levels.INFO)
   end
 
   return self._remote_os
@@ -250,13 +248,6 @@ function Provider:get_selection(choices, selection_opts)
   else
     return choice
   end
-end
-
----@private
----Verify we are able to connect to the remote host
-function Provider:_verify_connection_to_host()
-  self:run_command("echo 'OK'", "Check host connection")
-  vim.notify("Successfully connected to remote host", vim.log.levels.INFO)
 end
 
 ---@private
@@ -341,8 +332,6 @@ end
 ---Setup remote
 function Provider:_setup_remote()
   if not self._setup_running then
-    self:_verify_connection_to_host()
-
     if not self:is_remote_server_running() then
       self._setup_running = true
 
@@ -446,7 +435,7 @@ function Provider:_launch_remote_neovim_server()
       vim.notify("Remote server stopped", vim.log.levels.INFO)
     end)
     self._remote_server_process_id = self.executor:last_job_id()
-    vim.notify("Remote server launched", vim.log.levels.INFO)
+    self.progress_view:add_line("Remote server launched")
   end
 end
 
@@ -586,8 +575,8 @@ end
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
+    self.progress_view:start_run()
     self:_setup_workspace_variables()
-    self:_verify_connection_to_host()
     local deletion_choices = {
       "Delete neovim workspace (Choose if multiple people use the same user account)",
       "Delete remote neovim from remote host (Nuke it!)",
