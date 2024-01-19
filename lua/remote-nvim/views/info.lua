@@ -21,15 +21,18 @@ local function RemoteInfoNodes()
   }
 
   -- Remote OS, Local port, Remote port, Remote Neovim version, workspace ID
-  for host_id, session in pairs(remote_nvim.session_provider:get_active_sessions()) do
+  for host_id, session in pairs(remote_nvim.session_provider:get_all_sessions()) do
     if session:is_remote_server_running() then
       local general_info = NuiTree.Node({
         ---@diagnostic disable-next-line:invisible
-        text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(session._local_free_port),
+        text = ("Connection string: nvim --server localhost:%s --remote-ui"):format(
+          session:get_local_neovim_server_port()
+        ),
       })
 
       ---@type remote-nvim.providers.WorkspaceConfig
-      local workspace_config = remote_nvim.session_provider:get_config_provider():get_workspace_config(host_id)
+      local workspace_config =
+        remote_nvim.session_provider:get_config_provider():get_workspace_config(session:get_unique_host_id())
       local remote_node = NuiTree.Node({ text = "Remote" }, {
         NuiTree.Node({ text = ("Neovim version: %s"):format(workspace_config.neovim_version) }),
         NuiTree.Node({ text = ("Remote OS: %s"):format(workspace_config.os) }),
@@ -211,7 +214,9 @@ function M.RemoteInfo()
   vim.api.nvim_set_option_value("winhighlight", "Normal:Normal,FloatBorder:FloatBorder", { win = info_layout.winid })
 
   -- Enable syntax highlighting on buffer
-  vim.api.nvim_buf_set_option(info_popup.bufnr, "syntax", "yaml")
+  vim.api.nvim_set_option_value("syntax", "yaml", {
+    buf = info_popup.bufnr,
+  })
 end
 
 return M

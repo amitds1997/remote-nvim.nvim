@@ -10,15 +10,17 @@ function SessionProvider:init()
 end
 
 ---Get existing session or create a new session for a given host
----@param type provider_type Provider type
----@param host string
----@param conn_opts string|table Connection opts
+---@param opts remote-nvim.providers.ProviderOpts
 ---@return remote-nvim.providers.Provider session Session for the host
-function SessionProvider:get_or_initialize_session(type, host, conn_opts)
+function SessionProvider:get_or_initialize_session(opts)
   ---@type remote-nvim.providers.Provider
   local provider
-  if type == "ssh" then
-    provider = require("remote-nvim.providers.ssh.ssh_provider")(host, conn_opts)
+
+  opts.conn_opts = opts.conn_opts or {}
+  opts.progress_view = require("remote-nvim.ui.progressview")()
+
+  if opts.provider_type == "ssh" then
+    provider = require("remote-nvim.providers.ssh.ssh_provider")(opts)
   else
     error("Unknown provider type")
   end
@@ -27,12 +29,17 @@ function SessionProvider:get_or_initialize_session(type, host, conn_opts)
   if self.sessions[host_id] == nil then
     self.sessions[host_id] = provider
   end
+
   return self.sessions[host_id]
 end
 
----Get all active sessions
+function SessionProvider:get_session(host_id)
+  return self.sessions[host_id]
+end
+
+---Get all sessions
 ---@return table<string, remote-nvim.providers.Provider> sessions
-function SessionProvider:get_active_sessions()
+function SessionProvider:get_all_sessions()
   return self.sessions
 end
 
