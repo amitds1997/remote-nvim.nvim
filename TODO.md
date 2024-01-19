@@ -8,4 +8,11 @@
 ## Backlog
 
 - [ ] Add CONTRIBUTING.md
-- [ ] Add pre-commit hook for [selene](https://github.com/Kampfkarren/selene/pull/541)
+
+## To do
+
+- [ ] Save configuration only after we have successfully established connection e.g.
+  do a failed connection and it still creates workspace
+- [ ] Add tests for progressview
+- [ ] Add another vertical split and show the shortcuts that should be pressed
+  active level

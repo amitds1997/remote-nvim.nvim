@@ -1,4 +1,4 @@
----@alias provider_type "ssh"|"docker"|"local"
+---@alias provider_type "ssh"|"devpod"|"local"
 ---@alias os_type "macOS"|"Windows"|"Linux"
 
 ---@class remote-nvim.providers.WorkspaceConfig
@@ -19,6 +19,7 @@
 ---@field protected unique_host_id string Unique host identifier
 ---@field protected executor remote-nvim.providers.Executor Executor instance
 ---@field protected notifier remote-nvim.providers.Notifier Notification handler
+---@field protected progress_view remote-nvim.ui.ProgressView Log viewer for progress
 ---@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private logger plenary.logger Logger instance
@@ -40,39 +41,41 @@
 ---@field private _remote_neovim_config_path  string Get neovim configuration path on the remote host
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
+---@field protected _remote_working_dir string? Working directory on the remote server
 local Provider = require("remote-nvim.middleclass")("Provider")
 
 local Executor = require("remote-nvim.providers.executor")
-local Notifier = require("remote-nvim.providers.notifier")
 local provider_utils = require("remote-nvim.providers.utils")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 local utils = require("remote-nvim.utils")
 
----Create new provider instance
----@param host string
----@param conn_opts string|table?
-function Provider:init(host, conn_opts)
-  assert(host ~= nil, "Host must be provided")
-  self.host = host
+---@class remote-nvim.providers.ProviderOpts
+---@field host string Host name
+---@field conn_opts table? Connection options
+---@field progress_view remote-nvim.ui.ProgressView?
+---@field unique_host_id string? Unique host ID
+---@field provider_type provider_type Provider type
 
-  if type(conn_opts) == "table" then
-    conn_opts = table.concat(conn_opts, " ")
-  else
-    conn_opts = conn_opts or ""
-  end
-  self.conn_opts = self:_cleanup_conn_options(conn_opts)
+---Create new provider instance
+---@param opts remote-nvim.providers.ProviderOpts Provider options
+function Provider:init(opts)
+  assert(opts.host ~= nil, "Host must be provided")
+  self.host = opts.host
+
+  opts.conn_opts = opts.conn_opts or {}
+  self.conn_opts = self:_cleanup_conn_options(table.concat(opts.conn_opts, " "))
   self.logger = utils.get_logger()
   self._config_provider = remote_nvim.session_provider:get_config_provider()
 
   -- These should be overriden in implementing classes
-
-  self.unique_host_id = self.host
+  self.unique_host_id = opts.unique_host_id or self.host
   self.provider_type = "local"
   self.executor = Executor()
-  self.notifier = Notifier({
-    title = "Remote Nvim",
-  })
+  self.progress_view = opts.progress_view
+
+  -- Remote configuration members
+  self._remote_working_dir = nil
 
   ---@diagnostic disable-next-line: missing-fields
   self._host_config = {}
@@ -89,6 +92,7 @@ end
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(self._config_provider:get_workspace_config(self.unique_host_id)) then
+    self.logger.debug("Did not find any existing configuration. Creating one now..")
     self._config_provider:add_workspace_config(self.unique_host_id, {
       provider = self.provider_type,
       host = self.host,
@@ -98,6 +102,8 @@ function Provider:_setup_workspace_variables()
       client_auto_start = nil,
       workspace_id = utils.generate_random_string(10),
     })
+  else
+    self.logger.debug("Found an existing configuration. Re-using the same configuration..")
   end
   self._host_config = self._config_provider:get_workspace_config(self.unique_host_id)
 
@@ -168,6 +174,10 @@ function Provider:_reset()
   self._local_free_port = nil
 end
 
+function Provider:toggle_log_view()
+  self.progress_view:toggle()
+end
+
 ---Generate host identifer using host and port on host
 ---@return string host_id Unique identifier for the host
 function Provider:get_unique_host_id()
@@ -201,7 +211,7 @@ function Provider:_get_remote_os()
       })
     end
 
-    self.notifier:notify(("OS is %s"):format(self._remote_os), vim.log.levels.INFO, true)
+    vim.notify(("OS is %s"):format(self._remote_os), vim.log.levels.INFO)
   end
 
   return self._remote_os
@@ -230,7 +240,7 @@ function Provider:get_selection(choices, selection_opts)
 
   -- If the choice fails, we cannot move further so we stop the coroutine executing
   if choice == nil then
-    self.notifier:notify("No selection made", vim.log.levels.WARN, true)
+    vim.notify("No selection made", vim.log.levels.WARN)
     local co = coroutine.running()
     if co then
       return coroutine.yield()
@@ -246,7 +256,7 @@ end
 ---Verify we are able to connect to the remote host
 function Provider:_verify_connection_to_host()
   self:run_command("echo 'OK'", "Check host connection")
-  self.notifier:notify("Successfully connected to remote host", vim.log.levels.INFO, true)
+  vim.notify("Successfully connected to remote host", vim.log.levels.INFO)
 end
 
 ---@private
@@ -272,6 +282,11 @@ function Provider:_get_remote_neovim_version_preference()
   end
 
   return self._remote_neovim_version
+end
+
+---@return string? free_port Port used on local to connect with Neovim server
+function Provider:get_local_neovim_server_port()
+  return self._local_free_port
 end
 
 ---@private
@@ -378,13 +393,10 @@ function Provider:_setup_remote()
 
       self._setup_running = false
     else
-      self.notifier:notify_once("Neovim server is already running. Not starting a new one")
+      vim.notify("Neovim server is already running. Not starting a new one")
     end
   else
-    self.notifier:notify_once(
-      "Another instance of setup is already running. Wait for it to complete",
-      vim.log.levels.WARN
-    )
+    vim.notify("Another instance of setup is already running. Wait for it to complete", vim.log.levels.WARN)
   end
 end
 
@@ -404,7 +416,7 @@ function Provider:_launch_remote_neovim_server()
 
     self._local_free_port = provider_utils.find_free_port()
     self.logger.fmt_debug(
-      "[%s][%s] Local  free port: %s",
+      "[%s][%s] Local free port: %s",
       self.provider_type,
       self.unique_host_id,
       self._local_free_port
@@ -420,18 +432,25 @@ function Provider:_launch_remote_neovim_server()
       self:_remote_neovim_binary_path(),
       remote_free_port
     )
+
+    -- If we have a specified working directory, we launch there
+    if self._remote_working_dir then
+      remote_server_launch_cmd = ("%s --cmd ':cd %s'"):format(remote_server_launch_cmd, self._remote_working_dir)
+    end
+
     self:_run_code_in_coroutine(function()
       self:run_command(remote_server_launch_cmd, "Launch remote server", port_forward_opts, function()
+        self.progress_view:hide()
         self:_reset()
       end)
-      self.notifier:notify("Remote server stopped", vim.log.levels.INFO, true)
+      vim.notify("Remote server stopped", vim.log.levels.INFO)
     end)
     self._remote_server_process_id = self.executor:last_job_id()
-    self.notifier:notify("Remote server launched", vim.log.levels.INFO, true)
+    vim.notify("Remote server launched", vim.log.levels.INFO)
   end
 end
 
----@private
+---@protected
 ---Run code in a coroutine
 ---@param fn function Function to run inside the coroutine
 function Provider:_run_code_in_coroutine(fn)
@@ -439,12 +458,12 @@ function Provider:_run_code_in_coroutine(fn)
     local success, res_or_err = pcall(fn)
     if not success then
       self.logger.error(res_or_err)
-      self.notifier:notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR, true)
+      vim.notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR)
     end
   end)
   local success, res_or_err = coroutine.resume(co)
   if not success then
-    self.notifier:notify(res_or_err, vim.log.levels.ERROR, true)
+    vim.notify(res_or_err, vim.log.levels.ERROR)
   end
 end
 
@@ -477,11 +496,7 @@ function Provider:_wait_for_server_to_be_ready()
 
   -- Start the timer
   timer:start(timeout, 0, function()
-    self.notifier:notify(
-      ("Server did not come up on local in %s ms. Try again :("):format(timeout),
-      vim.log.levels.ERROR,
-      true
-    )
+    vim.notify(("Server did not come up on local in %s ms. Try again :("):format(timeout), vim.log.levels.ERROR)
     timer:stop()
     timer:close()
     error(("Server did not come up on local in %s ms. Try again :("):format(timeout))
@@ -532,19 +547,29 @@ function Provider:_launch_local_neovim_client()
       self._config_provider:get_workspace_config(self.unique_host_id)
     )
   else
-    self.notifier:notify("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO, true)
+    vim.notify("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO)
+  end
+end
+
+---@protected
+function Provider:_launch_neovim()
+  if not self:is_remote_server_running() then
+    self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
+    self.progress_view:start_run()
+    self:_setup_workspace_variables()
+    self:_setup_remote()
+    self:_launch_remote_neovim_server()
+    self:_launch_local_neovim_client()
+    self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
+  else
+    vim.notify("Neovim server is already running. Not starting a new one")
   end
 end
 
 ---Launch Neovim
 function Provider:launch_neovim()
   self:_run_code_in_coroutine(function()
-    self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
-    self:_setup_workspace_variables()
-    self:_setup_remote()
-    self:_launch_remote_neovim_server()
-    self:_launch_local_neovim_client()
-    self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
+    self:_launch_neovim()
   end)
 end
 
@@ -554,6 +579,7 @@ function Provider:stop_neovim()
     local cmd = ("nvim --server localhost:%s --remote-send ':q<CR>'"):format(self._local_free_port)
     vim.fn.system(cmd)
   end
+  self.progress_view:hide()
   self:_reset()
 end
 
@@ -582,7 +608,7 @@ function Provider:clean_up_remote_host()
     elseif cleanup_choice == deletion_choices[2] then
       self:run_command(("rm -rf %s"):format(self._remote_neovim_home), "Delete remote nvim from remote host")
     end
-    self.notifier:notify("Cleanup on remote host completed", vim.log.levels.INFO, true)
+    vim.notify("Cleanup on remote host completed", vim.log.levels.INFO)
 
     self._config_provider:remove_workspace_config(self.unique_host_id)
   end)
@@ -594,30 +620,41 @@ end
 function Provider:_handle_job_completion(desc)
   local exit_code = self.executor:last_job_status()
   if exit_code ~= 0 then
-    self.notifier:notify(("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
+    self.progress_view:add_line(("'%s' failed."):format(desc))
     local co = coroutine.running()
     if co then
       self.logger.error(
         debug.traceback(co, ("'%s' failed."):format(desc)),
         ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(self.executor:job_stdout(), "\n"))
       )
-      coroutine.yield()
+      coroutine.yield(exit_code)
     else
       error(("'%s' failed"):format(desc))
     end
-  else
-    self.notifier:notify(("'%s' succeeded."):format(desc), vim.log.levels.INFO)
   end
+  return exit_code
 end
 
 ---@protected
 ---Run command over executor
 ---@param command string
 ---@param desc string Description of the command running
-function Provider:run_command(command, desc, ...)
+---@param extra_opts string? Extra options to pass to the underlying command
+---@param exit_cb function? Exit callback to execute
+function Provider:run_command(command, desc, extra_opts, exit_cb)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
-  self.notifier:notify(("'%s' running..."):format(desc))
-  self.executor:run_command(command, ...)
+  self.progress_view:start_section(desc, {
+    ("Command: %s"):format(command),
+  })
+  self.executor:run_command(command, {
+    additional_conn_opts = extra_opts,
+    exit_cb = exit_cb,
+    stdout_cb = function(chunk)
+      if chunk and chunk ~= "" then
+        self.progress_view:add_line(chunk:gsub("\n", ""))
+      end
+    end,
+  })
   self:_handle_job_completion(desc)
 end
 
@@ -634,7 +671,6 @@ function Provider:upload(local_path, remote_path, desc)
     local_path,
     remote_path
   )
-  self.notifier:notify(("'%s' upload running..."):format(desc))
   if not require("plenary.path"):new({ local_path }):exists() then
     error(("Local path '%s' does not exist"):format(local_path))
   end

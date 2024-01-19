@@ -12,21 +12,37 @@ describe("Session provider", function()
 
   it("should initialize a session without errors", function()
     assert.has.no_errors(function()
-      session_provider:get_or_initialize_session("ssh", "localhost", "-p 9111")
+      session_provider:get_or_initialize_session({
+        provider_type = "ssh",
+        host = "localhost",
+        conn_opts = { "-p 9111" },
+      })
     end)
   end)
 
   it("should return existing session provider when re-called with same details", function()
-    local ssh_provider_1 = session_provider:get_or_initialize_session("ssh", "localhost", "-p 9111")
-    local ssh_provider_2 = session_provider:get_or_initialize_session("ssh", "localhost", "-p 9111")
+    local ssh_provider_1 = session_provider:get_or_initialize_session({
+      provider_type = "ssh",
+      host = "localhost",
+      conn_opts = { "-p 9111" },
+    })
+    local ssh_provider_2 = session_provider:get_or_initialize_session({
+      provider_type = "ssh",
+      host = "localhost",
+      conn_opts = { "-p 9111" },
+    })
 
     assert.are.equal(ssh_provider_1, ssh_provider_2)
   end)
 
   it("should error if an unknown provider type is provided", function()
     assert.error_matches(function()
-      ---@diagnostic disable-next-line:param-type-mismatch
-      session_provider:get_or_initialize_session("unknown", "localhost", "-p 9111")
+      session_provider:get_or_initialize_session({
+        ---@diagnostic disable-next-line:assign-type-mismatch
+        provider_type = "unknown",
+        host = "localhost",
+        conn_opts = { "-p 9111" },
+      })
     end, "Unknown provider type")
   end)
 

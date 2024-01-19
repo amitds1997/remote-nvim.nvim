@@ -9,6 +9,7 @@ describe("Base executor", function()
 
   local base_executor
   before_each(function()
+    ---@type remote-nvim.providers.Executor
     base_executor = Executor("example-host", "")
     stub(base_executor, "upload")
     stub(base_executor, "download")
@@ -23,7 +24,9 @@ describe("Base executor", function()
 
   it("should call the specified callback on job completion", function()
     local cb = spy.new(function() end)
-    base_executor:run_executor_job(succ_job_command, cb)
+    base_executor:run_executor_job(succ_job_command, {
+      exit_cb = cb,
+    })
     assert.spy(cb).was_called()
   end)
 

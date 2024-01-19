@@ -4,6 +4,7 @@ describe("Provider", function()
   local remote_nvim = require("remote-nvim")
   local Provider = require("remote-nvim.providers.provider")
   local stub = require("luassert.stub")
+  local mock = require("luassert.mock")
   local match = require("luassert.match")
   ---@type remote-nvim.providers.Provider
   local provider
@@ -12,33 +13,40 @@ describe("Provider", function()
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
-    provider = Provider(provider_host)
-    notifier_stub = stub(provider.notifier, "notify")
+
+    provider = Provider({
+      host = provider_host,
+      progress_view = mock(require("remote-nvim.ui.progressview"), true),
+    })
+    notifier_stub = stub(vim, "notify")
   end)
 
   describe("should handle array-type connections options", function()
     it("when it is not empty", function()
-      provider = Provider(provider_host, { "-p", "3011", "-t", "-x" })
+      provider = Provider({
+        host = provider_host,
+        conn_opts = { "-p", "3011", "-t", "-x" },
+      })
       assert.equals(provider.conn_opts, "-p 3011 -t -x")
     end)
 
     it("when it is an empty array", function()
-      provider = Provider(provider_host, {})
+      provider = Provider({
+        host = provider_host,
+        conn_opts = {},
+      })
       assert.equals(provider.conn_opts, "")
     end)
   end)
 
   it("should handle missing connection options correctly", function()
-    provider = Provider(provider_host)
+    provider = Provider({
+      host = provider_host,
+    })
     assert.equals(provider.conn_opts, "")
 
-    provider = Provider(provider_host, nil)
+    provider = Provider({ host = provider_host, conn_opts = nil })
     assert.equals(provider.conn_opts, "")
-  end)
-
-  it("should handle string connection options correctly", function()
-    provider = Provider(provider_host, "-p 3011 -t -x")
-    assert.equals(provider.conn_opts, "-p 3011 -t -x")
   end)
 
   describe("should handle setting workspace variables", function()
@@ -46,7 +54,7 @@ describe("Provider", function()
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
     before_each(function()
-      provider = Provider(provider_host, { "-p", "3011" })
+      provider = Provider({ host = provider_host, conn_opts = { "-p", "3011" } })
       detect_remote_os_stub = stub(provider, "_get_remote_os")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
 
@@ -148,10 +156,7 @@ describe("Provider", function()
 
     it("when they succeed", function()
       executor_job_status_stub.returns(0)
-      provider:_handle_job_completion(desc)
-      assert
-        .stub(notifier_stub).was
-        .called_with(provider.notifier, ("'%s' succeeded."):format(desc), vim.log.levels.INFO)
+      assert.equals(0, provider:_handle_job_completion(desc))
     end)
 
     it("when they fail", function()
@@ -160,11 +165,8 @@ describe("Provider", function()
       local co = coroutine.create(function()
         provider:_handle_job_completion(desc)
       end)
-      coroutine.resume(co)
-
-      assert
-        .stub(notifier_stub).was
-        .called_with(provider.notifier, ("'%s' failed."):format(desc), vim.log.levels.ERROR, true)
+      local _, ret_or_err = coroutine.resume(co)
+      assert.equals(255, ret_or_err)
     end)
   end)
 
@@ -181,7 +183,7 @@ describe("Provider", function()
         provider:get_selection({}, {})
       end)
       coroutine.resume(co)
-      assert.stub(notifier_stub).was.called_with(provider.notifier, "No selection made", vim.log.levels.WARN, true)
+      assert.stub(notifier_stub).was.called_with("No selection made", vim.log.levels.WARN)
     end)
 
     it("when choice selection is done", function()
@@ -378,16 +380,11 @@ describe("Provider", function()
   describe("should handle remote setup correctly", function()
     it("when another setup is already running", function()
       provider._setup_running = true
-      local notify_once_stub = stub(provider.notifier, "notify_once")
 
       provider:_setup_remote()
       assert
-        .stub(notify_once_stub).was
-        .called_with(
-          provider.notifier,
-          "Another instance of setup is already running. Wait for it to complete",
-          vim.log.levels.WARN
-        )
+        .stub(notifier_stub).was
+        .called_with("Another instance of setup is already running. Wait for it to complete", vim.log.levels.WARN)
     end)
 
     describe("and runs correct commands", function()
@@ -633,9 +630,10 @@ describe("Provider", function()
       provider:_setup_workspace_variables()
 
       provider:_launch_local_neovim_client()
+
       assert
         .stub(notifier_stub).was
-        .called_with(provider.notifier, "Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO, true)
+        .called_with("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO)
     end)
 
     it("when user wants to launch client", function()

@@ -1,17 +1,8 @@
+local contains = require("remote-nvim.utils").contains
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
 local M = {}
-
--- Define a function to check if an element exists in a list
-local function contains(list, element)
-  for _, value in ipairs(list) do
-    if value == element then
-      return true
-    end
-  end
-  return false
-end
 
 function M.RemoteStart(opts)
   local host_identifier = opts.args
@@ -19,12 +10,17 @@ function M.RemoteStart(opts)
     require("telescope").extensions["remote-nvim"].connect()
   else
     ---@type remote-nvim.providers.WorkspaceConfig
-    local workspace_config = remote_nvim.session_provider:get_config_provider():get_workspace_config(host_identifier)
+    local workspace_config =
+      remote_nvim.session_provider:get_config_provider():get_workspace_config(vim.trim(host_identifier))
     if vim.tbl_isempty(workspace_config) then
       vim.notify("Unknown host identifier. Run :RemoteStart to connect to a new host", vim.log.levels.ERROR)
     else
       remote_nvim.session_provider
-        :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
+        :get_or_initialize_session({
+          host = workspace_config.host,
+          provider_type = workspace_config.provider,
+          conn_opts = { workspace_config.connection_options },
+        })
         :launch_neovim()
     end
   end
@@ -36,8 +32,7 @@ vim.api.nvim_create_user_command("RemoteStart", M.RemoteStart, {
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)
-    local valid_hosts =
-      vim.tbl_keys(remote_nvim.session_provider:get_config_provider():get_workspace_config(nil, "ssh"))
+    local valid_hosts = vim.tbl_keys(remote_nvim.session_provider:get_config_provider():get_workspace_config())
     if #args == 0 then
       return valid_hosts
     end
@@ -69,11 +64,52 @@ function M.RemoteCleanup(opts)
       vim.notify("Unknown host identifier. Run :RemoteStart to connect to a new host", vim.log.levels.ERROR)
     else
       remote_nvim.session_provider
-        :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
+        :get_or_initialize_session({
+          host = workspace_config.host,
+          provider_type = workspace_config.provider,
+          conn_opts = { workspace_config.connection_options },
+        })
         :clean_up_remote_host()
     end
   end
 end
+
+vim.api.nvim_create_user_command("RemoteSessionLogToggle", function(opts)
+  local host_ids = vim.split(vim.trim(opts.args), "%s+")
+  for _, host_id in ipairs(host_ids) do
+    local session = remote_nvim.session_provider:get_session(host_id)
+    if session == nil then
+      vim.notify("No active session to this host", vim.log.levels.WARN)
+    else
+      session:toggle_log_view()
+    end
+  end
+end, {
+  desc = "Toggle remote session log window",
+  nargs = 1,
+  complete = function(_, line)
+    local args = vim.split(vim.trim(line), "%s+")
+    table.remove(args, 1)
+
+    -- Filter out those sessions whose port forwarding jobs are not running
+    local active_sessions = remote_nvim.session_provider:get_all_sessions()
+    local running_sessions = vim.tbl_keys(active_sessions)
+
+    if #args == 0 then
+      return running_sessions
+    end
+    local host_ids = vim.fn.filter(running_sessions, function(_, item)
+      return not contains(args, item)
+    end)
+    local completion_word = table.remove(args, #args)
+
+    -- If we have not provided any input, then the last word is the last completion
+    if contains(running_sessions, completion_word) then
+      return host_ids
+    end
+    return vim.fn.matchfuzzy(running_sessions, completion_word)
+  end,
+})
 
 vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
   desc = "Clean up remote host",
@@ -81,8 +117,7 @@ vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)
-    local valid_hosts =
-      vim.tbl_keys(remote_nvim.session_provider:get_config_provider():get_workspace_config(nil, "ssh"))
+    local valid_hosts = vim.tbl_keys(remote_nvim.session_provider:get_config_provider():get_workspace_config())
     if #args == 0 then
       return valid_hosts
     end
@@ -101,12 +136,13 @@ vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
 
 vim.api.nvim_create_user_command("RemoteStop", function(opts)
   local host_ids = vim.split(vim.trim(opts.args), "%s+")
-  local workspace_configs = remote_nvim.session_provider:get_config_provider():get_workspace_config()
   for _, host_id in ipairs(host_ids) do
-    local workspace_config = workspace_configs[host_id]
-    remote_nvim.session_provider
-      :get_or_initialize_session("ssh", workspace_config.host, workspace_config.connection_options)
-      :stop_neovim()
+    local session = remote_nvim.session_provider:get_session(host_id)
+    if session == nil then
+      vim.notify("No active session to this host", vim.log.levels.WARN)
+    else
+      session:stop_neovim()
+    end
   end
 end, {
   desc = "Stop running remote server",
@@ -117,7 +153,7 @@ end, {
 
     -- Filter out those sessions whose port forwarding jobs are not running
     local running_sessions = {}
-    local active_sessions = remote_nvim.session_provider:get_active_sessions()
+    local active_sessions = remote_nvim.session_provider:get_all_sessions()
     for host_id, session in pairs(active_sessions) do
       if session:is_remote_server_running() then
         table.insert(running_sessions, host_id)

@@ -1,3 +1,5 @@
+local Executor = require("remote-nvim.providers.executor")
+
 ---@class remote-nvim.providers.ssh.SSHExecutor: remote-nvim.providers.Executor
 ---@field super remote-nvim.providers.Executor
 ---@field ssh_conn_opts string Connection options for SSH command
@@ -7,13 +9,13 @@
 ---@field private _ssh_prompts remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt[] SSH prompts registered for processing for input
 ---@field private _job_stdout_processed_idx number Last index processed by output processor
 ---@field private _job_prompt_responses table<string,string> Responses for prompts provided by user during the job
-local SSHExecutor = require("remote-nvim.providers.executor"):subclass("SSHExecutor")
+local SSHExecutor = Executor:subclass("SSHExecutor")
 
 ---Initialize SSH executor instance
 ---@param host string Host name
 ---@param conn_opts string Connection options
 function SSHExecutor:init(host, conn_opts)
-  SSHExecutor.super:init(host, conn_opts)
+  SSHExecutor.super.init(self, host, conn_opts)
 
   self.ssh_conn_opts = self.conn_opts
   self.scp_conn_opts = self.conn_opts == "" and "-r" or self.conn_opts:gsub("%-p", "-P") .. " -r"
@@ -29,7 +31,7 @@ end
 
 ---Reset ssh executor
 function SSHExecutor:reset()
-  SSHExecutor.super:reset()
+  SSHExecutor.super.reset(self)
 
   self._job_stdout_processed_idx = 0
   self._job_prompt_responses = {}
@@ -43,7 +45,9 @@ function SSHExecutor:upload(localSrcPath, remoteDestPath, cb)
   local remotePath = ("%s:%s"):format(self.host, remoteDestPath)
   local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, localSrcPath, remotePath)
 
-  return self:run_executor_job(scp_command, cb)
+  return self:run_executor_job(scp_command, {
+    exit_cb = cb,
+  })
 end
 
 ---Download data from remote path to local path
@@ -54,24 +58,27 @@ function SSHExecutor:download(remoteSrcPath, localDescPath, cb)
   local remotePath = ("%s:%s"):format(self.host, remoteSrcPath)
   local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, remotePath, localDescPath)
 
-  return self:run_executor_job(scp_command, cb)
+  return self:run_executor_job(scp_command, {
+    exit_cb = cb,
+  })
 end
 
 ---Run command on the remote host
 ---@param command string Command to be run on the remote host
----@param additional_conn_opts string? Additional command options to be added to connections opts
----@param cb function? Callback to call after job completion
-function SSHExecutor:run_command(command, additional_conn_opts, cb)
+---@param job_opts remote-nvim.provider.Executor.JobOpts
+function SSHExecutor:run_command(command, job_opts)
+  job_opts = job_opts or {}
+
   -- Append additional connection options (if any)
-  local conn_opts = additional_conn_opts == nil and self.ssh_conn_opts
-    or (self.ssh_conn_opts .. " " .. additional_conn_opts)
+  local conn_opts = job_opts.additional_conn_opts == nil and self.ssh_conn_opts
+    or (self.ssh_conn_opts .. " " .. job_opts.additional_conn_opts)
 
   -- Generate connection details (conn_opts + host)
   local host_conn_opts = conn_opts == "" and self.host or conn_opts .. " " .. self.host
 
   -- Shell escape the passed command
   local ssh_command = ("%s %s %s"):format(self.ssh_binary, host_conn_opts, vim.fn.shellescape(command))
-  return self:run_executor_job(ssh_command, cb)
+  return self:run_executor_job(ssh_command, job_opts)
 end
 
 ---@private
@@ -102,8 +109,9 @@ end
 ---@private
 ---Process job output
 ---@param output_chunks string[]
-function SSHExecutor:process_stdout(output_chunks)
-  SSHExecutor.super:process_stdout(output_chunks)
+---@param cb function? Callback to call on job output
+function SSHExecutor:process_stdout(output_chunks, cb)
+  SSHExecutor.super.process_stdout(self, output_chunks, cb)
 
   local pending_search_str = table.concat(vim.list_slice(self._job_stdout, self._job_stdout_processed_idx + 1), "")
   for _, prompt in ipairs(self._ssh_prompts) do
@@ -117,7 +125,7 @@ end
 ---Process job completion
 ---@param exit_code number Exit code of the job that was just running on the executor
 function SSHExecutor:process_job_completion(exit_code)
-  SSHExecutor.super:process_job_completion(exit_code)
+  SSHExecutor.super.process_job_completion(self, exit_code)
 
   if self._job_exit_code == 0 then
     -- If the job has successfully concluded, we have the correct prompt values at hand for "static" prompts
