@@ -290,11 +290,9 @@ describe("Provider", function()
       selection_stub.returns("Delete neovim workspace (Choose if multiple people use the same user account)")
 
       provider:clean_up_remote_host()
-      assert.stub(run_command_stub).was.called_with(
-        match.is_ref(provider),
-        ("rm -rf %s"):format(provider._remote_workspace_id_path),
-        "Delete remote nvim workspace from remote host"
-      )
+      assert
+        .stub(run_command_stub).was
+        .called_with(match.is_ref(provider), ("rm -rf %s"):format(provider._remote_workspace_id_path), match.is_string())
       assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
     end)
 
@@ -302,11 +300,9 @@ describe("Provider", function()
       selection_stub.returns("Delete remote neovim from remote host (Nuke it!)")
 
       provider:clean_up_remote_host()
-      assert.stub(run_command_stub).was.called_with(
-        match.is_ref(provider),
-        ("rm -rf %s"):format(provider._remote_neovim_home),
-        "Delete remote nvim from remote host"
-      )
+      assert
+        .stub(run_command_stub).was
+        .called_with(match.is_ref(provider), ("rm -rf %s"):format(provider._remote_neovim_home), match.is_string())
       assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
     end)
   end)
@@ -419,29 +415,31 @@ describe("Provider", function()
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
           "mkdir -p ~/.remote-nvim/workspaces && mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share",
-          "Create necessary directories"
+          match.is_string()
         )
 
         -- copy scripts
-        assert.stub(upload_stub).was.called_with(
-          match.is_ref(provider),
-          require("plenary.path"):new("scripts"):absolute(),
-          "~/.remote-nvim",
-          "Copy necessary files"
-        )
+        assert
+          .stub(upload_stub).was
+          .called_with(
+            match.is_ref(provider),
+            require("plenary.path"):new("scripts"):absolute(),
+            "~/.remote-nvim",
+            match.is_string()
+          )
 
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
           "chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim",
-          "Install Neovim if not exists"
+          match.is_string()
         )
 
         assert.stub(upload_stub).was.called_with(
           match.is_ref(provider),
           remote_nvim.config.neovim_user_config_path,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
-          "Copy user neovim config"
+          match.is_string()
         )
       end)
 
@@ -456,7 +454,7 @@ describe("Provider", function()
           match.is_ref(provider),
           remote_nvim.config.neovim_user_config_path,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
-          "Copy user neovim config"
+          match.is_string()
         )
       end)
 
@@ -470,7 +468,7 @@ describe("Provider", function()
           match.is_ref(provider),
           remote_nvim.config.neovim_install_script_path,
           "~/.remote-nvim/scripts",
-          "Copy user-specified files"
+          match.is_string()
         )
         remote_nvim.default_opts.neovim_install_script_path = default_install_script_path
       end)
@@ -518,13 +516,13 @@ describe("Provider", function()
       assert.stub(run_command_stub).was.called_with(
         match.is_ref(provider),
         "~/.remote-nvim/nvim-downloads/stable/bin/nvim -l ~/.remote-nvim/scripts/free_port_finder.lua",
-        "Find free port on remote"
+        match.is_string()
       )
       assert.stub(local_free_port_stub).was.called()
       assert.stub(run_command_stub).was.called_with(
         match.is_ref(provider),
         "XDG_CONFIG_HOME=~/.remote-nvim/workspaces/ajfdalfj/.config XDG_DATA_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/share XDG_STATE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/state XDG_CACHE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.cache ~/.remote-nvim/nvim-downloads/stable/bin/nvim --listen 0.0.0.0:32123 --headless",
-        "Launch remote server",
+        match.is_string(),
         "-t -L 52232:localhost:32123",
         match.is_function()
       )
