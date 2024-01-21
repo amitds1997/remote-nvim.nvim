@@ -79,7 +79,7 @@ vim.api.nvim_create_user_command("RemoteInfo", function(opts)
   local sessions = remote_nvim.session_provider:get_all_sessions()
 
   if #vim.tbl_keys(sessions) == 0 then
-    vim.notify("No active sessions found. Please start session first with :RemoteStart", vim.log.levels.WARN)
+    vim.notify("No active sessions found. Please start remote session(s) with :RemoteStart first", vim.log.levels.WARN)
     return
   elseif #host_ids > 1 then
     vim.notify("Please pass only one host at a time", vim.log.levels.WARN)
@@ -88,7 +88,7 @@ vim.api.nvim_create_user_command("RemoteInfo", function(opts)
     local session = sessions[host_ids[1]]
 
     if session == nil then
-      vim.notify(("No active session to %s found"):format(host_ids[1]), vim.log.levels.WARN)
+      vim.notify(("No active remote session to %s found"):format(host_ids[1]), vim.log.levels.WARN)
     else
       session:show_info()
     end
