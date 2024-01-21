@@ -32,11 +32,19 @@ local utils = require("remote-nvim.utils")
 ---@field level string Logging level
 ---@field max_size integer Max file size, after which it will be truncated
 
+---@class remote-nvim.config.PluginConfig.ProgressViewConfig
+---@field type "popup"|"split" Type of holder to launch
+---@field relative string? How should split/popup be placed
+---@field position string? Where should the holder be placed
+---@field size string? What should be the size of the holder
+---@field border string? What kind of border should be applied to the popup
+
 ---@class remote-nvim.config.PluginConfig
 ---@field ssh_config remote-nvim.config.PluginConfig.SSHConfig SSH configuration
 ---@field neovim_install_script_path string Local path where neovim installation script is stored
 ---@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
+---@field progress_view remote-nvim.config.PluginConfig.ProgressViewConfig Progress view configuration
 ---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig Configuration for the local client
 ---@field log remote-nvim.config.PluginConfig.LogConfig Plugin logging options
 
@@ -66,6 +74,9 @@ M.default_opts = {
     "scripts",
     "neovim_install.sh"
   ),
+  progress_view = {
+    type = "split",
+  },
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
     callback = function(port, _)

@@ -78,7 +78,7 @@ function Executor:run_executor_job(command, job_opts)
     on_exit = function(_, exit_code)
       self:process_job_completion(exit_code)
       if job_opts.exit_cb ~= nil then
-        job_opts.exit_cb()
+        job_opts.exit_cb(exit_code)
       end
       if co ~= nil then
         coroutine.resume(co)

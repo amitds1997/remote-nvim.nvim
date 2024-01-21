@@ -74,19 +74,38 @@ function M.RemoteCleanup(opts)
   end
 end
 
-vim.api.nvim_create_user_command("RemoteSessionLogToggle", function(opts)
+vim.api.nvim_create_user_command("RemoteInfo", function(opts)
   local host_ids = vim.split(vim.trim(opts.args), "%s+")
-  for _, host_id in ipairs(host_ids) do
-    local session = remote_nvim.session_provider:get_session(host_id)
+  local sessions = remote_nvim.session_provider:get_all_sessions()
+
+  if #vim.tbl_keys(sessions) == 0 then
+    vim.notify("No active sessions found. Please start session first with :RemoteStart", vim.log.levels.WARN)
+    return
+  elseif #host_ids > 1 then
+    vim.notify("Please pass only one host at a time", vim.log.levels.WARN)
+    return
+  elseif #host_ids == 1 and vim.trim(host_ids[1]) ~= "" then
+    local session = sessions[host_ids[1]]
+
     if session == nil then
-      vim.notify("No active session to this host", vim.log.levels.WARN)
+      vim.notify(("No active session to %s found"):format(host_ids[1]), vim.log.levels.WARN)
     else
-      session:toggle_log_view()
+      session:show_info()
     end
+  else
+    vim.ui.select(vim.tbl_keys(sessions), {
+      prompt = "Choose active session",
+    }, function(choice)
+      if choice == nil then
+        vim.notify("No session selected")
+      else
+        sessions[choice]:show_info()
+      end
+    end)
   end
 end, {
-  desc = "Toggle remote session log window",
-  nargs = 1,
+  desc = "View session information",
+  nargs = "?",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)

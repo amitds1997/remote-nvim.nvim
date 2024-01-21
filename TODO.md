@@ -13,11 +13,13 @@
 
 - ProgressView
   - Add tests
-  - Add highlighting to keymaps and improve overall aesthetics
+  - Update README.md with correct steps
+  - Add custom highlight groups and link it to default highlight groups
+  - Remove hard coded highlight groups
   - Add autoscrolling to ProgressView, autoscroll if on last line else don't scroll
-  - Improve section headers
-  - Output useful messages when required like "Remote server launched and accessible
-    at port XYZ"
+  - Add "Session Info (S)" tab
+  - Clean up progressview code
+  - Deprecate `:RemoteSessionInfo`
 - Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
 - When you previously chose to not launch a client and you re-run `:RemoteStart`,

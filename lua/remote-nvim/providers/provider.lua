@@ -24,6 +24,7 @@
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private logger plenary.logger Logger instance
 ---@field private _setup_running boolean Is the setup running?
+---@field private _active_run_number number Active run number
 ---@field private _local_free_port string? Free port available on local machine
 ---@field private _local_neovim_install_script_path string Local path where Neovim installation script is stored
 ---@field private _remote_neovim_home string Directory where all remote neovim data would be stored on host
@@ -73,6 +74,7 @@ function Provider:init(opts)
   self.provider_type = "local"
   self.executor = Executor()
   self.progress_view = opts.progress_view
+  self._active_run_number = 0
 
   -- Remote configuration members
   self._remote_working_dir = nil
@@ -174,8 +176,30 @@ function Provider:_reset()
   self._local_free_port = nil
 end
 
-function Provider:toggle_log_view()
-  self.progress_view:toggle()
+function Provider:start_run()
+  self._active_run_number = self._active_run_number + 1
+
+  local title = ("Run number %s"):format(self._active_run_number)
+  if self._active_run_number == 1 then
+    title = "Initial run"
+  end
+
+  self.progress_view:add_node({
+    text = title,
+    type = "run_node",
+  })
+  self:show_info()
+end
+
+function Provider:show_info()
+  for _, session in pairs(remote_nvim.session_provider:get_all_sessions()) do
+    session:hide_info()
+  end
+  self.progress_view:show()
+end
+
+function Provider:hide_info()
+  self.progress_view:hide()
 end
 
 ---Generate host identifer using host and port on host
@@ -189,7 +213,7 @@ end
 ---@return string remote_os OS running on remote host
 function Provider:_get_remote_os()
   if self._remote_os == nil then
-    self:run_command("uname", "Get remote OS")
+    self:run_command("uname", "Determining OS on remote machine")
     local cmd_out_lines = self.executor:job_stdout()
     local os = cmd_out_lines[#cmd_out_lines]
 
@@ -220,7 +244,7 @@ end
 ---@return string home_path User's home directory path
 function Provider:_get_remote_user_home()
   if self._remote_neovim_home == nil then
-    self:run_command("echo $HOME", "Get remote user's home directory")
+    self:run_command("echo $HOME", "Determining remote user's home directory")
     local cmd_out_lines = self.executor:job_stdout()
     self._remote_neovim_home = cmd_out_lines[#cmd_out_lines]
   end
@@ -348,7 +372,7 @@ function Provider:_setup_remote()
       for _, dir in ipairs(necessary_dirs) do
         table.insert(mkdirs_cmds, ("mkdir -p %s"):format(dir))
       end
-      self:run_command(table.concat(mkdirs_cmds, " && "), "Create necessary directories")
+      self:run_command(table.concat(mkdirs_cmds, " && "), "Creating custom neovim directories on remote")
 
       -- Copy things required on remote
       self:upload(
@@ -373,7 +397,7 @@ function Provider:_setup_remote()
         self._remote_neovim_version,
         self._remote_neovim_home
       )
-      self:run_command(install_neovim_cmd, "Install Neovim if not exists")
+      self:run_command(install_neovim_cmd, "Installing Neovim (if required)")
 
       -- Upload user neovim config, if necessary
       if self:_get_neovim_config_upload_preference() then
@@ -398,7 +422,7 @@ function Provider:_launch_remote_neovim_server()
       self:_remote_neovim_binary_path(),
       utils.path_join(self._remote_is_windows, self._remote_scripts_path, "free_port_finder.lua")
     )
-    self:run_command(free_port_on_remote_cmd, "Find free port on remote")
+    self:run_command(free_port_on_remote_cmd, "Searching for free port on the remote machine")
     local remote_free_port_output = self.executor:job_stdout()
     local remote_free_port = remote_free_port_output[#remote_free_port_output]
     self.logger.fmt_debug("[%s][%s] Remote free port: %s", self.provider_type, self.unique_host_id, remote_free_port)
@@ -428,14 +452,31 @@ function Provider:_launch_remote_neovim_server()
     end
 
     self:_run_code_in_coroutine(function()
-      self:run_command(remote_server_launch_cmd, "Launch remote server", port_forward_opts, function()
-        self.progress_view:hide()
-        self:_reset()
-      end)
+      self:run_command(
+        remote_server_launch_cmd,
+        "Launching Neovim server on the remote machine",
+        port_forward_opts,
+        function(node)
+          return function(exit_code)
+            self.progress_view:update_status(exit_code == 0 and "success" or "failed", true, node)
+            if exit_code == 0 then
+              self:hide_info()
+            else
+              self:show_info()
+            end
+            self:_reset()
+          end
+        end
+      )
       vim.notify("Remote server stopped", vim.log.levels.INFO)
     end)
     self._remote_server_process_id = self.executor:last_job_id()
-    self.progress_view:add_line("Remote server launched")
+    if self:is_remote_server_running() then
+      self.progress_view:add_node({
+        type = "info_node",
+        text = ("Remote server available at localhost:%s"):format(self._local_free_port),
+      })
+    end
   end
 end
 
@@ -544,7 +585,7 @@ end
 function Provider:_launch_neovim()
   if not self:is_remote_server_running() then
     self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
-    self.progress_view:start_run()
+    self:start_run()
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
@@ -575,7 +616,7 @@ end
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
-    self.progress_view:start_run()
+    self:start_run()
     self:_setup_workspace_variables()
     local deletion_choices = {
       "Delete neovim workspace (Choose if multiple people use the same user account)",
@@ -592,10 +633,13 @@ function Provider:clean_up_remote_host()
     if cleanup_choice == deletion_choices[1] then
       self:run_command(
         ("rm -rf %s"):format(self._remote_workspace_id_path),
-        "Delete remote nvim workspace from remote host"
+        ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path)
       )
     elseif cleanup_choice == deletion_choices[2] then
-      self:run_command(("rm -rf %s"):format(self._remote_neovim_home), "Delete remote nvim from remote host")
+      self:run_command(
+        ("rm -rf %s"):format(self._remote_neovim_home),
+        "Delete remote neovim created directories from remote machine"
+      )
     end
     vim.notify("Cleanup on remote host completed", vim.log.levels.INFO)
 
@@ -609,7 +653,10 @@ end
 function Provider:_handle_job_completion(desc)
   local exit_code = self.executor:last_job_status()
   if exit_code ~= 0 then
-    self.progress_view:add_line(("'%s' failed."):format(desc))
+    self.progress_view:update_status("failed", true)
+    if self._setup_running then
+      self._setup_running = false
+    end
     local co = coroutine.running()
     if co then
       self.logger.error(
@@ -620,6 +667,8 @@ function Provider:_handle_job_completion(desc)
     else
       error(("'%s' failed"):format(desc))
     end
+  else
+    self.progress_view:update_status("success")
   end
   return exit_code
 end
@@ -632,15 +681,27 @@ end
 ---@param exit_cb function? Exit callback to execute
 function Provider:run_command(command, desc, extra_opts, exit_cb)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
-  self.progress_view:start_section(desc, {
-    ("Command: %s"):format(command),
+  self.progress_view:add_node({
+    text = desc,
+    type = "section_node",
   })
+  self.progress_view:add_node({
+    text = command,
+    type = "command_node",
+  })
+  -- Allow correct update of active job in ProgressView
+  if exit_cb ~= nil then
+    exit_cb = exit_cb(self.progress_view:get_active_section())
+  end
   self.executor:run_command(command, {
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
     stdout_cb = function(chunk)
       if chunk and chunk ~= "" then
-        self.progress_view:add_line(chunk:gsub("\n", ""))
+        self.progress_view:add_node({
+          type = "stdout_node",
+          text = chunk:gsub("\n", ""),
+        })
       end
     end,
   })
