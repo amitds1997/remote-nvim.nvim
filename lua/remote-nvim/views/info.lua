@@ -58,6 +58,10 @@ local function RemoteInfoNodes()
 end
 
 function M.RemoteInfo()
+  vim.notify_once(
+    "This command will be deprecated in coming months. Please use :RemoteInfo instead.",
+    vim.log.levels.WARN
+  )
   local info_popup = Popup({
     border = {
       style = "rounded",

@@ -12,14 +12,12 @@
 ## To do
 
 - ProgressView
+  - Add "Session Info (S)" tab
+  - Add custom highlight groups and link it to default highlight groups
+  - Add autoscrolling to ProgressView, autoscroll if on last line else don't scroll
+  - Clean up progressview code
   - Add tests
   - Update README.md with correct steps
-  - Add custom highlight groups and link it to default highlight groups
-  - Remove hard coded highlight groups
-  - Add autoscrolling to ProgressView, autoscroll if on last line else don't scroll
-  - Add "Session Info (S)" tab
-  - Clean up progressview code
-  - Deprecate `:RemoteSessionInfo`
 - Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
 - When you previously chose to not launch a client and you re-run `:RemoteStart`,
