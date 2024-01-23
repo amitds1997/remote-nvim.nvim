@@ -539,7 +539,7 @@ function Provider:_wait_for_server_to_be_ready()
   local cmd = ("nvim --server localhost:%s --remote-send ':echo<CR>'"):format(self._local_free_port)
   local timeout = 20000 -- Wait for max 20 seconds for server to get ready
 
-  local timer = vim.loop.new_timer()
+  local timer = utils.uv.new_timer()
   assert(timer ~= nil, "Timer object should not be nil")
 
   local co = coroutine.running()
