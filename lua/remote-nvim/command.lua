@@ -161,6 +161,7 @@ vim.api.nvim_create_user_command("RemoteStop", function(opts)
       vim.notify("No active session to this host", vim.log.levels.WARN)
     else
       session:stop_neovim()
+      session:hide_info()
     end
   end
 end, {

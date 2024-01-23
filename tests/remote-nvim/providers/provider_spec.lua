@@ -294,19 +294,27 @@ describe("Provider", function()
       selection_stub.returns("Delete neovim workspace (Choose if multiple people use the same user account)")
 
       provider:clean_up_remote_host()
-      assert
-        .stub(run_command_stub).was
-        .called_with(match.is_ref(provider), ("rm -rf %s"):format(provider._remote_workspace_id_path), match.is_string())
+      assert.stub(run_command_stub).was.called_with(
+        match.is_ref(provider),
+        ("rm -rf %s"):format(provider._remote_workspace_id_path),
+        match.is_string(),
+        nil,
+        match.is_function()
+      )
       assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
     end)
 
-    it("when asked to clenaup entire remote neovim directory", function()
+    it("when asked to cleanup entire remote neovim directory", function()
       selection_stub.returns("Delete remote neovim from remote host (Nuke it!)")
 
       provider:clean_up_remote_host()
-      assert
-        .stub(run_command_stub).was
-        .called_with(match.is_ref(provider), ("rm -rf %s"):format(provider._remote_neovim_home), match.is_string())
+      assert.stub(run_command_stub).was.called_with(
+        match.is_ref(provider),
+        ("rm -rf %s"):format(provider._remote_neovim_home),
+        match.is_string(),
+        nil,
+        match.is_function()
+      )
       assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
     end)
   end)
