@@ -166,6 +166,45 @@ function Provider:_setup_workspace_variables()
       utils.path_join(self._remote_is_windows, self._remote_workspace_id_path, path)
   end
   self._remote_neovim_config_path = utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim")
+
+  self:_add_session_info()
+end
+
+function Provider:_add_session_info()
+  local function add_config_info(key, value)
+    self.progress_view:add_session_info({
+      type = "config_node",
+      key = key,
+      value = value,
+    })
+  end
+
+  local function add_local_info(key, value)
+    self.progress_view:add_session_info({
+      type = "local_node",
+      key = key,
+      value = value,
+    })
+  end
+
+  local function add_remote_info(key, value)
+    self.progress_view:add_session_info({
+      type = "remote_node",
+      key = key,
+      value = value,
+    })
+  end
+
+  add_config_info("Global log file", remote_nvim.config.log.filepath)
+
+  add_local_info("OS", utils.os_name())
+  add_local_info("Neovim version", utils.neovim_version())
+
+  add_remote_info("OS", self._remote_os)
+  add_remote_info("Neovim version", self._remote_neovim_version)
+  add_remote_info("Remote Neovim home", self._remote_neovim_home)
+  add_remote_info("Current workspace path", self._remote_workspace_id_path)
+  add_remote_info("Working directory", self._remote_working_dir or "<not-specified>")
 end
 
 ---@private
@@ -184,10 +223,7 @@ function Provider:start_run()
     title = "Initial run"
   end
 
-  self.progress_view:add_node({
-    text = title,
-    type = "run_node",
-  })
+  self.progress_view:start_run(title)
   self:show_info()
 end
 
@@ -472,9 +508,9 @@ function Provider:_launch_remote_neovim_server()
     end)
     self._remote_server_process_id = self.executor:last_job_id()
     if self:is_remote_server_running() then
-      self.progress_view:add_node({
+      self.progress_view:add_session_info({
         type = "info_node",
-        text = ("Remote server available at localhost:%s"):format(self._local_free_port),
+        value = ("Remote server available at localhost:%s"):format(self._local_free_port),
       })
     end
   end
@@ -577,7 +613,7 @@ function Provider:_launch_local_neovim_client()
       self._config_provider:get_workspace_config(self.unique_host_id)
     )
   else
-    vim.notify("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO)
+    vim.notify("Check [Session Info] tab in :RemoteInfo", vim.log.levels.INFO)
   end
 end
 

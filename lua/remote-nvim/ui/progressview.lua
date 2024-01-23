@@ -6,7 +6,8 @@ local utils = require("remote-nvim.utils")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
----@alias progressview_node_type "run_node"|"section_node"|"command_node"|"stdout_node"|"warning_node"|"info_node"
+---@alias progressview_node_type "run_node"|"section_node"|"command_node"|"stdout_node"
+---@alias session_node_type "local_node"|"remote_node"|"config_node"|"root_node"|"info_node"
 ---@alias progressview_status "running"|"success"|"failed"|"warning"|"no_op"
 
 ---@class ProgressViewLine
@@ -15,20 +16,38 @@ local remote_nvim = require("remote-nvim")
 ---@field status progressview_status? Status of the node
 ---@field type progressview_node_type Type of line
 
+---@class SessionInfoNode
+---@field key string? Key for the info
+---@field value string Text to insert
+---@field holds session_node_type? Type of nodes it contains
+---@field type session_node_type Type of the node
+---@field last_child_id NuiTree.Node? Last inserted child's ID
+
 ---@class remote-nvim.ui.ProgressView
 ---@field private pv_holder NuiSplit | NuiPopup
----@field private tree NuiTree
+---@field private pv_tree NuiTree
 ---@field private map_options table<string, any>
----@field private help_bufnr number Buffer ID of the keymap help buffer
+---@field private help_bufnr integer Buffer ID of the keymap help buffer
+---@field private si_bufnr integer Buffer ID of the session info buffer
 ---@field private pv_holder_opts table
 ---@field private _active_section NuiTree.Node?
 ---@field private _run_section NuiTree.Node?
----@field private _tree_start_linenr number What line number should the tree be rendered from
+---@field private _pv_tree_start_linenr number What line number should the tree be rendered from
+---@field private _session_tree_start_linenr number What line number should the session tree be rendered from
 local ProgressView = require("remote-nvim.middleclass")("ProgressView")
 
 function ProgressView:init()
   local pv_config = remote_nvim.config.progress_view
   self.pv_ns = vim.api.nvim_create_namespace("remote_nvim_progressview")
+  self.buf_options = {
+    bufhidden = "hide",
+    buflisted = false,
+    buftype = "nofile",
+    modifiable = false,
+    readonly = true,
+    swapfile = false,
+    undolevels = 0,
+  }
   self.win_options = {
     number = false,
     relativenumber = false,
@@ -64,7 +83,145 @@ function ProgressView:init()
     self.pv_holder = Popup(self.pv_holder_opts)
   end
   self.help_bufnr = vim.api.nvim_create_buf(false, true)
-  self.tree = NuiTree({
+  self.si_bufnr = vim.api.nvim_create_buf(false, true)
+  self.pv_tree = nil
+  self.session_tree = nil
+  self._active_section = nil
+  self.map_options = { noremap = true, nowait = true }
+
+  self:_setup_progress_view()
+  self:_setup_session_info()
+  self:_setup_help_window()
+end
+
+function ProgressView:_set_buffer(bufnr)
+  vim.api.nvim_win_set_buf(self.pv_holder.winid, bufnr)
+  if bufnr ~= self.pv_holder.bufnr then
+    for key, value in pairs(self.win_options) do
+      vim.api.nvim_set_option_value(key, value, {
+        win = self.pv_holder.winid,
+      })
+    end
+  end
+end
+
+---@private
+---@param bufnr number Buffer ID
+---@param clear_buffer boolean? Should clear buffer
+function ProgressView:_set_top_line(bufnr, clear_buffer)
+  vim.bo[bufnr].readonly = false
+  vim.bo[bufnr].modifiable = true
+
+  local active_hl = "CurSearch"
+  local inactive_hl = "CursorLine"
+  local help_hl = (bufnr == self.help_bufnr) and active_hl or inactive_hl
+  local progress_hl = (bufnr == self.pv_holder.bufnr) and active_hl or inactive_hl
+  local si_hl = (bufnr == self.si_bufnr) and active_hl or inactive_hl
+
+  if clear_buffer then
+    vim.api.nvim_buf_set_lines(bufnr, 0, vim.api.nvim_buf_line_count(bufnr) - 1, true, {})
+  end
+  vim.api.nvim_buf_set_lines(bufnr, 0, 0, true, { "" })
+  local line_count = vim.api.nvim_buf_line_count(bufnr)
+
+  local line = NuiLine()
+  line:append(" ")
+  line:append(" Progress View (P) ", progress_hl)
+  line:append(" ")
+  line:append(" Session Info (S) ", si_hl)
+  line:append(" ")
+  line:append(" Help (?) ", help_hl)
+  line:render(bufnr, -1, line_count)
+
+  vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, true, { "" })
+
+  vim.bo[bufnr].readonly = true
+  vim.bo[bufnr].modifiable = false
+end
+
+function ProgressView:show()
+  -- Update layout because the pv_holder internally holds the window relative to which
+  -- it should create the split/popup. If it no longer exists, it will throw an error.
+  -- So, we update the layout to get the latest reference.
+  self.pv_holder:update_layout(self.pv_holder_opts)
+  self.pv_holder:show()
+  vim.api.nvim_set_current_win(self.pv_holder.winid)
+end
+
+function ProgressView:hide()
+  self.pv_holder:hide()
+end
+
+---@private
+function ProgressView:_collapse_all_nodes(tree, start_linenr)
+  local updated = false
+
+  for _, node in pairs(tree.nodes.by_id) do
+    updated = node:collapse() or updated
+  end
+
+  if updated then
+    tree:render(start_linenr)
+  end
+end
+
+---@private
+function ProgressView:_expand_all_nodes(tree, start_linenr)
+  local updated = false
+
+  for _, node in pairs(tree.nodes.by_id) do
+    updated = node:expand() or updated
+  end
+
+  if updated then
+    tree:render(start_linenr)
+  end
+end
+
+---@param session_info_node SessionInfoNode Node input
+function ProgressView:add_session_info(session_info_node)
+  ---@return NuiTree.Node?
+  local function find_parent_node(node_type)
+    local parent_node = nil
+    for _, tree_node in ipairs(self.session_tree:get_nodes()) do
+      if tree_node.holds == node_type then
+        parent_node = tree_node
+        break
+      end
+    end
+    return parent_node
+  end
+
+  local node = NuiTree.Node({
+    key = session_info_node.key,
+    value = session_info_node.value,
+    holds = session_info_node.holds,
+    type = session_info_node.type,
+  })
+  local parent_node = find_parent_node(node.type)
+
+  if parent_node then
+    self.session_tree:add_node(node, parent_node:get_id())
+    parent_node.last_child_id = node:get_id()
+    parent_node:expand()
+  else
+    self.session_tree:add_node(node)
+  end
+
+  self.session_tree:render(self._session_tree_start_linenr)
+end
+
+function ProgressView:start_run(title)
+  self:add_node({
+    text = title,
+    type = "run_node",
+  })
+
+  self:_setup_session_info()
+end
+
+function ProgressView:_setup_progress_view()
+  self.pv_tree = NuiTree({
     ns_id = self.pv_ns,
     winid = self.pv_holder.winid,
     bufnr = self.pv_holder.bufnr,
@@ -84,10 +241,6 @@ function ProgressView:init()
         highlight = "@namespace"
       elseif node_status == "failed" then
         highlight = "@method"
-      elseif node_type == "warning_node" then
-        highlight = "@number"
-      elseif node_type == "info_node" then
-        highlight = "@boolean"
       elseif node_status == "running" then
         highlight = "CmpItemKindInterface"
       elseif node_type == "run_node" then
@@ -102,20 +255,14 @@ function ProgressView:init()
 
       ---@type progressview_node_type[]
       local section_nodes = { "section_node", "run_node" }
-      ---@type progressview_node_type[]
-      local status_nodes = { "warning_node", "info_node" }
       if utils.contains(section_nodes, node.type) then
         line:append(node:is_expanded() and " " or " ", highlight)
-      elseif not utils.contains(status_nodes, node.type) then
+      else
         line:append(" ")
       end
 
       if node_type == "command_node" then
         line:append("Command: ", "CmpItemKindMethod")
-      elseif node_type == "warning_node" then
-        line:append("⚠︎ ", highlight)
-      elseif node_type == "info_node" then
-        line:append("ⓘ ", highlight)
       end
       line:append(node.text, highlight)
 
@@ -132,54 +279,117 @@ function ProgressView:init()
       return line
     end,
   })
-  self._active_section = nil
-  self.map_options = { noremap = true, nowait = true }
-  self:_set_keybindings()
   self:_set_top_line(self.pv_holder.bufnr)
-  self._tree_start_linenr = vim.api.nvim_buf_line_count(self.pv_holder.bufnr) + 1
+  self._pv_tree_start_linenr = vim.api.nvim_buf_line_count(self.pv_holder.bufnr) + 1
+
+  -- Set up key bindings
+  local keymaps = self:_get_section_keymaps()
+  local tree_keymaps = self:_get_tree_keymaps(self.pv_tree, self._pv_tree_start_linenr)
+  keymaps = vim.list_extend(keymaps, tree_keymaps)
+  self:_set_buffer_keymaps(self.pv_holder.bufnr, keymaps)
+end
+
+function ProgressView:_initialize_session_info_tree()
+  -- Initialize session info tree
+  self.session_tree = NuiTree({
+    ns_id = self.pv_ns,
+    winid = self.pv_holder.winid,
+    bufnr = self.si_bufnr,
+    prepare_node = function(node, parent_node)
+      local line = NuiLine()
+
+      line:append(string.rep(" ", node:get_depth()))
+
+      ---@type session_node_type
+      local node_type = node.type
+      ---@type progressview_status
+
+      local highlight = nil
+
+      if node_type == "root_node" then
+        line:append(node:is_expanded() and " " or " ", highlight)
+      else
+        line:append("* ")
+      end
+
+      if node.key ~= nil then
+        line:append(node.key .. ": ", "Comment")
+      end
+      line:append(node.value, highlight)
+
+      if parent_node and parent_node.last_child_id == node:get_id() then
+        return {
+          line,
+          NuiLine(),
+        }
+      end
+
+      return line
+    end,
+  })
+
+  self:add_session_info({
+    value = "Config",
+    holds = "config_node",
+    type = "root_node",
+  })
+  self:add_session_info({
+    value = "Local config",
+    holds = "local_node",
+    type = "root_node",
+  })
+  self:add_session_info({
+    value = "Remote config",
+    holds = "remote_node",
+    type = "root_node",
+  })
+end
+
+function ProgressView:_setup_session_info()
+  self:_set_top_line(self.si_bufnr, true)
+  self._session_tree_start_linenr = vim.api.nvim_buf_line_count(self.si_bufnr) + 1
+  self:_initialize_session_info_tree()
+
+  -- Set up key bindings
+  local keymaps = self:_get_section_keymaps()
+  local tree_keymaps = self:_get_tree_keymaps(self.session_tree, self._session_tree_start_linenr)
+  keymaps = vim.list_extend(keymaps, tree_keymaps)
+  self:_set_buffer_keymaps(self.si_bufnr, keymaps)
+
+  for key, val in pairs(self.buf_options) do
+    vim.api.nvim_set_option_value(key, val, {
+      buf = self.si_bufnr,
+    })
+  end
+
+  self.session_tree:render(self._session_tree_start_linenr)
 end
 
 ---@private
-function ProgressView:_set_top_line(bufnr)
-  vim.bo[bufnr].readonly = false
-  vim.bo[bufnr].modifiable = true
-
-  local is_help_bufr = (bufnr == self.help_bufnr)
-  local active_hl = "CurSearch"
-  local inactive_hl = "CursorLine"
-  local help_hl = is_help_bufr and active_hl or inactive_hl
-  local progress_hl = is_help_bufr and inactive_hl or active_hl
-
-  vim.api.nvim_buf_set_lines(bufnr, 0, 0, true, { "" })
-  local line_count = vim.api.nvim_buf_line_count(bufnr)
-
-  local line = NuiLine()
-  line:append(" ")
-  line:append(" Progress View (P) ", progress_hl)
-  line:append(" ")
-  line:append(" Help (?) ", help_hl)
-  line:render(bufnr, -1, line_count)
-
-  vim.api.nvim_buf_set_lines(bufnr, line_count, line_count, true, { "" })
-
-  vim.bo[bufnr].readonly = true
-  vim.bo[bufnr].modifiable = false
-end
-
-function ProgressView:show()
-  self.pv_holder:update_layout(self.pv_holder_opts)
-  self.pv_holder:show()
-  vim.api.nvim_set_current_win(self.pv_holder.winid)
-end
-
-function ProgressView:hide()
-  self.pv_holder:hide()
+function ProgressView:_set_buffer_keymaps(bufnr, keymaps)
+  for _, val in ipairs(keymaps) do
+    local options = vim.deepcopy(self.map_options)
+    options["callback"] = val.action
+    vim.api.nvim_buf_set_keymap(bufnr, "n", val.key, "", options)
+  end
 end
 
 ---@private
-function ProgressView:_set_keybindings_help(keymaps)
+function ProgressView:_setup_help_window()
   self:_set_top_line(self.help_bufnr)
   local line_nr = vim.api.nvim_buf_line_count(self.help_bufnr) + 1
+
+  local keymaps = self:_get_section_keymaps()
+  self:_set_buffer_keymaps(self.help_bufnr, keymaps)
+
+  -- Get tree keymaps (we use this to set help and do not set up any extra keybindings)
+  local tree_keymaps = self:_get_tree_keymaps(self.pv_tree, self._pv_tree_start_linenr)
+  vim.list_extend(keymaps, tree_keymaps)
+
+  local max_length = 0
+  for _, v in ipairs(keymaps) do
+    max_length = math.max(max_length, #v.key)
+  end
 
   vim.bo[self.help_bufnr].readonly = false
   vim.bo[self.help_bufnr].modifiable = true
@@ -191,11 +401,6 @@ function ProgressView:_set_keybindings_help(keymaps)
   vim.api.nvim_buf_set_lines(self.help_bufnr, line_nr, line_nr, true, { "" })
   line_nr = line_nr + 2
 
-  local max_length = 0
-  for _, v in ipairs(keymaps) do
-    max_length = math.max(max_length, #v.key)
-  end
-
   for _, v in ipairs(keymaps) do
     line = NuiLine()
 
@@ -205,59 +410,29 @@ function ProgressView:_set_keybindings_help(keymaps)
     line_nr = line_nr + 1
   end
 
-  local buf_options = {
-    bufhidden = "hide",
-    buflisted = false,
-    buftype = "nofile",
-    modifiable = false,
-    readonly = true,
-    swapfile = false,
-    undolevels = 0,
-  }
-  for key, val in pairs(buf_options) do
+  for key, val in pairs(self.buf_options) do
     vim.api.nvim_set_option_value(key, val, {
       buf = self.help_bufnr,
     })
   end
 end
 
----@private
-function ProgressView:_collapse_all_nodes()
-  local updated = false
-
-  for _, node in pairs(self.tree.nodes.by_id) do
-    updated = node:collapse() or updated
+---@param tree NuiTree Tree on which keymaps will be set
+---@param start_linenr number What line number on the buffer should the tree be rendered from
+function ProgressView:_get_tree_keymaps(tree, start_linenr)
+  if tree == nil or start_linenr == nil then
+    return {}
   end
-
-  if updated then
-    self.tree:render(self._tree_start_linenr)
-  end
-end
-
----@private
-function ProgressView:_expand_all_nodes()
-  local updated = false
-
-  for _, node in pairs(self.tree.nodes.by_id) do
-    updated = node:expand() or updated
-  end
-
-  if updated then
-    self.tree:render(self._tree_start_linenr)
-  end
-end
-
----@private
-function ProgressView:_set_keybindings()
-  local keymaps = {
+  return {
     {
       key = "l",
       action = function()
-        local node = self.tree:get_node()
-        assert(node ~= nil, "Node should not be nil")
+        local node = tree:get_node()
 
-        if node:expand() then
-          self.tree:render(self._tree_start_linenr)
+        if node and node:expand() then
+          tree:render(start_linenr)
+        else
+          vim.api.nvim_feedkeys("l", "n", true)
         end
       end,
       desc = "Expand current heading",
@@ -265,11 +440,12 @@ function ProgressView:_set_keybindings()
     {
       key = "h",
       action = function()
-        local node = self.tree:get_node()
-        assert(node ~= nil, "Node should not be nil")
+        local node = tree:get_node()
 
-        if node:collapse() then
-          self.tree:render(self._tree_start_linenr)
+        if node and node:collapse() then
+          tree:render(start_linenr)
+        else
+          vim.api.nvim_feedkeys("h", "n", true)
         end
       end,
       desc = "Collapse current heading",
@@ -277,38 +453,53 @@ function ProgressView:_set_keybindings()
     {
       key = "<CR>",
       action = function()
-        local node = self.tree:get_node()
-        assert(node ~= nil, "Node should not be nil")
+        local node = tree:get_node()
 
-        if node:is_expanded() then
-          node:collapse()
+        if node then
+          if node:is_expanded() then
+            node:collapse()
+          else
+            node:expand()
+          end
+          tree:render(start_linenr)
         else
-          node:expand()
+          vim.api.nvim_feedkeys("<CR>", "n", true)
         end
-        self.tree:render(self._tree_start_linenr)
       end,
       desc = "Toggle current heading",
     },
     {
       key = "L",
       action = function()
-        self:_expand_all_nodes()
+        self:_expand_all_nodes(tree, start_linenr)
       end,
       desc = "Expand all headings",
     },
     {
       key = "H",
       action = function()
-        self:_collapse_all_nodes()
+        self:_collapse_all_nodes(tree, start_linenr)
       end,
       desc = "Collapse all headings",
     },
+  }
+end
+
+function ProgressView:_get_section_keymaps()
+  return {
     {
       key = "P",
       action = function()
-        vim.api.nvim_win_set_buf(self.pv_holder.winid, self.pv_holder.bufnr)
+        self:_set_buffer(self.pv_holder.bufnr)
       end,
       desc = "Switch to Progress view",
+    },
+    {
+      key = "S",
+      action = function()
+        self:_set_buffer(self.si_bufnr)
+      end,
+      desc = "Switch to Session Info view",
     },
     {
       key = "?",
@@ -316,14 +507,7 @@ function ProgressView:_set_keybindings()
         local switch_to_bufnr = (vim.api.nvim_win_get_buf(self.pv_holder.winid) == self.help_bufnr)
             and self.pv_holder.bufnr
           or self.help_bufnr
-        vim.api.nvim_win_set_buf(self.pv_holder.winid, switch_to_bufnr)
-        if switch_to_bufnr == self.help_bufnr then
-          for key, value in pairs(self.win_options) do
-            vim.api.nvim_set_option_value(key, value, {
-              win = self.pv_holder.winid,
-            })
-          end
-        end
+        self:_set_buffer(switch_to_bufnr)
       end,
       desc = "Toggle help window",
     },
@@ -335,15 +519,6 @@ function ProgressView:_set_keybindings()
       desc = "Close Progress view",
     },
   }
-
-  for _, val in ipairs(keymaps) do
-    self.pv_holder:map("n", val.key, val.action, self.map_options)
-    local options = vim.deepcopy(self.map_options)
-    options["callback"] = val.action
-    vim.api.nvim_buf_set_keymap(self.help_bufnr, "n", val.key, "", options)
-  end
-
-  self:_set_keybindings_help(keymaps)
 end
 
 ---@param node ProgressViewLine Line to insert into progress view
@@ -351,16 +526,14 @@ function ProgressView:add_node(node)
   ---@type progressview_status
   local status = "no_op"
 
-  if node.type == "warning_node" then
-    status = "warning"
-  elseif node.type == "stdout_node" then
+  if node.type == "stdout_node" then
     status = "running"
   elseif utils.contains({ "run_node", "section_node" }, node.type) then
     status = node.status
   end
 
   if node.text ~= nil then
-    if utils.contains({ "section_node", "warning_node", "info_node" }, node.type) then
+    if node.type == "section_node" then
       self:_add_section(node)
     elseif node.type == "run_node" then
       self:_add_run_section(node)
@@ -388,7 +561,7 @@ function ProgressView:update_status(status, should_update_parent_status, node)
   if should_update_parent_status then
     local parent_node_id = node:get_parent_id()
     while parent_node_id ~= nil do
-      local parent_node = self.tree:get_node(parent_node_id)
+      local parent_node = self.pv_tree:get_node(parent_node_id)
       parent_node.status = status
       ---@diagnostic disable-next-line:need-check-nil
       parent_node_id = parent_node:get_parent_id()
@@ -403,7 +576,7 @@ function ProgressView:update_status(status, should_update_parent_status, node)
   if status == "success" then
     node:collapse()
   end
-  self.tree:render(self._tree_start_linenr)
+  self.pv_tree:render(self._pv_tree_start_linenr)
 end
 
 ---@param node ProgressViewLine Section to insert into progress view
@@ -419,7 +592,7 @@ function ProgressView:_add_section(node)
     ---@type progressview_node_type
     type = node.type,
   })
-  self.tree:add_node(section_node, self._run_section:get_id())
+  self.pv_tree:add_node(section_node, self._run_section:get_id())
 
   if node.type == "section_node" then
     self._active_section = section_node
@@ -432,10 +605,10 @@ function ProgressView:_add_run_section(node)
     text = node.text,
     type = node.type,
   }, {})
-  self.tree:add_node(self._run_section)
+  self.pv_tree:add_node(self._run_section)
 
   -- Collapse all nodes, and then expand current run section
-  self:_collapse_all_nodes()
+  self:_collapse_all_nodes(self.pv_tree, self._pv_tree_start_linenr)
   self._run_section:expand()
 end
 
@@ -443,7 +616,7 @@ end
 ---@param node ProgressViewLine Line to insert into progress view
 function ProgressView:_add_line(node)
   assert(self._active_section ~= nil, "Active section should not be nil")
-  self.tree:add_node(
+  self.pv_tree:add_node(
     NuiTree.Node({
       text = node.text,
       type = node.type,

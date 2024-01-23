@@ -54,7 +54,11 @@ describe("Provider", function()
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
     before_each(function()
-      provider = Provider({ host = provider_host, conn_opts = { "-p", "3011" } })
+      provider = Provider({
+        host = provider_host,
+        conn_opts = { "-p", "3011" },
+        progress_view = mock(require("remote-nvim.ui.progressview"), true),
+      })
       detect_remote_os_stub = stub(provider, "_get_remote_os")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
 
@@ -629,9 +633,7 @@ describe("Provider", function()
 
       provider:_launch_local_neovim_client()
 
-      assert
-        .stub(notifier_stub).was
-        .called_with("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO)
+      assert.stub(notifier_stub).was.called_with(match.is_string(), vim.log.levels.INFO)
     end)
 
     it("when user wants to launch client", function()
