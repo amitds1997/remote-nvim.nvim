@@ -1,5 +1,6 @@
 local M = {}
 local constants = require("remote-nvim.constants")
+M.uv = vim.fn.has("0.10") and vim.uv or vim.loop
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
@@ -146,7 +147,7 @@ end
 ---Truncate the plugin log file
 M.truncate_log = function()
   local remote_nvim = require("remote-nvim")
-  local stat = vim.loop.fs_stat(remote_nvim.config.log.filepath)
+  local stat = M.uv.fs_stat(remote_nvim.config.log.filepath)
   if stat and stat.size > remote_nvim.config.log.max_size then
     io.open(remote_nvim.config.log.filepath, "w+"):close()
   end
@@ -163,7 +164,7 @@ function M.contains(list, element)
 end
 
 function M.os_name()
-  local os_name = vim.uv.os_uname().sysname
+  local os_name = M.uv.os_uname().sysname
 
   if os_name == "Darwin" then
     return "macOS"

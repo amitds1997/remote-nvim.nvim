@@ -95,7 +95,7 @@ end
 ---Get an ephemeral free port on the local machine
 ---@return string port A free ephemeral port available for TCP connections
 function M.find_free_port()
-  local socket = vim.loop.new_tcp()
+  local socket = require("remote-nvim.utils").uv.new_tcp()
 
   socket:bind("127.0.0.1", 0)
   local result = socket.getsockname(socket)
