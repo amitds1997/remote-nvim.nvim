@@ -142,7 +142,6 @@ function Provider:_setup_workspace_variables()
   end
 
   -- Set up remaining workspace variables
-
   self._remote_workspace_id = self._host_config.workspace_id
   self._remote_neovim_home = self._host_config.remote_neovim_home
   self._remote_workspaces_path = utils.path_join(self._remote_is_windows, self._remote_neovim_home, "workspaces")
@@ -204,7 +203,7 @@ function Provider:_add_session_info()
   add_remote_info("Neovim version", self._remote_neovim_version)
   add_remote_info("Remote Neovim home", self._remote_neovim_home)
   add_remote_info("Current workspace path", self._remote_workspace_id_path)
-  add_remote_info("Working directory", self._remote_working_dir or "<not-specified>")
+  add_remote_info("Working directory", self._remote_working_dir)
 end
 
 ---@private

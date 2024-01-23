@@ -309,15 +309,22 @@ function ProgressView:_initialize_session_info_tree()
       if node_type == "root_node" then
         line:append(node:is_expanded() and " " or " ", highlight)
       else
-        line:append("* ")
+        line:append(" ")
       end
 
       if node.key ~= nil then
         line:append(node.key .. ": ", "Comment")
       end
-      line:append(node.value, highlight)
+      if node.value then
+        line:append(node.value, highlight)
+      else
+        line:append("nil", highlight)
+      end
 
-      if parent_node and parent_node.last_child_id == node:get_id() then
+      if
+        (parent_node and parent_node.last_child_id == node:get_id())
+        or (node.holds == "remote_node" and not node:is_expanded())
+      then
         return {
           line,
           NuiLine(),
