@@ -36,9 +36,9 @@ end
 ---Upload data to the host
 ---@param localSrcPath string Local path from which data would be uploaded
 ---@param remoteDestPath string Path on host where data would be uploaded
----@param cb function? Callback to call on upload completion
+---@param job_opts remote-nvim.provider.Executor.JobOpts
 ---@diagnostic disable-next-line: unused-local
-function Executor:upload(localSrcPath, remoteDestPath, cb)
+function Executor:upload(localSrcPath, remoteDestPath, job_opts)
   error("Not implemented")
 end
 
@@ -47,9 +47,9 @@ end
 ---Download data from host
 ---@param remoteSrcPath string Remote path where data is located
 ---@param localDestPath string Local path where data will be downloaded
----@param cb function? Callback to call on download completion
+---@param job_opts remote-nvim.provider.Executor.JobOpts
 ---@diagnostic disable-next-line: unused-local
-function Executor:download(remoteSrcPath, localDestPath, cb)
+function Executor:download(remoteSrcPath, localDestPath, job_opts)
   error("Not implemented")
 end
 

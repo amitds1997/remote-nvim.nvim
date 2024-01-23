@@ -238,7 +238,7 @@ function ProgressView:_setup_progress_view()
       local highlight = nil
 
       if node_status == "success" then
-        highlight = "@namespace"
+        highlight = "@markup.heading.4.markdown"
       elseif node_status == "failed" then
         highlight = "@method"
       elseif node_status == "running" then
