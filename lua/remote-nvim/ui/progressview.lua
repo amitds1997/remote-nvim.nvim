@@ -212,7 +212,7 @@ function ProgressView:add_session_info(session_info_node)
 end
 
 function ProgressView:start_run(title)
-  self:add_node({
+  self:add_progress_node({
     text = title,
     type = "run_node",
   })
@@ -529,7 +529,7 @@ function ProgressView:_get_section_keymaps()
 end
 
 ---@param node ProgressViewLine Line to insert into progress view
-function ProgressView:add_node(node)
+function ProgressView:add_progress_node(node)
   ---@type progressview_status
   local status = "no_op"
 
@@ -572,6 +572,22 @@ function ProgressView:update_status(status, should_update_parent_status, node)
       parent_node.status = status
       ---@diagnostic disable-next-line:need-check-nil
       parent_node_id = parent_node:get_parent_id()
+    end
+
+    if self.session_tree then
+      -- Delete all info_node from session info tree (since they are from a previous run)
+      local updated = false
+      for _, si_node in ipairs(self.session_tree:get_nodes()) do
+        vim.print(si_node.type)
+        if si_node.type == "info_node" then
+          updated = true
+          self.session_tree:remove_node(si_node:get_id())
+        end
+      end
+
+      if updated then
+        self.session_tree:render(self._session_tree_start_linenr)
+      end
     end
   end
 

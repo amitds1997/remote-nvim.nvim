@@ -24,7 +24,8 @@
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private logger plenary.logger Logger instance
 ---@field private _setup_running boolean Is the setup running?
----@field private _active_run_number number Active run number
+---@field private _neovim_launch_number number Active run number
+---@field private _cleanup_run_number number Active run number
 ---@field private _local_free_port string? Free port available on local machine
 ---@field private _local_neovim_install_script_path string Local path where Neovim installation script is stored
 ---@field private _remote_neovim_home string Directory where all remote neovim data would be stored on host
@@ -74,7 +75,8 @@ function Provider:init(opts)
   self.provider_type = "local"
   self.executor = Executor()
   self.progress_view = opts.progress_view
-  self._active_run_number = 0
+  self._cleanup_run_number = 1
+  self._neovim_launch_number = 1
 
   -- Remote configuration members
   self._remote_working_dir = nil
@@ -211,14 +213,8 @@ function Provider:_reset()
   self._local_free_port = nil
 end
 
-function Provider:start_run()
-  self._active_run_number = self._active_run_number + 1
-
-  local title = ("Run number %s"):format(self._active_run_number)
-  if self._active_run_number == 1 then
-    title = "Initial run"
-  end
-
+---@title string Title for the run
+function Provider:start_run(title)
   self.progress_view:start_run(title)
   self:show_info()
 end
@@ -410,7 +406,7 @@ function Provider:_setup_remote()
       self:upload(
         vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h"),
         self._remote_neovim_home,
-        "Copy necessary files"
+        "Copying plugin scripts onto remote"
       )
 
       ---If we have custom scripts specified, copy them over
@@ -418,7 +414,7 @@ function Provider:_setup_remote()
         self:upload(
           remote_nvim.config.neovim_install_script_path,
           self._remote_scripts_path,
-          "Copy user-specified files"
+          "Copying custom install scripts specified by user"
         )
       end
 
@@ -433,7 +429,11 @@ function Provider:_setup_remote()
 
       -- Upload user neovim config, if necessary
       if self:_get_neovim_config_upload_preference() then
-        self:upload(remote_nvim.config.neovim_user_config_path, self._remote_xdg_config_path, "Copy user neovim config")
+        self:upload(
+          remote_nvim.config.neovim_user_config_path,
+          self._remote_xdg_config_path,
+          "Copying your Neovim configuration files onto remote"
+        )
       end
 
       self._setup_running = false
@@ -617,7 +617,8 @@ end
 function Provider:_launch_neovim()
   if not self:is_remote_server_running() then
     self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
-    self:start_run()
+    self:start_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
+    self._neovim_launch_number = self._neovim_launch_number + 1
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
@@ -647,7 +648,8 @@ end
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
-    self:start_run()
+    self:start_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
+    self._cleanup_run_number = self._cleanup_run_number + 1
     self:_setup_workspace_variables()
     local deletion_choices = {
       "Delete neovim workspace (Choose if multiple people use the same user account)",
@@ -729,11 +731,11 @@ end
 ---@param exit_cb function? Exit callback to execute
 function Provider:run_command(command, desc, extra_opts, exit_cb)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
-  self.progress_view:add_node({
+  self.progress_view:add_progress_node({
     text = desc,
     type = "section_node",
   })
-  self.progress_view:add_node({
+  self.progress_view:add_progress_node({
     text = command,
     type = "command_node",
   })
@@ -754,7 +756,7 @@ end
 ---@private
 function Provider:_update_pv_with_stdout(stdout_chunk)
   if stdout_chunk and stdout_chunk ~= "" then
-    self.progress_view:add_node({
+    self.progress_view:add_progress_node({
       type = "stdout_node",
       text = stdout_chunk:gsub("\n", ""),
     })
@@ -777,7 +779,7 @@ function Provider:upload(local_path, remote_path, desc)
   if not require("plenary.path"):new({ local_path }):exists() then
     error(("Local path '%s' does not exist"):format(local_path))
   end
-  self.progress_view:add_node({
+  self.progress_view:add_progress_node({
     text = desc,
     type = "section_node",
   })

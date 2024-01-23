@@ -17,7 +17,6 @@
   - Clean up progressview code
   - Add tests
   - Update README.md with correct steps
-  - Use better names instead of Run number 2 and such
 - Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
 - When you previously chose to not launch a client and you re-run `:RemoteStart`,
