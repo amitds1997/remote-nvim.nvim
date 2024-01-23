@@ -162,4 +162,22 @@ function M.contains(list, element)
   return false
 end
 
+function M.os_name()
+  local os_name = vim.uv.os_uname().sysname
+
+  if os_name == "Darwin" then
+    return "macOS"
+  end
+  return os_name
+end
+
+function M.neovim_version()
+  local neovim_version = vim.version()
+  local neovim_version_str = ("%d.%d.%d"):format(neovim_version.major, neovim_version.minor, neovim_version.patch)
+  if neovim_version.prerelease then
+    neovim_version_str = ("%s-%s"):format(neovim_version_str, neovim_version.prerelease)
+  end
+  return neovim_version_str
+end
+
 return M

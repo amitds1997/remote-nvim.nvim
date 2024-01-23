@@ -12,7 +12,6 @@
 ## To do
 
 - ProgressView
-  - Add "Session Info (S)" tab
   - Add custom highlight groups and link it to default highlight groups
   - Add autoscrolling to ProgressView, autoscroll if on last line else don't scroll
   - Clean up progressview code
