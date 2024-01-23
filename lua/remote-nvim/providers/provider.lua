@@ -126,16 +126,13 @@ function Provider:_setup_workspace_variables()
   end
 
   -- Set variables from the fetched configuration
-
   self._remote_os = self._host_config.os
   self._remote_is_windows = self._remote_os == "Windows" and true or false
   self._remote_neovim_version = self._host_config.neovim_version
 
   -- Set remote neovim home path
-
   if self._host_config.remote_neovim_home == nil then
-    self._host_config.remote_neovim_home =
-      utils.path_join(self._remote_is_windows, self:_get_remote_user_home(), ".remote-nvim")
+    self._host_config.remote_neovim_home = self:_get_remote_neovim_home()
     self._config_provider:update_workspace_config(self.unique_host_id, {
       remote_neovim_home = self._host_config.remote_neovim_home,
     })
@@ -277,11 +274,11 @@ end
 ---@private
 ---Get user's home directory on the remote host
 ---@return string home_path User's home directory path
-function Provider:_get_remote_user_home()
+function Provider:_get_remote_neovim_home()
   if self._remote_neovim_home == nil then
     self:run_command("echo $HOME", "Determining remote user's home directory")
     local cmd_out_lines = self.executor:job_stdout()
-    self._remote_neovim_home = cmd_out_lines[#cmd_out_lines]
+    self._remote_neovim_home = utils.path_join(self._remote_is_windows, cmd_out_lines[#cmd_out_lines], ".remote-nvim")
   end
 
   return self._remote_neovim_home
@@ -732,15 +729,20 @@ function Provider:run_command(command, desc, extra_opts, exit_cb)
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
     stdout_cb = function(chunk)
-      if chunk and chunk ~= "" then
-        self.progress_view:add_node({
-          type = "stdout_node",
-          text = chunk:gsub("\n", ""),
-        })
-      end
+      self:_update_pv_with_stdout(chunk)
     end,
   })
   self:_handle_job_completion(desc)
+end
+
+---@private
+function Provider:_update_pv_with_stdout(stdout_chunk)
+  if stdout_chunk and stdout_chunk ~= "" then
+    self.progress_view:add_node({
+      type = "stdout_node",
+      text = stdout_chunk:gsub("\n", ""),
+    })
+  end
 end
 
 ---@protected
@@ -759,7 +761,15 @@ function Provider:upload(local_path, remote_path, desc)
   if not require("plenary.path"):new({ local_path }):exists() then
     error(("Local path '%s' does not exist"):format(local_path))
   end
-  self.executor:upload(local_path, remote_path)
+  self.progress_view:add_node({
+    text = desc,
+    type = "section_node",
+  })
+  self.executor:upload(local_path, remote_path, {
+    stdout_cb = function(chunk)
+      self:_update_pv_with_stdout(chunk)
+    end,
+  })
   self:_handle_job_completion(desc)
 end
 

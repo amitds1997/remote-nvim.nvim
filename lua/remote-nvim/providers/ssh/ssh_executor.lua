@@ -40,27 +40,26 @@ end
 ---Upload data from local path to remote path
 ---@param localSrcPath string Local path
 ---@param remoteDestPath string Remote path
----@param cb function? Callback to call after job completion
-function SSHExecutor:upload(localSrcPath, remoteDestPath, cb)
+---@param job_opts remote-nvim.provider.Executor.JobOpts
+function SSHExecutor:upload(localSrcPath, remoteDestPath, job_opts)
+  job_opts = job_opts or {}
+
   local remotePath = ("%s:%s"):format(self.host, remoteDestPath)
   local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, localSrcPath, remotePath)
 
-  return self:run_executor_job(scp_command, {
-    exit_cb = cb,
-  })
+  return self:run_executor_job(scp_command, job_opts)
 end
 
 ---Download data from remote path to local path
 ---@param remoteSrcPath string Remote path
 ---@param localDescPath string Local path
----@param cb function? Callback to call after job completion
-function SSHExecutor:download(remoteSrcPath, localDescPath, cb)
+---@param job_opts remote-nvim.provider.Executor.JobOpts
+function SSHExecutor:download(remoteSrcPath, localDescPath, job_opts)
+  job_opts = job_opts or {}
   local remotePath = ("%s:%s"):format(self.host, remoteSrcPath)
   local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, remotePath, localDescPath)
 
-  return self:run_executor_job(scp_command, {
-    exit_cb = cb,
-  })
+  return self:run_executor_job(scp_command, job_opts)
 end
 
 ---Run command on the remote host
