@@ -641,7 +641,6 @@ function Provider:stop_neovim()
     local cmd = ("nvim --server localhost:%s --remote-send ':q<CR>'"):format(self._local_free_port)
     vim.fn.system(cmd)
   end
-  self.progress_view:hide()
   self:_reset()
 end
 
@@ -662,20 +661,37 @@ function Provider:clean_up_remote_host()
     -- Stop neovim first to avoid interference from running plugins and services
     self:stop_neovim()
 
+    local exit_cb = function(node)
+      return function(exit_code)
+        self.progress_view:update_status(exit_code == 0 and "success" or "failed", true, node)
+        if exit_code == 0 then
+          self:hide_info()
+        else
+          self:show_info()
+        end
+        self:_reset()
+      end
+    end
+
     if cleanup_choice == deletion_choices[1] then
       self:run_command(
         ("rm -rf %s"):format(self._remote_workspace_id_path),
-        ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path)
+        ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path),
+        nil,
+        exit_cb
       )
     elseif cleanup_choice == deletion_choices[2] then
       self:run_command(
         ("rm -rf %s"):format(self._remote_neovim_home),
-        "Delete remote neovim created directories from remote machine"
+        "Delete remote neovim created directories from remote machine",
+        nil,
+        exit_cb
       )
     end
     vim.notify("Cleanup on remote host completed", vim.log.levels.INFO)
 
     self._config_provider:remove_workspace_config(self.unique_host_id)
+    self:hide_info()
   end)
 end
 
