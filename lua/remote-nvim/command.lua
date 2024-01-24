@@ -28,7 +28,7 @@ end
 
 vim.api.nvim_create_user_command("RemoteStart", M.RemoteStart, {
   nargs = "?",
-  desc = "Start Neovim on remote host",
+  desc = "Start Neovim on remote machine",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)
@@ -48,7 +48,7 @@ function M.RemoteLog()
 end
 
 vim.api.nvim_create_user_command("RemoteLog", M.RemoteLog, {
-  desc = "Open the remote-nvim.nvim log file",
+  desc = "Open Remote Neovim logs",
 })
 
 function M.RemoteCleanup(opts)
@@ -104,7 +104,7 @@ vim.api.nvim_create_user_command("RemoteInfo", function(opts)
     end)
   end
 end, {
-  desc = "View session information",
+  desc = "View Remote Neovim launched session's information",
   nargs = "?",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
@@ -131,7 +131,7 @@ end, {
 })
 
 vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
-  desc = "Clean up remote host",
+  desc = "Clean up Remote Neovim created resources from remote machine",
   nargs = 1,
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
@@ -165,7 +165,7 @@ vim.api.nvim_create_user_command("RemoteStop", function(opts)
     end
   end
 end, {
-  desc = "Stop running remote server",
+  desc = "Stop running Remote Neovim launched Neovim server",
   nargs = "+",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
@@ -203,7 +203,7 @@ vim.api.nvim_create_user_command("RemoteConfigDel", function(opts)
   end
   vim.notify("Workspace configuration(s) deleted")
 end, {
-  desc = "Delete cached workspace record",
+  desc = "Delete Remote Neovim workspace record",
   nargs = "+",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
@@ -226,7 +226,7 @@ end, {
 })
 
 vim.api.nvim_create_user_command("RemoteSessionInfo", require("remote-nvim.views.info").RemoteInfo, {
-  desc = "Get information about all running session(s)",
+  desc = "Get information about all running session(s) DEPRECATED",
   nargs = 0,
 })
 

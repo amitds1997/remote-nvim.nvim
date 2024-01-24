@@ -56,7 +56,7 @@ end
 ---@param inputString string The string to split.
 ---@param sep string Separator by which to split the string
 ---@return table table A table of strings.
-M.split = function(inputString, sep)
+function M.split(inputString, sep)
   local fields = {}
 
   local pattern = string.format("([^%s]+)", sep)
@@ -72,7 +72,7 @@ end
 ---@param is_windows boolean Are the paths on a Windows machine
 ---@param ... string The paths to join.
 ---@return string
-M.path_join = function(is_windows, ...)
+function M.path_join(is_windows, ...)
   local path_separator = is_windows and "\\" or "/"
   local args = { ... }
   if #args == 0 then
@@ -99,7 +99,7 @@ end
 ---@param token_arr string[] List containing the string tokens
 ---@param num number Number of columns to be created
 ---@return string[] spaced_arr Formatted list containing the formatted string tokens
-M.generate_equally_spaced_columns = function(token_arr, num)
+function M.generate_equally_spaced_columns(token_arr, num)
   -- Create lists for the grouped elements
   local col_grouped_list = {}
 
@@ -145,7 +145,7 @@ M.generate_equally_spaced_columns = function(token_arr, num)
 end
 
 ---Truncate the plugin log file
-M.truncate_log = function()
+function M.truncate_log()
   local remote_nvim = require("remote-nvim")
   local stat = M.uv.fs_stat(remote_nvim.config.log.filepath)
   if stat and stat.size > remote_nvim.config.log.max_size then
@@ -153,7 +153,8 @@ M.truncate_log = function()
   end
 end
 
--- Define a function to check if an element exists in a list
+---Define a function to check if an element exists in a list
+---@return boolean contains Returns if the list contains the given element
 function M.contains(list, element)
   for _, value in ipairs(list) do
     if value == element then
@@ -163,6 +164,8 @@ function M.contains(list, element)
   return false
 end
 
+---Get OS name of the system
+---@return string os_name Name of the OS
 function M.os_name()
   local os_name = M.uv.os_uname().sysname
 
@@ -172,6 +175,8 @@ function M.os_name()
   return os_name
 end
 
+---Get local client's neovim version
+---@return string version Local client Neovim version
 function M.neovim_version()
   local neovim_version = vim.version()
   local neovim_version_str = ("%d.%d.%d"):format(neovim_version.major, neovim_version.minor, neovim_version.patch)
