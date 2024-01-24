@@ -2,6 +2,7 @@ local function gen_choices()
   local choices = {}
 
   local curr_path = vim.fs.dirname(debug.getinfo(1).source:sub(2))
+  assert(curr_path ~= nil, "File path to the current file should not be nil")
 
   local files = vim.fs.find(function(name, _)
     return name ~= "init.lua"

@@ -90,7 +90,7 @@ vim.api.nvim_create_user_command("RemoteInfo", function(opts)
     if session == nil then
       vim.notify(("No active remote session to %s found"):format(host_ids[1]), vim.log.levels.WARN)
     else
-      session:show_info()
+      session:show_progress_view_window()
     end
   else
     vim.ui.select(vim.tbl_keys(sessions), {
@@ -99,7 +99,7 @@ vim.api.nvim_create_user_command("RemoteInfo", function(opts)
       if choice == nil then
         vim.notify("No session selected")
       else
-        sessions[choice]:show_info()
+        sessions[choice]:show_progress_view_window()
       end
     end)
   end
@@ -161,7 +161,7 @@ vim.api.nvim_create_user_command("RemoteStop", function(opts)
       vim.notify("No active session to this host", vim.log.levels.WARN)
     else
       session:stop_neovim()
-      session:hide_info()
+      session:hide_progress_view_window()
     end
   end
 end, {
