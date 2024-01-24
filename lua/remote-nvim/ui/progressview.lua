@@ -362,12 +362,13 @@ function ProgressView:_initialize_session_info_tree()
           line:append(node.key .. ": ", hl_groups.RemoteNvimInfoKey.name)
           node_value_hl = hl_groups.RemoteNvimInfoValue.name
         end
-        line:append(node.value or "nil", node_value_hl)
+        line:append(node.value or "<not-provided>", node_value_hl)
       end
 
       if
         (parent_node and parent_node.last_child_id == node:get_id())
         or (node.holds == "remote_node" and not node:is_expanded())
+        or (node.type == "root_node" and node:is_expanded())
       then
         return {
           line,
