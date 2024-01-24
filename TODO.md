@@ -4,17 +4,17 @@
 
 1. Correct way to handle Neovim existing on remote machine
 2. Correct way to handle detaching the Remote Neovim server from the remote instance
-
-## Backlog
-
-- Add CONTRIBUTING.md
+3. Add CONTRIBUTING.md
 
 ## To do
 
-- ProgressView
-  - Add tests
-  - Update README.md with correct steps
+- Add tests for the added code
 - Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
-- When you previously chose to not launch a client and you re-run `:RemoteStart`,
-  allow choice to launch a client.
+- Update README.md
+  - Add info about ":RemoteInfo"
+  - Add how ":RemoteStart" behaves
+    - Explain the 4 choices that you have
+    - Explain local client launch behaviour when server is not running
+  - Add more information about callback
+  - Add deprecated to heading of ":RemoteSessionInfo"
