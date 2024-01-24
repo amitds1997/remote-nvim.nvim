@@ -12,7 +12,6 @@
 ## To do
 
 - ProgressView
-  - Clean up progressview code
   - Add tests
   - Update README.md with correct steps
 - Save configuration only after we have successfully established connection e.g.
