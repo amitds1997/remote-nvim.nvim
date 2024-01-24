@@ -104,6 +104,7 @@ M.setup = function(opts)
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
   M.session_provider = require("remote-nvim.providers.session_provider")()
   require("remote-nvim.command")
+  require("remote-nvim.colors").setup()
 
   utils.truncate_log()
 end

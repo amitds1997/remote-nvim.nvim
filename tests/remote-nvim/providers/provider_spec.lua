@@ -637,11 +637,10 @@ describe("Provider", function()
       provider._config_provider:update_workspace_config(provider.unique_host_id, {
         client_auto_start = false,
       })
+      local defined_callback_stub = stub(remote_nvim.config.local_client_config, "callback")
       provider:_setup_workspace_variables()
-
       provider:_launch_local_neovim_client()
-
-      assert.stub(notifier_stub).was.called_with(match.is_string(), vim.log.levels.INFO)
+      assert.stub(defined_callback_stub).was.not_called()
     end)
 
     it("when user wants to launch client", function()
