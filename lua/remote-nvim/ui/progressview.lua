@@ -146,8 +146,8 @@ function ProgressView:_set_top_line(bufnr, clear_buffer)
   vim.bo[bufnr].readonly = false
   vim.bo[bufnr].modifiable = true
 
-  local active_hl = hl_groups.ActiveHeading.name
-  local inactive_hl = hl_groups.InactiveHeading.name
+  local active_hl = hl_groups.RemoteNvimActiveHeading.name
+  local inactive_hl = hl_groups.RemoteNvimInactiveHeading.name
   local help_hl = (bufnr == self.help_pane_bufnr) and active_hl or inactive_hl
   local progress_hl = (bufnr == self.progress_view.bufnr) and active_hl or inactive_hl
   local si_hl = (bufnr == self.session_info_pane_bufnr) and active_hl or inactive_hl
@@ -287,17 +287,17 @@ function ProgressView:_setup_progress_view_pane()
       local highlight = nil
 
       if node_status == "success" then
-        highlight = hl_groups.Success
+        highlight = hl_groups.RemoteNvimSuccess
       elseif node_status == "failed" then
-        highlight = hl_groups.Failure
+        highlight = hl_groups.RemoteNvimFailure
       elseif node_status == "running" then
-        highlight = hl_groups.Running
+        highlight = hl_groups.RemoteNvimRunning
       elseif utils.contains({ "run_node", "section_node" }, node_type) then
-        highlight = hl_groups.CommandHeading
+        highlight = hl_groups.RemoteNvimHeading
       elseif node_type == "stdout_node" then
-        highlight = hl_groups.CommandOutput
+        highlight = hl_groups.RemoteNvimOutput
       elseif node_type == "command_node" then
-        highlight = hl_groups.InfoValue
+        highlight = hl_groups.RemoteNvimInfoValue
       end
       highlight = highlight and highlight.name
 
@@ -310,12 +310,12 @@ function ProgressView:_setup_progress_view_pane()
       end
 
       if node_type == "command_node" then
-        line:append("Command: ", hl_groups.InfoKey.name)
+        line:append("Command: ", hl_groups.RemoteNvimInfoKey.name)
       end
       line:append(node.text, highlight)
 
       if node_type == "run_node" and utils.contains({ "success", "failed" }, node_status) then
-        line:append(" (no longer active)", hl_groups.SubInfo.name)
+        line:append(" (no longer active)", hl_groups.RemoteNvimSubInfo.name)
       end
 
       if node_type == "command_node" then
@@ -351,18 +351,19 @@ function ProgressView:_initialize_session_info_tree()
 
       ---@type session_node_type
       local node_type = node.type
-      ---@type progress_view_status
 
       if node_type == "root_node" then
-        line:append(node:is_expanded() and " " or " ", hl_groups.CommandHeading.name)
+        line:append((node:is_expanded() and " " or " ") .. node.value, hl_groups.RemoteNvimHeading.name)
       else
         line:append(" ")
-      end
 
-      if node.key ~= nil then
-        line:append(node.key .. ": ", hl_groups.InfoKey.name)
+        local node_value_hl = hl_groups.RemoteNvimInfo.name
+        if node.key ~= nil then
+          line:append(node.key .. ": ", hl_groups.RemoteNvimInfoKey.name)
+          node_value_hl = hl_groups.RemoteNvimInfoValue.name
+        end
+        line:append(node.value or "nil", node_value_hl)
       end
-      line:append(node.value or "nil", hl_groups.InfoValue.name)
 
       if
         (parent_node and parent_node.last_child_id == node:get_id())
@@ -452,7 +453,7 @@ function ProgressView:_setup_help_pane()
 
   -- Add Keyboard shortcuts heading
   local line = NuiLine()
-  line:append(" Keyboard shortcuts")
+  line:append(" Keyboard shortcuts", hl_groups.RemoteNvimHeading.name)
   line:render(self.help_pane_bufnr, -1, line_nr)
   vim.api.nvim_buf_set_lines(self.help_pane_bufnr, line_nr, line_nr, true, { "" })
   line_nr = line_nr + 2
@@ -460,8 +461,8 @@ function ProgressView:_setup_help_pane()
   for _, v in ipairs(keymaps) do
     line = NuiLine()
 
-    line:append("  " .. v.key .. string.rep(" ", max_length - #v.key), hl_groups.InfoKey.name)
-    line:append(" " .. v.desc, hl_groups.InfoValue.name)
+    line:append("  " .. v.key .. string.rep(" ", max_length - #v.key), hl_groups.RemoteNvimInfoKey.name)
+    line:append(" " .. v.desc, hl_groups.RemoteNvimInfoValue.name)
     line:render(self.help_pane_bufnr, -1, line_nr)
     line_nr = line_nr + 1
   end

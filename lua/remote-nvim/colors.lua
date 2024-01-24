@@ -1,50 +1,33 @@
 local M = {}
 
+---@class remote-nvim.ui.colors.HighlightGroup: vim.api.keyset.highlight
+---@field name? string Name of the highlight group
+
+---@type table<string, remote-nvim.ui.colors.HighlightGroup>
 M.hl_groups = {
-  Running = {
-    link = "CmpItemKindInterface",
-  },
-  Success = {
-    link = "@markup.heading.4.markdown",
-  },
-  Failure = {
-    link = "@method",
-  },
-  CommandHeading = {
-    link = "Conditional",
-  },
-  CommandOutput = {
-    link = "Comment",
-  },
-  InfoKey = {
-    link = "TroubleFoldIcon",
-  },
-  InfoValue = {
-    link = "CmpItemKindMethod",
-  },
-  SubInfo = {
-    link = "Comment",
-  },
-  ActiveHeading = {
-    link = "CurSearch",
-  },
-  InactiveHeading = {
-    link = "CursorLine",
-  },
+  RemoteNvimInfo = { link = "RemoteNvimSuccess" },
+  RemoteNvimRunning = { link = "DiagnosticOk" },
+  RemoteNvimSuccess = { link = "DiagnosticInfo" },
+  RemoteNvimFailure = { link = "ErrorMsg" },
+  RemoteNvimHeading = { link = "Title" },
+  RemoteNvimActiveHeading = { link = "QuickFixLine" },
+  RemoteNvimInactiveHeading = { link = "TabLine" },
+  RemoteNvimInfoKey = { link = "@label" },
+  RemoteNvimInfoValue = { link = "LspInlayHint" },
+  RemoteNvimOutput = { link = "Comment" },
+  RemoteNvimSubInfo = { link = "RemoteNvimOutput" },
 }
 
-for hl_group, _ in pairs(M.hl_groups) do
-  M.hl_groups[hl_group].name = "RemoteNvim" .. hl_group
+for hl_name, hl_group in pairs(M.hl_groups) do
+  hl_group.name = hl_name
 end
 
 function M.set_hl()
-  for _, hl_values in pairs(M.hl_groups) do
+  for hl_name, hl_values in pairs(M.hl_groups) do
     local hl_opts = vim.deepcopy(hl_values)
-    local hl_name = hl_values.name
 
-    --- If already set, do not override it
-    hl_opts.default = true
-    hl_opts["name"] = nil
+    hl_opts.default = true -- If already set, do not override it
+    hl_opts.name = nil
     vim.api.nvim_set_hl(0, hl_name, hl_opts)
   end
 end
