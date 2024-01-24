@@ -94,7 +94,7 @@ vim.api.nvim_create_user_command("RemoteInfo", function(opts)
     end
   else
     vim.ui.select(vim.tbl_keys(sessions), {
-      prompt = "Choose active session",
+      prompt = "Choose remote neovim session",
     }, function(choice)
       if choice == nil then
         vim.notify("No session selected")
@@ -155,26 +155,53 @@ vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
 
 vim.api.nvim_create_user_command("RemoteStop", function(opts)
   local host_ids = vim.split(vim.trim(opts.args), "%s+")
-  for _, host_id in ipairs(host_ids) do
-    local session = remote_nvim.session_provider:get_session(host_id)
-    if session == nil then
-      vim.notify("No active session to this host", vim.log.levels.WARN)
+  local sessions = remote_nvim.session_provider:get_all_sessions()
+
+  if #vim.tbl_keys(sessions) == 0 then
+    vim.notify("No active sessions found. Please start remote session(s) with :RemoteStart first", vim.log.levels.WARN)
+    return
+  elseif #host_ids > 1 then
+    vim.notify("Please pass only one host at a time", vim.log.levels.WARN)
+    return
+  elseif #host_ids == 1 and vim.trim(host_ids[1]) ~= "" then
+    local session = sessions[host_ids[1]]
+
+    if session == nil or not session:is_remote_server_running() then
+      vim.notify(("No active remote session to '%s' found"):format(host_ids[1]), vim.log.levels.WARN)
     else
       session:stop_neovim()
       session:hide_progress_view_window()
     end
+  else
+    local running_sessions = {}
+    for host_id, session in pairs(sessions) do
+      if session:is_remote_server_running() then
+        table.insert(running_sessions, host_id)
+      end
+    end
+
+    vim.ui.select(running_sessions, {
+      prompt = "Choose active session that needs to be closed",
+    }, function(choice)
+      if choice == nil then
+        vim.notify("No session selected")
+      else
+        sessions[choice]:stop_neovim()
+        sessions[choice]:hide_progress_view_window()
+      end
+    end)
   end
 end, {
   desc = "Stop running Remote Neovim launched Neovim server",
-  nargs = "+",
+  nargs = "?",
   complete = function(_, line)
     local args = vim.split(vim.trim(line), "%s+")
     table.remove(args, 1)
 
     -- Filter out those sessions whose port forwarding jobs are not running
     local running_sessions = {}
-    local active_sessions = remote_nvim.session_provider:get_all_sessions()
-    for host_id, session in pairs(active_sessions) do
+    local sessions = remote_nvim.session_provider:get_all_sessions()
+    for host_id, session in pairs(sessions) do
       if session:is_remote_server_running() then
         table.insert(running_sessions, host_id)
       end
