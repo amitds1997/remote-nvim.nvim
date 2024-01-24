@@ -19,5 +19,5 @@
     - Explain local client launch behaviour when server is not running
   - Add more information about callback
   - Add deprecated to heading of ":RemoteSessionInfo"
-- Handle (running at port xyz) in known workspaces
 - Allow :RemoteStop to have drop down options
+- Correct expected and passed params in all tests
