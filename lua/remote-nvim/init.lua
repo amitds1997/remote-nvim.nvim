@@ -34,10 +34,12 @@ local utils = require("remote-nvim.utils")
 
 ---@class remote-nvim.config.PluginConfig.ProgressViewConfig
 ---@field type "popup"|"split" Type of holder to launch
----@field relative string? How should split/popup be placed
----@field position string? Where should the holder be placed
----@field size string? What should be the size of the holder
----@field border string? What kind of border should be applied to the popup
+---@field relative nui_layout_option_relative_type|nui_layout_option_relative? How should split/popup be placed
+---@field position  number|string|nui_layout_option_position|nui_split_option_position? Where should the holder be placed
+---@field size number|string|nui_layout_option_size|nui_split_option_size? What should be the size of the holder
+---@field border _nui_popup_border_style_builtin|nui_popup_border_options? What kind of border should be applied to the popup
+---@field anchor nui_layout_option_anchor? What to anchor the popup with
+---@field zindex number? What should be the z-index for the popup
 
 ---@class remote-nvim.config.PluginConfig
 ---@field ssh_config remote-nvim.config.PluginConfig.SSHConfig SSH configuration
@@ -75,7 +77,8 @@ M.default_opts = {
     "neovim_install.sh"
   ),
   progress_view = {
-    type = "split",
+    type = "popup",
+    relative = "win",
   },
   ---@diagnostic disable-next-line:assign-type-mismatch
   neovim_user_config_path = vim.fn.stdpath("config"),

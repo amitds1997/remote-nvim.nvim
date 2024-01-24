@@ -295,11 +295,20 @@ end
 ---@param selection_opts table
 ---@return string selected_choice Selected choice
 function Provider:get_selection(choices, selection_opts)
+  self.progress_viewer:add_progress_node({
+    type = "section_node",
+    text = ("Choice: %s"):format(selection_opts.prompt),
+  })
   local choice = provider_utils.get_selection(choices, selection_opts)
 
   -- If the choice fails, we cannot move further so we stop the coroutine executing
   if choice == nil then
     vim.notify("No selection made", vim.log.levels.WARN)
+    self.progress_viewer:add_progress_node({
+      type = "stdout_node",
+      text = "No selection made. Aborting...",
+    })
+    self.progress_viewer:update_status("failed", true)
     local co = coroutine.running()
     if co then
       return coroutine.yield()
@@ -307,6 +316,11 @@ function Provider:get_selection(choices, selection_opts)
       error("Choice is necessary to proceed.")
     end
   else
+    self.progress_viewer:add_progress_node({
+      type = "stdout_node",
+      text = ("Choice: %s"):format(choice),
+    })
+    self.progress_viewer:update_status("success", false)
     return choice
   end
 end
