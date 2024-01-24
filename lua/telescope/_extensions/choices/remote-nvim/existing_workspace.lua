@@ -45,7 +45,7 @@ local function remote_nvim_existing_workspace_action(opts)
             display = function(input)
               ---@type string
               ---@diagnostic disable-next-line:assign-type-mismatch
-              local host_identifier = config_provider:get_workspace_config(input.value).host
+              local host_identifier = input.value
               local colon_position = host_identifier:find(":")
 
               local login_identifier, port
