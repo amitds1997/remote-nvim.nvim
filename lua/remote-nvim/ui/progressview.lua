@@ -3,6 +3,7 @@ local NuiTree = require("nui.tree")
 local Popup = require("nui.popup")
 local Split = require("nui.split")
 local utils = require("remote-nvim.utils")
+local hl_groups = require("remote-nvim.colors").hl_groups
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
@@ -105,6 +106,25 @@ function ProgressView:_set_buffer(bufnr)
   end
 end
 
+---@param pane "progress_view"|"session_info"|"help"
+---@param collapse_nodes boolean?
+function ProgressView:switch_to_pane(pane, collapse_nodes)
+  collapse_nodes = collapse_nodes or false
+  if pane == "progress_view" then
+    self:_set_buffer(self.pv_holder.bufnr)
+    if collapse_nodes then
+      self:_collapse_all_nodes(self.pv_tree, self._pv_tree_start_linenr)
+    end
+  elseif pane == "session_info" then
+    self:_set_buffer(self.si_bufnr)
+    if collapse_nodes then
+      self:_collapse_all_nodes(self.session_tree, self._session_tree_start_linenr)
+    end
+  else
+    self:_set_buffer(self.help_bufnr)
+  end
+end
+
 ---@private
 ---@param bufnr number Buffer ID
 ---@param clear_buffer boolean? Should clear buffer
@@ -112,8 +132,8 @@ function ProgressView:_set_top_line(bufnr, clear_buffer)
   vim.bo[bufnr].readonly = false
   vim.bo[bufnr].modifiable = true
 
-  local active_hl = "CurSearch"
-  local inactive_hl = "CursorLine"
+  local active_hl = hl_groups.ActiveHeading.name
+  local inactive_hl = hl_groups.InactiveHeading.name
   local help_hl = (bufnr == self.help_bufnr) and active_hl or inactive_hl
   local progress_hl = (bufnr == self.pv_holder.bufnr) and active_hl or inactive_hl
   local si_hl = (bufnr == self.si_bufnr) and active_hl or inactive_hl
@@ -238,20 +258,19 @@ function ProgressView:_setup_progress_view()
       local highlight = nil
 
       if node_status == "success" then
-        highlight = "@markup.heading.4.markdown"
+        highlight = hl_groups.Success
       elseif node_status == "failed" then
-        highlight = "@method"
+        highlight = hl_groups.Failure
       elseif node_status == "running" then
-        highlight = "CmpItemKindInterface"
-      elseif node_type == "run_node" then
-        highlight = "CursorLineNR"
-      elseif node_type == "section_node" then
-        highlight = "Conditional"
+        highlight = hl_groups.Running
+      elseif utils.contains({ "run_node", "section_node" }, node_type) then
+        highlight = hl_groups.CommandHeading
       elseif node_type == "stdout_node" then
-        highlight = "Comment"
+        highlight = hl_groups.CommandOutput
       elseif node_type == "command_node" then
-        highlight = "TroubleFoldIcon"
+        highlight = hl_groups.InfoValue
       end
+      highlight = highlight and highlight.name
 
       ---@type progressview_node_type[]
       local section_nodes = { "section_node", "run_node" }
@@ -262,12 +281,12 @@ function ProgressView:_setup_progress_view()
       end
 
       if node_type == "command_node" then
-        line:append("Command: ", "CmpItemKindMethod")
+        line:append("Command: ", hl_groups.InfoKey.name)
       end
       line:append(node.text, highlight)
 
       if node_type == "run_node" and utils.contains({ "success", "failed" }, node_status) then
-        line:append(" (no longer active)", "Comment")
+        line:append(" (no longer active)", hl_groups.SubInfo.name)
       end
 
       if node_type == "command_node" then
@@ -304,22 +323,16 @@ function ProgressView:_initialize_session_info_tree()
       local node_type = node.type
       ---@type progressview_status
 
-      local highlight = nil
-
       if node_type == "root_node" then
-        line:append(node:is_expanded() and " " or " ", highlight)
+        line:append(node:is_expanded() and " " or " ", hl_groups.CommandHeading.name)
       else
         line:append(" ")
       end
 
       if node.key ~= nil then
-        line:append(node.key .. ": ", "Comment")
+        line:append(node.key .. ": ", hl_groups.InfoKey.name)
       end
-      if node.value then
-        line:append(node.value, highlight)
-      else
-        line:append("nil", highlight)
-      end
+      line:append(node.value or "nil", hl_groups.InfoValue.name)
 
       if
         (parent_node and parent_node.last_child_id == node:get_id())
@@ -411,8 +424,8 @@ function ProgressView:_setup_help_window()
   for _, v in ipairs(keymaps) do
     line = NuiLine()
 
-    line:append("  " .. v.key .. string.rep(" ", max_length - #v.key), "DiagnosticInfo")
-    line:append(" - " .. v.desc)
+    line:append("  " .. v.key .. string.rep(" ", max_length - #v.key), hl_groups.InfoKey.name)
+    line:append(" " .. v.desc, hl_groups.InfoValue.name)
     line:render(self.help_bufnr, -1, line_nr)
     line_nr = line_nr + 1
   end
@@ -578,7 +591,6 @@ function ProgressView:update_status(status, should_update_parent_status, node)
       -- Delete all info_node from session info tree (since they are from a previous run)
       local updated = false
       for _, si_node in ipairs(self.session_tree:get_nodes()) do
-        vim.print(si_node.type)
         if si_node.type == "info_node" then
           updated = true
           self.session_tree:remove_node(si_node:get_id())

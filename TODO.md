@@ -12,8 +12,6 @@
 ## To do
 
 - ProgressView
-  - Add custom highlight groups and link it to default highlight groups
-  - Add autoscrolling to ProgressView, autoscroll if on last line else don't scroll
   - Clean up progressview code
   - Add tests
   - Update README.md with correct steps

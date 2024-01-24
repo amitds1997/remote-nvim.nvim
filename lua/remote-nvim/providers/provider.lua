@@ -609,7 +609,8 @@ function Provider:_launch_local_neovim_client()
       self._config_provider:get_workspace_config(self.unique_host_id)
     )
   else
-    vim.notify("Check [Session Info] tab in :RemoteInfo", vim.log.levels.INFO)
+    self:show_info()
+    self.progress_view:switch_to_pane("session_info", true)
   end
 end
 
@@ -626,6 +627,8 @@ function Provider:_launch_neovim()
     self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
   else
     vim.notify("Neovim server is already running. Not starting a new one")
+    self:show_info()
+    self.progress_view:switch_to_pane("session_info", true)
   end
 end
 
