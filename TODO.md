@@ -9,7 +9,6 @@
 ## To do
 
 - Add tests for the added code
-- Correct color highlights for progress window
 - Check progressview behaviour on different relatives and split/popup
 - Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
@@ -20,3 +19,5 @@
     - Explain local client launch behaviour when server is not running
   - Add more information about callback
   - Add deprecated to heading of ":RemoteSessionInfo"
+- Handle (running at port xyz) in known workspaces
+- Allow :RemoteStop to have drop down options
