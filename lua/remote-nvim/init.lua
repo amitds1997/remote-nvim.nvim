@@ -77,6 +77,7 @@ M.default_opts = {
   progress_view = {
     type = "split",
   },
+  ---@diagnostic disable-next-line:assign-type-mismatch
   neovim_user_config_path = vim.fn.stdpath("config"),
   local_client_config = {
     callback = function(port, _)
@@ -88,6 +89,7 @@ M.default_opts = {
     end,
   },
   log = {
+    ---@diagnostic disable-next-line:param-type-mismatch
     filepath = utils.path_join(utils.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),
     level = "info",
     max_size = 1024 * 1024 * 2, -- 2MB

@@ -19,7 +19,7 @@
 ---@field protected unique_host_id string Unique host identifier
 ---@field protected executor remote-nvim.providers.Executor Executor instance
 ---@field protected notifier remote-nvim.providers.Notifier Notification handler
----@field protected progress_view remote-nvim.ui.ProgressView Log viewer for progress
+---@field protected progress_viewer remote-nvim.ui.ProgressView Progress viewer for progress
 ---@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private logger plenary.logger Logger instance
@@ -74,7 +74,7 @@ function Provider:init(opts)
   self.unique_host_id = opts.unique_host_id or self.host
   self.provider_type = "local"
   self.executor = Executor()
-  self.progress_view = opts.progress_view
+  self.progress_viewer = opts.progress_view
   self._cleanup_run_number = 1
   self._neovim_launch_number = 1
 
@@ -86,6 +86,7 @@ function Provider:init(opts)
   self:_reset()
 end
 
+---@private
 ---Clean up connection options
 ---@param conn_opts string
 ---@return string cleaned_conn_opts
@@ -93,6 +94,7 @@ function Provider:_cleanup_conn_options(conn_opts)
   return conn_opts
 end
 
+---@private
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(self._config_provider:get_workspace_config(self.unique_host_id)) then
@@ -168,9 +170,11 @@ function Provider:_setup_workspace_variables()
   self:_add_session_info()
 end
 
+---@private
+---Add session information to the progress viewer
 function Provider:_add_session_info()
   local function add_config_info(key, value)
-    self.progress_view:add_session_node({
+    self.progress_viewer:add_session_node({
       type = "config_node",
       key = key,
       value = value,
@@ -178,7 +182,7 @@ function Provider:_add_session_info()
   end
 
   local function add_local_info(key, value)
-    self.progress_view:add_session_node({
+    self.progress_viewer:add_session_node({
       type = "local_node",
       key = key,
       value = value,
@@ -186,7 +190,7 @@ function Provider:_add_session_info()
   end
 
   local function add_remote_info(key, value)
-    self.progress_view:add_session_node({
+    self.progress_viewer:add_session_node({
       type = "remote_node",
       key = key,
       value = value,
@@ -213,21 +217,24 @@ function Provider:_reset()
   self._local_free_port = nil
 end
 
+---@private
 ---@title string Title for the run
-function Provider:start_run(title)
-  self.progress_view:start_run(title)
-  self:show_info()
+function Provider:start_progress_view_run(title)
+  self.progress_viewer:start_run(title)
+  self:show_progress_view_window()
 end
 
-function Provider:show_info()
+---Show progress info window
+function Provider:show_progress_view_window()
   for _, session in pairs(remote_nvim.session_provider:get_all_sessions()) do
-    session:hide_info()
+    session:hide_progress_view_window()
   end
-  self.progress_view:show()
+  self.progress_viewer:show()
 end
 
-function Provider:hide_info()
-  self.progress_view:hide()
+---Hide progress info window
+function Provider:hide_progress_view_window()
+  self.progress_viewer:hide()
 end
 
 ---Generate host identifer using host and port on host
@@ -486,11 +493,11 @@ function Provider:_launch_remote_neovim_server()
         port_forward_opts,
         function(node)
           return function(exit_code)
-            self.progress_view:update_status(exit_code == 0 and "success" or "failed", true, node)
+            self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
             if exit_code == 0 then
-              self:hide_info()
+              self:hide_progress_view_window()
             else
-              self:show_info()
+              self:show_progress_view_window()
             end
             self:_reset()
           end
@@ -500,7 +507,7 @@ function Provider:_launch_remote_neovim_server()
     end)
     self._remote_server_process_id = self.executor:last_job_id()
     if self:is_remote_server_running() then
-      self.progress_view:add_session_node({
+      self.progress_viewer:add_session_node({
         type = "info_node",
         value = ("Remote server available at localhost:%s"):format(self._local_free_port),
       })
@@ -621,8 +628,8 @@ function Provider:_launch_local_neovim_client(override_local_client_launch_prefe
       self._config_provider:get_workspace_config(self.unique_host_id)
     )
   else
-    self:show_info()
-    self.progress_view:switch_to_pane("session_info", true)
+    self:show_progress_view_window()
+    self.progress_viewer:switch_to_pane("session_info", true)
   end
 end
 
@@ -630,7 +637,7 @@ end
 function Provider:_launch_neovim()
   if not self:is_remote_server_running() then
     self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
-    self:start_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
+    self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
     self._neovim_launch_number = self._neovim_launch_number + 1
     self:_setup_workspace_variables()
     self:_setup_remote()
@@ -639,8 +646,8 @@ function Provider:_launch_neovim()
     self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
   else
     self:_launch_local_neovim_client(true)
-    self:show_info()
-    self.progress_view:switch_to_pane("session_info", true)
+    self:show_progress_view_window()
+    self.progress_viewer:switch_to_pane("session_info", true)
   end
 end
 
@@ -663,7 +670,7 @@ end
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
-    self:start_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
+    self:start_progress_view_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
     self._cleanup_run_number = self._cleanup_run_number + 1
     self:_setup_workspace_variables()
     local deletion_choices = {
@@ -680,11 +687,11 @@ function Provider:clean_up_remote_host()
 
     local exit_cb = function(node)
       return function(exit_code)
-        self.progress_view:update_status(exit_code == 0 and "success" or "failed", true, node)
+        self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
         if exit_code == 0 then
-          self:hide_info()
+          self:hide_progress_view_window()
         else
-          self:show_info()
+          self:show_progress_view_window()
         end
         self:_reset()
       end
@@ -708,17 +715,18 @@ function Provider:clean_up_remote_host()
     vim.notify("Cleanup on remote host completed", vim.log.levels.INFO)
 
     self._config_provider:remove_workspace_config(self.unique_host_id)
-    self:hide_info()
+    self:hide_progress_view_window()
   end)
 end
 
 ---@private
 ---Handle job completion
 ---@param desc string Description of the job
+---@return integer exit_code Exit code of the job being handled
 function Provider:_handle_job_completion(desc)
   local exit_code = self.executor:last_job_status()
   if exit_code ~= 0 then
-    self.progress_view:update_status("failed", true)
+    self.progress_viewer:update_status("failed", true)
     if self._setup_running then
       self._setup_running = false
     end
@@ -733,7 +741,7 @@ function Provider:_handle_job_completion(desc)
       error(("'%s' failed"):format(desc))
     end
   else
-    self.progress_view:update_status("success")
+    self.progress_viewer:update_status("success")
   end
   return exit_code
 end
@@ -746,32 +754,33 @@ end
 ---@param exit_cb function? Exit callback to execute
 function Provider:run_command(command, desc, extra_opts, exit_cb)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
-  self.progress_view:add_progress_node({
+  self.progress_viewer:add_progress_node({
     text = desc,
     type = "section_node",
   })
-  self.progress_view:add_progress_node({
+  self.progress_viewer:add_progress_node({
     text = command,
     type = "command_node",
   })
   -- Allow correct update of active job in ProgressView
   if exit_cb ~= nil then
-    exit_cb = exit_cb(self.progress_view:get_active_progress_view_section())
+    exit_cb = exit_cb(self.progress_viewer:get_active_progress_view_section())
   end
   self.executor:run_command(command, {
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
     stdout_cb = function(chunk)
-      self:_update_pv_with_stdout(chunk)
+      self:_add_stdout_to_progress_view_window(chunk)
     end,
   })
   self:_handle_job_completion(desc)
 end
 
 ---@private
-function Provider:_update_pv_with_stdout(stdout_chunk)
+---Add stdout information to progress viewer
+function Provider:_add_stdout_to_progress_view_window(stdout_chunk)
   if stdout_chunk and stdout_chunk ~= "" then
-    self.progress_view:add_progress_node({
+    self.progress_viewer:add_progress_node({
       type = "stdout_node",
       text = stdout_chunk:gsub("\n", ""),
     })
@@ -794,13 +803,13 @@ function Provider:upload(local_path, remote_path, desc)
   if not require("plenary.path"):new({ local_path }):exists() then
     error(("Local path '%s' does not exist"):format(local_path))
   end
-  self.progress_view:add_progress_node({
+  self.progress_viewer:add_progress_node({
     text = desc,
     type = "section_node",
   })
   self.executor:upload(local_path, remote_path, {
     stdout_cb = function(chunk)
-      self:_update_pv_with_stdout(chunk)
+      self:_add_stdout_to_progress_view_window(chunk)
     end,
   })
   self:_handle_job_completion(desc)
