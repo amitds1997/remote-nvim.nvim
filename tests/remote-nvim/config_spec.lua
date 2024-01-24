@@ -36,6 +36,13 @@ describe("Config", function()
     }
   end)
 
+  after_each(function()
+    local all_workspaces = config_provider:get_workspace_config()
+    for workspace_id, _ in pairs(all_workspaces) do
+      config_provider:remove_workspace_config(workspace_id)
+    end
+  end)
+
   describe("should fetch workspace config correctly", function()
     it("when both provider type and host identifier is specified", function()
       assert.are.same(
