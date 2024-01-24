@@ -78,7 +78,6 @@ M.default_opts = {
   ),
   progress_view = {
     type = "popup",
-    relative = "win",
   },
   ---@diagnostic disable-next-line:assign-type-mismatch
   neovim_user_config_path = vim.fn.stdpath("config"),

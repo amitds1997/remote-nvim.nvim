@@ -295,7 +295,7 @@ end
 ---@param selection_opts table
 ---@return string selected_choice Selected choice
 function Provider:get_selection(choices, selection_opts)
-  self.progress_viewer:add_progress_node({
+  local section_node = self.progress_viewer:add_progress_node({
     type = "section_node",
     text = ("Choice: %s"):format(selection_opts.prompt),
   })
@@ -303,24 +303,25 @@ function Provider:get_selection(choices, selection_opts)
 
   -- If the choice fails, we cannot move further so we stop the coroutine executing
   if choice == nil then
-    vim.notify("No selection made", vim.log.levels.WARN)
     self.progress_viewer:add_progress_node({
       type = "stdout_node",
-      text = "No selection made. Aborting...",
-    })
-    self.progress_viewer:update_status("failed", true)
+      status = "failed",
+      set_parent_status = not self:is_remote_server_running(),
+      text = "No selection made.",
+    }, section_node)
+    self.progress_viewer:update_status("failed", false, section_node)
     local co = coroutine.running()
     if co then
-      return coroutine.yield()
+      return coroutine.yield(nil)
     else
       error("Choice is necessary to proceed.")
     end
   else
     self.progress_viewer:add_progress_node({
       type = "stdout_node",
-      text = ("Choice: %s"):format(choice),
-    })
-    self.progress_viewer:update_status("success", false)
+      text = ("Choice selected: %s"):format(choice),
+    }, section_node)
+    self.progress_viewer:update_status("success", false, section_node)
     return choice
   end
 end
@@ -520,7 +521,7 @@ function Provider:_launch_remote_neovim_server()
         end
       )
       vim.notify("Remote server stopped", vim.log.levels.INFO)
-    end)
+    end, "Launching Remote Neovim server")
     self._remote_server_process_id = self.executor:last_job_id()
     if self:is_remote_server_running() then
       self.progress_viewer:add_session_node({
@@ -534,17 +535,13 @@ end
 ---@protected
 ---Run code in a coroutine
 ---@param fn function Function to run inside the coroutine
-function Provider:_run_code_in_coroutine(fn)
-  local co = coroutine.create(function()
-    local success, res_or_err = pcall(fn)
-    if not success then
-      self.logger.error(res_or_err)
-      vim.notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR)
-    end
-  end)
-  local success, res_or_err = coroutine.resume(co)
+---@param desc string Description of operation being performed
+function Provider:_run_code_in_coroutine(fn, desc)
+  local co = coroutine.create(fn)
+  local success, _ = coroutine.resume(co)
   if not success then
-    vim.notify(res_or_err, vim.log.levels.ERROR)
+    self.logger.error(debug.traceback(co, ("'%s' failed"):format(desc)))
+    vim.notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR)
   end
 end
 
@@ -671,7 +668,7 @@ end
 function Provider:launch_neovim()
   self:_run_code_in_coroutine(function()
     self:_launch_neovim()
-  end)
+  end, "Setting up Neovim on remote host")
 end
 
 ---Stop running Neovim instance (if any)
@@ -732,7 +729,7 @@ function Provider:clean_up_remote_host()
 
     self._config_provider:remove_workspace_config(self.unique_host_id)
     self:hide_progress_view_window()
-  end)
+  end, "Cleaning up remote host")
 end
 
 ---@private
@@ -770,36 +767,37 @@ end
 ---@param exit_cb function? Exit callback to execute
 function Provider:run_command(command, desc, extra_opts, exit_cb)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
-  self.progress_viewer:add_progress_node({
+  local section_node = self.progress_viewer:add_progress_node({
     text = desc,
     type = "section_node",
   })
   self.progress_viewer:add_progress_node({
     text = command,
     type = "command_node",
-  })
+  }, section_node)
   -- Allow correct update of active job in ProgressView
   if exit_cb ~= nil then
-    exit_cb = exit_cb(self.progress_viewer:get_active_progress_view_section())
+    exit_cb = exit_cb(section_node)
   end
   self.executor:run_command(command, {
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
-    stdout_cb = function(chunk)
-      self:_add_stdout_to_progress_view_window(chunk)
-    end,
+    stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
   })
   self:_handle_job_completion(desc)
 end
 
 ---@private
 ---Add stdout information to progress viewer
-function Provider:_add_stdout_to_progress_view_window(stdout_chunk)
-  if stdout_chunk and stdout_chunk ~= "" then
-    self.progress_viewer:add_progress_node({
-      type = "stdout_node",
-      text = stdout_chunk:gsub("\n", ""),
-    })
+---@param node NuiTree.Node Section node on which the output nodes would be attached
+function Provider:_add_stdout_to_progress_view_window(node)
+  return function(stdout_chunk)
+    if stdout_chunk and stdout_chunk ~= "" then
+      self.progress_viewer:add_progress_node({
+        type = "stdout_node",
+        text = stdout_chunk:gsub("\n", ""),
+      }, node)
+    end
   end
 end
 
@@ -819,14 +817,12 @@ function Provider:upload(local_path, remote_path, desc)
   if not require("plenary.path"):new({ local_path }):exists() then
     error(("Local path '%s' does not exist"):format(local_path))
   end
-  self.progress_viewer:add_progress_node({
+  local section_node = self.progress_viewer:add_progress_node({
     text = desc,
     type = "section_node",
   })
   self.executor:upload(local_path, remote_path, {
-    stdout_cb = function(chunk)
-      self:_add_stdout_to_progress_view_window(chunk)
-    end,
+    stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
   })
   self:_handle_job_completion(desc)
 end

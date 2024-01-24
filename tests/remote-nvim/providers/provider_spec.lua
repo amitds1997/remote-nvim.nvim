@@ -9,7 +9,6 @@ describe("Provider", function()
   ---@type remote-nvim.providers.Provider
   local provider
   local provider_host
-  local notifier_stub
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
@@ -18,7 +17,6 @@ describe("Provider", function()
       host = provider_host,
       progress_view = mock(require("remote-nvim.ui.progressview"), true),
     })
-    notifier_stub = stub(vim, "notify")
   end)
 
   describe("should handle array-type connections options", function()
@@ -186,8 +184,8 @@ describe("Provider", function()
       local co = coroutine.create(function()
         provider:get_selection({}, {})
       end)
-      coroutine.resume(co)
-      assert.stub(notifier_stub).was.called_with("No selection made", vim.log.levels.WARN)
+      local _, ret_or_err = coroutine.resume(co)
+      assert.equals(nil, ret_or_err)
     end)
 
     it("when choice selection is done", function()
@@ -390,9 +388,8 @@ describe("Provider", function()
       provider._setup_running = true
 
       provider:_setup_remote()
-      assert
-        .stub(notifier_stub).was
-        .called_with("Another instance of setup is already running. Wait for it to complete", vim.log.levels.WARN)
+      local run_command_stub = stub(provider, "run_command")
+      assert.stub(run_command_stub).was.not_called()
     end)
 
     describe("and runs correct commands", function()

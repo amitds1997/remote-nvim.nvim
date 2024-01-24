@@ -9,7 +9,7 @@ local remote_nvim = require("remote-nvim")
 
 ---@alias progress_view_node_type "run_node"|"section_node"|"command_node"|"stdout_node"
 ---@alias session_node_type "local_node"|"remote_node"|"config_node"|"root_node"|"info_node"
----@alias progress_view_status "running"|"success"|"failed"|"warning"|"no_op"
+---@alias progress_view_status "running"|"success"|"failed"|"no_op"
 
 ---@class remote-nvim.ui.ProgressView.Keymaps: vim.api.keyset.keymap
 ---@field key string Key which invokes the keymap action
@@ -32,6 +32,7 @@ local remote_nvim = require("remote-nvim")
 ---@field private progress_view NuiSplit|NuiPopup Progress View UI holder
 ---@field private progress_view_pane_tree NuiTree Tree used to render "Progress View" pane
 ---@field private session_info_pane_tree NuiTree Tree used to render "Session Info" pane
+---@field private layout_type "split"|"popup" Type of layout we are using for progress view
 ---@field private progress_view_keymap_options vim.api.keyset.keymap Default keymap options
 ---@field private help_pane_bufnr integer Buffer ID of the keymap help buffer
 ---@field private session_info_pane_bufnr integer Buffer ID of the session info buffer
@@ -47,6 +48,7 @@ local ProgressView = require("remote-nvim.middleclass")("ProgressView")
 
 function ProgressView:init()
   local progress_view_config = remote_nvim.config.progress_view
+  self.layout_type = progress_view_config.type
   self.progress_view_hl_ns = vim.api.nvim_create_namespace("remote_nvim_progressview_ns")
   self.progress_view_buf_options = {
     bufhidden = "hide",
@@ -71,7 +73,7 @@ function ProgressView:init()
     fillchars = "eob: ",
   }
 
-  if progress_view_config.type == "split" then
+  if self.layout_type == "split" then
     self.progress_view_options = {
       ns_id = self.progress_view_hl_ns,
       relative = progress_view_config.relative or "editor",
@@ -179,7 +181,9 @@ function ProgressView:show()
   -- Update layout because progressview internally holds the window ID relative to which
   -- it should create the split/popup in case of rel="win". If it no longer exists, it
   -- will throw an error. So, we update the layout to get the latest window ID.
-  self.progress_view:update_layout(self.progress_view_options)
+  if self.layout_type == "split" then
+    self.progress_view:update_layout(self.progress_view_options)
+  end
   self.progress_view:show()
   vim.api.nvim_set_current_win(self.progress_view.winid)
 end
@@ -586,35 +590,28 @@ function ProgressView:_get_progressview_keymaps()
 end
 
 ---Add a node to the progress view pane
----@param node remote-nvim.ui.ProgressView.ProgressInfoNode Line to insert into progress view
-function ProgressView:add_progress_node(node)
+---@param node remote-nvim.ui.ProgressView.ProgressInfoNode Node to insert into progress view tree
+---@param parent_node NuiTree.Node? Node under which the new node should be inserted
+---@return NuiTree.Node created_node The node that was created and inserted into the progress tree
+function ProgressView:add_progress_node(node, parent_node)
   ---@type progress_view_status
-  local status = nil
+  local status = node.status or "no_op"
 
-  if node.type == "stdout_node" then
-    status = "running"
-  elseif utils.contains({ "run_node", "section_node" }, node.type) then
-    status = node.status
-  end
-  status = status or "no_op"
-
+  ---@type NuiTree.Node
+  local created_node
   if node.text ~= nil then
     if node.type == "section_node" then
-      self:_add_progress_view_section(node)
+      created_node = self:_add_progress_view_section(node, parent_node)
     elseif node.type == "run_node" then
-      self:_add_progress_view_run_section(node)
+      created_node = self:_add_progress_view_run_section(node)
     else
-      self:_add_progress_view_output_node(node)
+      created_node = self:_add_progress_view_output_node(node, parent_node)
     end
   end
 
-  self:update_status(status, node.set_parent_status)
-end
+  self:update_status(status, node.set_parent_status, created_node)
 
----Get active progress view section
----@return NuiTree.Node?
-function ProgressView:get_active_progress_view_section()
-  return self.active_progress_view_section_node
+  return created_node
 end
 
 ---Update status of the node and if needed, it's parent nodes
@@ -665,9 +662,13 @@ end
 
 ---@private
 ---Add new progress view section to an active run
----@param node remote-nvim.ui.ProgressView.ProgressInfoNode Section to insert into progress view
-function ProgressView:_add_progress_view_section(node)
-  assert(self.active_progress_view_run_node ~= nil, "Run section should not be nil")
+---@param node remote-nvim.ui.ProgressView.ProgressInfoNode Section node to be inserted into progress view
+---@param parent_node NuiTree.Node? Node under which the new node should be inserted
+---@return NuiTree.Node section_node The created section node
+function ProgressView:_add_progress_view_section(node, parent_node)
+  parent_node = parent_node or self.active_progress_view_run_node
+  assert(parent_node ~= nil, "Run section node should not be nil")
+
   -- If we were working with a previous active section, collapse it
   if self.active_progress_view_section_node then
     self.active_progress_view_section_node:collapse()
@@ -677,17 +678,18 @@ function ProgressView:_add_progress_view_section(node)
     text = node.text,
     ---@type progress_view_node_type
     type = node.type,
-  })
-  self.progress_view_pane_tree:add_node(section_node, self.active_progress_view_run_node:get_id())
+  }, {})
+  self.progress_view_pane_tree:add_node(section_node, parent_node:get_id())
+  self.active_progress_view_section_node = section_node
+  self.active_progress_view_section_node:expand()
 
-  if node.type == "section_node" then
-    self.active_progress_view_section_node = section_node
-  end
+  return section_node
 end
 
 ---@private
 ---Add new progress view run section
 ---@param node remote-nvim.ui.ProgressView.ProgressInfoNode Run node to insert into progress view
+---@return NuiTree.Node created_node Created run node
 function ProgressView:_add_progress_view_run_section(node)
   self.active_progress_view_run_node = NuiTree.Node({
     text = node.text,
@@ -698,20 +700,26 @@ function ProgressView:_add_progress_view_run_section(node)
   -- Collapse all nodes, and then expand current run section
   self:_collapse_all_nodes(self.progress_view_pane_tree, self.progress_view_tree_render_linenr)
   self.active_progress_view_run_node:expand()
+
+  return self.active_progress_view_run_node
 end
 
 ---@private
----Add line to the log view
----@param node remote-nvim.ui.ProgressView.ProgressInfoNode Line to insert into progress view
-function ProgressView:_add_progress_view_output_node(node)
-  assert(self.active_progress_view_section_node ~= nil, "Active section should not be nil")
-  self.progress_view_pane_tree:add_node(
-    NuiTree.Node({
-      text = node.text,
-      type = node.type,
-    }),
-    self.active_progress_view_section_node:get_id()
-  )
+---Add output node to the progress view tree
+---@param node remote-nvim.ui.ProgressView.ProgressInfoNode Output to be inserted
+---@param parent_node NuiTree.Node? Node to which the output node should be attached
+---@return NuiTree.Node created_node Created output node
+function ProgressView:_add_progress_view_output_node(node, parent_node)
+  parent_node = parent_node or self.active_progress_view_section_node
+  assert(parent_node ~= nil, "Parent node should not be nil")
+
+  local created_node = NuiTree.Node({
+    text = node.text,
+    type = node.type,
+  })
+  self.progress_view_pane_tree:add_node(created_node, parent_node:get_id())
+
+  return created_node
 end
 
 return ProgressView
