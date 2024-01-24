@@ -74,7 +74,7 @@ function ProgressView:init()
   if progress_view_config.type == "split" then
     self.progress_view_options = {
       ns_id = self.progress_view_hl_ns,
-      relative = progress_view_config.relative or "win",
+      relative = progress_view_config.relative or "editor",
       position = progress_view_config.position or "right",
       size = progress_view_config.size or "30%",
       win_options = self.progress_view_win_options,
@@ -84,11 +84,12 @@ function ProgressView:init()
   else
     self.progress_view_options = {
       ns_id = self.progress_view_hl_ns,
-      relative = progress_view_config.relative or "win",
+      relative = progress_view_config.relative or "editor",
       position = progress_view_config.position or "50%",
-      size = progress_view_config.size or "50%",
+      size = progress_view_config.size or "70%",
       win_options = self.progress_view_win_options,
       border = progress_view_config.border or "rounded",
+      anchor = progress_view_config.anchor,
     }
     ---@diagnostic disable-next-line:param-type-mismatch
     self.progress_view = Popup(self.progress_view_options)
