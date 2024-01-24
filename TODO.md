@@ -19,4 +19,3 @@
     - Explain local client launch behaviour when server is not running
   - Add more information about callback
   - Add deprecated to heading of ":RemoteSessionInfo"
-- Add host name and configuration details to Session Info

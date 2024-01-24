@@ -197,16 +197,18 @@ function Provider:_add_session_info()
     })
   end
 
-  add_config_info("Global log file", remote_nvim.config.log.filepath)
+  add_config_info("Plugin log path ", remote_nvim.config.log.filepath)
 
-  add_local_info("OS", utils.os_name())
-  add_local_info("Neovim version", utils.neovim_version())
+  add_local_info("OS             ", utils.os_name())
+  add_local_info("Neovim version ", utils.neovim_version())
 
-  add_remote_info("OS", self._remote_os)
-  add_remote_info("Neovim version", self._remote_neovim_version)
-  add_remote_info("Remote Neovim home", self._remote_neovim_home)
-  add_remote_info("Current workspace path", self._remote_workspace_id_path)
-  add_remote_info("Working directory", self._remote_working_dir)
+  add_remote_info("OS              ", self._remote_os)
+  add_remote_info("Neovim version  ", self._remote_neovim_version)
+  add_remote_info("Connection type ", self.provider_type)
+  add_remote_info("Host URI        ", self.host)
+  add_remote_info("Connection opts ", (self.conn_opts == "" and "<no-extra-options>" or self.conn_opts))
+  add_remote_info("Workspace path  ", self._remote_workspace_id_path)
+  add_remote_info("Working dir.    ", self._remote_working_dir)
 end
 
 ---@private
