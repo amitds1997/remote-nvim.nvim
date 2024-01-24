@@ -12,7 +12,7 @@ describe("Notifier service", function()
 
   it("should correctly format message", function()
     local message = "test message"
-    assert.equals(notifier:_format_msg(message), (" %s"):format(message))
+    assert.equals((" %s"):format(message), notifier:_format_msg(message))
   end)
 
   describe("should handle notification flow correctly", function()

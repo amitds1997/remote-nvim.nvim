@@ -20,4 +20,3 @@
   - Add more information about callback
   - Add deprecated to heading of ":RemoteSessionInfo"
 - Allow :RemoteStop to have drop down options
-- Correct expected and passed params in all tests

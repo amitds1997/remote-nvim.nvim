@@ -27,7 +27,7 @@ describe("Provider", function()
         host = provider_host,
         conn_opts = { "-p", "3011", "-t", "-x" },
       })
-      assert.equals(provider.conn_opts, "-p 3011 -t -x")
+      assert.equals("-p 3011 -t -x", provider.conn_opts)
     end)
 
     it("when it is an empty array", function()
@@ -35,7 +35,7 @@ describe("Provider", function()
         host = provider_host,
         conn_opts = {},
       })
-      assert.equals(provider.conn_opts, "")
+      assert.equals("", provider.conn_opts)
     end)
   end)
 
@@ -43,10 +43,10 @@ describe("Provider", function()
     provider = Provider({
       host = provider_host,
     })
-    assert.equals(provider.conn_opts, "")
+    assert.equals("", provider.conn_opts)
 
     provider = Provider({ host = provider_host, conn_opts = nil })
-    assert.equals(provider.conn_opts, "")
+    assert.equals("", provider.conn_opts)
   end)
 
   describe("should handle setting workspace variables", function()
@@ -86,7 +86,7 @@ describe("Provider", function()
       provider._config_provider:remove_workspace_config(provider.unique_host_id)
       provider:_setup_workspace_variables()
 
-      assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {
+      assert.are.same({
         provider = "local",
         host = provider.host,
         connection_options = provider.conn_opts,
@@ -96,7 +96,7 @@ describe("Provider", function()
         workspace_id = workspace_id,
         neovim_version = "stable",
         os = "Linux",
-      })
+      }, provider._config_provider:get_workspace_config(provider.unique_host_id))
     end)
 
     it("by setting up remote OS if not set", function()
@@ -106,7 +106,7 @@ describe("Provider", function()
       provider:_setup_workspace_variables()
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["os"], "Linux")
+      assert.are.equal("Linux", wk_config["os"])
     end)
 
     it("by setting up remote Neovim if not set", function()
@@ -116,36 +116,36 @@ describe("Provider", function()
       provider:_setup_workspace_variables()
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["neovim_version"], "stable")
+      assert.are.equal("stable", wk_config["neovim_version"])
     end)
 
     it("by correctly setting workspace variables", function()
       provider:_setup_workspace_variables()
       local remote_home = provider._remote_neovim_home
 
-      assert.equals(provider._remote_os, "Linux")
-      assert.equals(provider._remote_is_windows, false)
-      assert.equals(provider._remote_neovim_version, "stable")
-      assert.equals(provider._remote_workspace_id, workspace_id)
-      assert.equals(provider._remote_neovim_home, remote_home)
-      assert.equals(provider._remote_workspaces_path, ("%s/workspaces"):format(remote_home))
-      assert.equals(provider._remote_scripts_path, ("%s/scripts"):format(remote_home))
-      assert.equals(provider._remote_neovim_install_script_path, ("%s/scripts/neovim_install.sh"):format(remote_home))
-      assert.equals(provider._remote_workspace_id_path, ("%s/workspaces/%s"):format(remote_home, workspace_id))
+      assert.equals("Linux", provider._remote_os)
+      assert.equals(false, provider._remote_is_windows)
+      assert.equals("stable", provider._remote_neovim_version)
+      assert.equals(workspace_id, provider._remote_workspace_id)
+      assert.equals(remote_home, provider._remote_neovim_home)
+      assert.equals(("%s/workspaces"):format(remote_home), provider._remote_workspaces_path)
+      assert.equals(("%s/scripts"):format(remote_home), provider._remote_scripts_path)
+      assert.equals(("%s/scripts/neovim_install.sh"):format(remote_home), provider._remote_neovim_install_script_path)
+      assert.equals(("%s/workspaces/%s"):format(remote_home, workspace_id), provider._remote_workspace_id_path)
 
       -- XDG variables
-      assert.equals(provider._remote_xdg_config_path, ("%s/workspaces/%s/.config"):format(remote_home, workspace_id))
-      assert.equals(provider._remote_xdg_cache_path, ("%s/workspaces/%s/.cache"):format(remote_home, workspace_id))
-      assert.equals(provider._remote_xdg_data_path, ("%s/workspaces/%s/.local/share"):format(remote_home, workspace_id))
+      assert.equals(("%s/workspaces/%s/.config"):format(remote_home, workspace_id), provider._remote_xdg_config_path)
+      assert.equals(("%s/workspaces/%s/.cache"):format(remote_home, workspace_id), provider._remote_xdg_cache_path)
+      assert.equals(("%s/workspaces/%s/.local/share"):format(remote_home, workspace_id), provider._remote_xdg_data_path)
       assert.equals(
-        provider._remote_xdg_state_path,
-        ("%s/workspaces/%s/.local/state"):format(remote_home, workspace_id)
+        ("%s/workspaces/%s/.local/state"):format(remote_home, workspace_id),
+        provider._remote_xdg_state_path
       )
 
       -- Remote config path
       assert.equals(
-        provider._remote_neovim_config_path,
-        ("%s/workspaces/%s/.config/nvim"):format(remote_home, workspace_id)
+        ("%s/workspaces/%s/.config/nvim"):format(remote_home, workspace_id),
+        provider._remote_neovim_config_path
       )
     end)
   end)
@@ -193,7 +193,7 @@ describe("Provider", function()
     it("when choice selection is done", function()
       local choice = "choice"
       get_selection_stub.returns(choice)
-      assert.equals(provider:get_selection({}, {}), choice)
+      assert.equals(choice, provider:get_selection({}, {}))
     end)
   end)
 
@@ -224,45 +224,45 @@ describe("Provider", function()
         config_copy = true,
       })
       provider:_setup_workspace_variables()
-      assert.equals(provider:_get_neovim_config_upload_preference(), true)
+      assert.equals(true, provider:_get_neovim_config_upload_preference())
 
       provider._config_provider:update_workspace_config(provider.unique_host_id, {
         config_copy = false,
       })
       provider:_setup_workspace_variables()
-      assert.equals(provider:_get_neovim_config_upload_preference(), false)
+      assert.equals(false, provider:_get_neovim_config_upload_preference())
     end)
 
     it("when the choice is 'Yes (always)'", function()
       selection_stub.returns("Yes (always)")
-      assert.equals(provider:_get_neovim_config_upload_preference(), true)
+      assert.equals(true, provider:_get_neovim_config_upload_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["config_copy"], true)
+      assert.are.equal(true, wk_config["config_copy"])
     end)
 
     it("when the choice is 'No (never)'", function()
       selection_stub.returns("No (never)")
-      assert.equals(provider:_get_neovim_config_upload_preference(), false)
+      assert.equals(false, provider:_get_neovim_config_upload_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["config_copy"], false)
+      assert.are.equal(false, wk_config["config_copy"])
     end)
 
     it("when the choice is 'Yes'", function()
       selection_stub.returns("Yes")
-      assert.equals(provider:_get_neovim_config_upload_preference(), true)
+      assert.equals(true, provider:_get_neovim_config_upload_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["config_copy"], nil) -- The value should not be stored
+      assert.are.equal(nil, wk_config["config_copy"]) -- The value should not be stored
     end)
 
     it("when the choice is 'No'", function()
       selection_stub.returns("No")
-      assert.equals(provider:_get_neovim_config_upload_preference(), false)
+      assert.equals(false, provider:_get_neovim_config_upload_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["config_copy"], nil) -- The value should not be stored
+      assert.are.equal(nil, wk_config["config_copy"]) -- The value should not be stored
     end)
   end)
 
@@ -301,7 +301,7 @@ describe("Provider", function()
         nil,
         match.is_function()
       )
-      assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
+      assert.are.same({}, provider._config_provider:get_workspace_config(provider.unique_host_id))
     end)
 
     it("when asked to cleanup entire remote neovim directory", function()
@@ -315,7 +315,7 @@ describe("Provider", function()
         nil,
         match.is_function()
       )
-      assert.are.same(provider._config_provider:get_workspace_config(provider.unique_host_id), {})
+      assert.are.same({}, provider._config_provider:get_workspace_config(provider.unique_host_id))
     end)
   end)
 
@@ -332,9 +332,9 @@ describe("Provider", function()
       provider._local_free_port = "52212"
 
       provider:_reset()
-      assert.equals(provider._setup_running, false)
-      assert.equals(provider._remote_server_process_id, nil)
-      assert.equals(provider._local_free_port, nil)
+      assert.equals(false, provider._setup_running)
+      assert.equals(nil, provider._remote_server_process_id)
+      assert.equals(nil, provider._local_free_port)
     end)
   end)
 
@@ -345,16 +345,16 @@ describe("Provider", function()
     provider._local_free_port = "52212"
 
     provider:stop_neovim()
-    assert.equals(provider._setup_running, false)
-    assert.equals(provider._remote_server_process_id, nil)
-    assert.equals(provider._local_free_port, nil)
+    assert.equals(false, provider._setup_running)
+    assert.equals(nil, provider._remote_server_process_id)
+    assert.equals(nil, provider._local_free_port)
     assert.stub(system_stub).was.called()
   end)
 
   describe("should determine correctly if remote server is running", function()
     it("when we do not have a registered process id", function()
       provider._remote_server_process_id = nil
-      assert.equals(provider:is_remote_server_running(), false)
+      assert.equals(false, provider:is_remote_server_running())
     end)
 
     describe("when we have a registered process", function()
@@ -367,12 +367,12 @@ describe("Provider", function()
 
       it("and it is still running", function()
         job_wait_stub.returns({ -1 })
-        assert.equals(provider:is_remote_server_running(), true)
+        assert.equals(true, provider:is_remote_server_running())
       end)
 
       it("but it is no longer running", function()
         job_wait_stub.returns({ 0 })
-        assert.equals(provider:is_remote_server_running(), false)
+        assert.equals(false, provider:is_remote_server_running())
       end)
     end)
   end)
@@ -382,7 +382,7 @@ describe("Provider", function()
     provider._remote_neovim_home = "~/.remote-nvim"
     provider._remote_neovim_version = "stable"
 
-    assert.equals(provider:_remote_neovim_binary_path(), "~/.remote-nvim/nvim-downloads/stable/bin/nvim")
+    assert.equals("~/.remote-nvim/nvim-downloads/stable/bin/nvim", provider:_remote_neovim_binary_path())
   end)
 
   describe("should handle remote setup correctly", function()
@@ -572,45 +572,45 @@ describe("Provider", function()
         client_auto_start = true,
       })
       provider:_setup_workspace_variables()
-      assert.equals(provider:_get_local_client_start_preference(), true)
+      assert.equals(true, provider:_get_local_client_start_preference())
 
       provider._config_provider:update_workspace_config(provider.unique_host_id, {
         client_auto_start = false,
       })
       provider:_setup_workspace_variables()
-      assert.equals(provider:_get_local_client_start_preference(), false)
+      assert.equals(false, provider:_get_local_client_start_preference())
     end)
 
     it("when the choice is 'Yes (always)'", function()
       selection_stub.returns("Yes (always)")
-      assert.equals(provider:_get_local_client_start_preference(), true)
+      assert.equals(true, provider:_get_local_client_start_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["client_auto_start"], true)
+      assert.are.equal(true, wk_config["client_auto_start"])
     end)
 
     it("when the choice is 'No (never)'", function()
       selection_stub.returns("No (never)")
-      assert.equals(provider:_get_local_client_start_preference(), false)
+      assert.equals(false, provider:_get_local_client_start_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["client_auto_start"], false)
+      assert.are.equal(false, wk_config["client_auto_start"])
     end)
 
     it("when the choice is 'Yes'", function()
       selection_stub.returns("Yes")
-      assert.equals(provider:_get_local_client_start_preference(), true)
+      assert.equals(true, provider:_get_local_client_start_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["client_auto_start"], nil)
+      assert.are.equal(nil, wk_config["client_auto_start"])
     end)
 
     it("when the choice is 'No'", function()
       selection_stub.returns("No")
-      assert.equals(provider:_get_local_client_start_preference(), false)
+      assert.equals(false, provider:_get_local_client_start_preference())
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
-      assert.are.equal(wk_config["client_auto_start"], nil)
+      assert.are.equal(nil, wk_config["client_auto_start"])
     end)
   end)
 
