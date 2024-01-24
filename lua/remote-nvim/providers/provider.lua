@@ -170,7 +170,7 @@ end
 
 function Provider:_add_session_info()
   local function add_config_info(key, value)
-    self.progress_view:add_session_info({
+    self.progress_view:add_session_node({
       type = "config_node",
       key = key,
       value = value,
@@ -178,7 +178,7 @@ function Provider:_add_session_info()
   end
 
   local function add_local_info(key, value)
-    self.progress_view:add_session_info({
+    self.progress_view:add_session_node({
       type = "local_node",
       key = key,
       value = value,
@@ -186,7 +186,7 @@ function Provider:_add_session_info()
   end
 
   local function add_remote_info(key, value)
-    self.progress_view:add_session_info({
+    self.progress_view:add_session_node({
       type = "remote_node",
       key = key,
       value = value,
@@ -504,7 +504,7 @@ function Provider:_launch_remote_neovim_server()
     end)
     self._remote_server_process_id = self.executor:last_job_id()
     if self:is_remote_server_running() then
-      self.progress_view:add_session_info({
+      self.progress_view:add_session_node({
         type = "info_node",
         value = ("Remote server available at localhost:%s"):format(self._local_free_port),
       })
@@ -744,7 +744,7 @@ function Provider:run_command(command, desc, extra_opts, exit_cb)
   })
   -- Allow correct update of active job in ProgressView
   if exit_cb ~= nil then
-    exit_cb = exit_cb(self.progress_view:get_active_section())
+    exit_cb = exit_cb(self.progress_view:get_active_progress_view_section())
   end
   self.executor:run_command(command, {
     additional_conn_opts = extra_opts,
