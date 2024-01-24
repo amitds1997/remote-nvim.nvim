@@ -39,10 +39,10 @@ end
 
 function M.set_hl()
   for _, hl_values in pairs(M.hl_groups) do
-    --- If already set, do not override it
     local hl_opts = vim.deepcopy(hl_values)
     local hl_name = hl_values.name
 
+    --- If already set, do not override it
     hl_opts.default = true
     hl_opts["name"] = nil
     vim.api.nvim_set_hl(0, hl_name, hl_opts)

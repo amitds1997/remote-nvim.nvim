@@ -78,7 +78,7 @@ function Provider:init(opts)
   self._cleanup_run_number = 1
   self._neovim_launch_number = 1
 
-  -- Remote configuration members
+  -- Remote configuration parameters
   self._remote_working_dir = nil
 
   ---@diagnostic disable-next-line: missing-fields
@@ -384,62 +384,58 @@ end
 ---Setup remote
 function Provider:_setup_remote()
   if not self._setup_running then
-    if not self:is_remote_server_running() then
-      self._setup_running = true
+    self._setup_running = true
 
-      -- Create necessary directories
-      local necessary_dirs = {
-        self._remote_workspaces_path,
-        self._remote_scripts_path,
-        self._remote_xdg_config_path,
-        self._remote_xdg_cache_path,
-        self._remote_xdg_state_path,
-        self._remote_xdg_data_path,
-      }
-      local mkdirs_cmds = {}
-      for _, dir in ipairs(necessary_dirs) do
-        table.insert(mkdirs_cmds, ("mkdir -p %s"):format(dir))
-      end
-      self:run_command(table.concat(mkdirs_cmds, " && "), "Creating custom neovim directories on remote")
-
-      -- Copy things required on remote
-      self:upload(
-        vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h"),
-        self._remote_neovim_home,
-        "Copying plugin scripts onto remote"
-      )
-
-      ---If we have custom scripts specified, copy them over
-      if remote_nvim.default_opts.neovim_install_script_path ~= remote_nvim.config.neovim_install_script_path then
-        self:upload(
-          remote_nvim.config.neovim_install_script_path,
-          self._remote_scripts_path,
-          "Copying custom install scripts specified by user"
-        )
-      end
-
-      -- Set correct permissions and install Neovim
-      local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s]]):format(
-        self._remote_neovim_install_script_path,
-        self._remote_neovim_install_script_path,
-        self._remote_neovim_version,
-        self._remote_neovim_home
-      )
-      self:run_command(install_neovim_cmd, "Installing Neovim (if required)")
-
-      -- Upload user neovim config, if necessary
-      if self:_get_neovim_config_upload_preference() then
-        self:upload(
-          remote_nvim.config.neovim_user_config_path,
-          self._remote_xdg_config_path,
-          "Copying your Neovim configuration files onto remote"
-        )
-      end
-
-      self._setup_running = false
-    else
-      vim.notify("Neovim server is already running. Not starting a new one")
+    -- Create necessary directories
+    local necessary_dirs = {
+      self._remote_workspaces_path,
+      self._remote_scripts_path,
+      self._remote_xdg_config_path,
+      self._remote_xdg_cache_path,
+      self._remote_xdg_state_path,
+      self._remote_xdg_data_path,
+    }
+    local mkdirs_cmds = {}
+    for _, dir in ipairs(necessary_dirs) do
+      table.insert(mkdirs_cmds, ("mkdir -p %s"):format(dir))
     end
+    self:run_command(table.concat(mkdirs_cmds, " && "), "Creating custom neovim directories on remote")
+
+    -- Copy things required on remote
+    self:upload(
+      vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h"),
+      self._remote_neovim_home,
+      "Copying plugin scripts onto remote"
+    )
+
+    ---If we have custom scripts specified, copy them over
+    if remote_nvim.default_opts.neovim_install_script_path ~= remote_nvim.config.neovim_install_script_path then
+      self:upload(
+        remote_nvim.config.neovim_install_script_path,
+        self._remote_scripts_path,
+        "Copying custom install scripts specified by user"
+      )
+    end
+
+    -- Set correct permissions and install Neovim
+    local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s]]):format(
+      self._remote_neovim_install_script_path,
+      self._remote_neovim_install_script_path,
+      self._remote_neovim_version,
+      self._remote_neovim_home
+    )
+    self:run_command(install_neovim_cmd, "Installing Neovim (if required)")
+
+    -- Upload user neovim config, if necessary
+    if self:_get_neovim_config_upload_preference() then
+      self:upload(
+        remote_nvim.config.neovim_user_config_path,
+        self._remote_xdg_config_path,
+        "Copying your Neovim configuration files onto remote"
+      )
+    end
+
+    self._setup_running = false
   else
     vim.notify("Another instance of setup is already running. Wait for it to complete", vim.log.levels.WARN)
   end

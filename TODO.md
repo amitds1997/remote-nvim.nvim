@@ -9,6 +9,9 @@
 ## To do
 
 - Add tests for the added code
+- Add documentation to the Provider's added functions
+- Correct color highlights for progress window
+- Check progressview behaviour on different relatives and split/popup
 - Save configuration only after we have successfully established connection e.g.
   do a failed connection and it still creates workspace
 - Update README.md

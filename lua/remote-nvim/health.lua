@@ -6,7 +6,7 @@ local M = {}
 local function verify_binary(binary_name)
   local succ, _ = pcall(utils.find_binary, binary_name)
   if not succ then
-    vim.health.report_warn(("`%s` executable not found. Setup would not work."):format(binary_name))
+    vim.health.warn(("`%s` executable not found. Setup would not work."):format(binary_name))
   else
     vim.health.ok(("`%s` executable found."):format(binary_name))
   end
