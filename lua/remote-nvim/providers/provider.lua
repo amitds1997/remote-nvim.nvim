@@ -592,21 +592,15 @@ end
 
 ---@private
 ---Get preference if the local client should be launched or not
----@param override_session_preference boolean? Should we override session choice to show local client launch preference window
 ---@return boolean preference Should we launch local client?
-function Provider:_get_local_client_start_preference(override_session_preference)
-  local should_start_client = false
+function Provider:_get_local_client_start_preference()
   ---@type remote-nvim.providers.WorkspaceConfig
   local workspace_config = self._config_provider:get_workspace_config(self.unique_host_id)
-  local get_saved_choice = workspace_config.client_auto_start
-  local choice = nil
+  local should_start_client = workspace_config.client_auto_start
 
-  local selection_prompt = (override_session_preference and "Do you want to connect to the running Neovim server?")
-    or "Start local Neovim client?"
-
-  if get_saved_choice == nil then
-    choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
-      prompt = selection_prompt,
+  if should_start_client == nil then
+    local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
+      prompt = "Launch local Neovim client?",
     })
 
     -- Handle choices
@@ -625,23 +619,15 @@ function Provider:_get_local_client_start_preference(override_session_preference
     else
       should_start_client = (choice == "Yes" and true) or false
     end
-  else
-    assert(get_saved_choice ~= nil, "Get saved choice should not be nil")
-    should_start_client = get_saved_choice
-  end
-
-  if override_session_preference and vim.tbl_contains({ "Yes", "No" }, choice) then
-    should_start_client = (choice == "Yes" and true) or false
   end
 
   return should_start_client
 end
 
 ---@private
----@param override_local_client_launch_preference boolean? Should override local client launch preference
 ---Launch local neovim client
-function Provider:_launch_local_neovim_client(override_local_client_launch_preference)
-  if self:_get_local_client_start_preference(override_local_client_launch_preference) then
+function Provider:_launch_local_neovim_client()
+  if self:_get_local_client_start_preference() then
     self:_wait_for_server_to_be_ready()
 
     remote_nvim.config.local_client_config.callback(
@@ -666,7 +652,7 @@ function Provider:_launch_neovim()
     self:_launch_local_neovim_client()
     self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
   else
-    self:_launch_local_neovim_client(true)
+    self:_launch_local_neovim_client()
     self:show_progress_view_window()
     self.progress_viewer:switch_to_pane("session_info", true)
   end

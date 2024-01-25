@@ -598,14 +598,12 @@ function ProgressView:add_progress_node(node, parent_node)
 
   ---@type NuiTree.Node
   local created_node
-  if node.text ~= nil then
-    if node.type == "section_node" then
-      created_node = self:_add_progress_view_section(node, parent_node)
-    elseif node.type == "run_node" then
-      created_node = self:_add_progress_view_run_section(node)
-    else
-      created_node = self:_add_progress_view_output_node(node, parent_node)
-    end
+  if node.type == "section_node" then
+    created_node = self:_add_progress_view_section(node, parent_node)
+  elseif node.type == "run_node" then
+    created_node = self:_add_progress_view_run_section(node)
+  else
+    created_node = self:_add_progress_view_output_node(node, parent_node)
   end
 
   self:update_status(status, node.set_parent_status, created_node)
