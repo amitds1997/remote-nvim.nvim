@@ -17,6 +17,7 @@ describe("Provider", function()
       host = provider_host,
       progress_view = mock(require("remote-nvim.ui.progressview"), true),
     })
+    stub(vim, "notify")
   end)
 
   describe("should handle array-type connections options", function()
@@ -89,7 +90,7 @@ describe("Provider", function()
       provider._config_provider:remove_workspace_config(provider.unique_host_id)
     end)
 
-    it("by creating new workspace config record when does not exist", function()
+    it("by creating new workspace config record when does not exist if able to connect to remote machine", function()
       provider._config_provider:remove_workspace_config(provider.unique_host_id)
       provider:_setup_workspace_variables()
 
@@ -104,6 +105,18 @@ describe("Provider", function()
         neovim_version = "stable",
         os = "Linux",
       }, provider._config_provider:get_workspace_config(provider.unique_host_id))
+    end)
+
+    it("by not creating workspace config record if not able to connect to remote", function()
+      provider._config_provider:remove_workspace_config(provider.unique_host_id)
+      local executor_job_status_stub = stub(provider.executor, "last_job_status")
+      executor_job_status_stub.returns(255)
+
+      local co = coroutine.create(function()
+        provider:_setup_workspace_variables()
+      end)
+      coroutine.resume(co)
+      assert(vim.tbl_isempty(provider._config_provider:get_workspace_config(provider.unique_host_id)))
     end)
 
     it("by setting up remote OS if not set", function()
@@ -392,6 +405,18 @@ describe("Provider", function()
     assert.equals("~/.remote-nvim/nvim-downloads/stable/bin/nvim", provider:_remote_neovim_binary_path())
   end)
 
+  it("should return same remote neovim path over multiple calls", function()
+    stub(provider, "run_command")
+    local output_stub = stub(provider.executor, "job_stdout")
+    output_stub.returns({ "/home/test-user" })
+    provider._remote_neovim_home = nil
+
+    provider:_get_remote_neovim_home()
+    assert.equals("/home/test-user/.remote-nvim", provider._remote_neovim_home)
+    assert.equals(provider._remote_neovim_home, provider:_get_remote_neovim_home())
+    assert.equals(provider:_get_remote_neovim_home(), provider:_get_remote_neovim_home())
+  end)
+
   describe("should handle remote setup correctly", function()
     it("when another setup is already running", function()
       provider._setup_running = true
@@ -523,27 +548,50 @@ describe("Provider", function()
       assert.stub(run_command_stub).was.not_called()
     end)
 
-    it("when launching a remote server", function()
-      local output_stub = stub(provider.executor, "job_stdout")
-      local local_free_port_stub = stub(require("remote-nvim.providers.utils"), "find_free_port")
-      is_remote_server_running_stub.returns(false)
-      output_stub.returns({ 32123 })
-      local_free_port_stub.returns(52232)
+    describe("when launching a remote server", function()
+      local output_stub, local_free_port_stub
+      before_each(function()
+        output_stub = stub(provider.executor, "job_stdout")
+        local_free_port_stub = stub(require("remote-nvim.providers.utils"), "find_free_port")
+        is_remote_server_running_stub.returns(false)
+        output_stub.returns({ 32123 })
+        local_free_port_stub.returns(52232)
+      end)
 
-      provider:_launch_remote_neovim_server()
-      assert.stub(run_command_stub).was.called_with(
-        match.is_ref(provider),
-        "~/.remote-nvim/nvim-downloads/stable/bin/nvim -l ~/.remote-nvim/scripts/free_port_finder.lua",
-        match.is_string()
-      )
-      assert.stub(local_free_port_stub).was.called()
-      assert.stub(run_command_stub).was.called_with(
-        match.is_ref(provider),
-        "XDG_CONFIG_HOME=~/.remote-nvim/workspaces/ajfdalfj/.config XDG_DATA_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/share XDG_STATE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/state XDG_CACHE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.cache ~/.remote-nvim/nvim-downloads/stable/bin/nvim --listen 0.0.0.0:32123 --headless",
-        match.is_string(),
-        "-t -L 52232:localhost:32123",
-        match.is_function()
-      )
+      it("with no set working directory", function()
+        provider:_launch_remote_neovim_server()
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          "~/.remote-nvim/nvim-downloads/stable/bin/nvim -l ~/.remote-nvim/scripts/free_port_finder.lua",
+          match.is_string()
+        )
+        assert.stub(local_free_port_stub).was.called()
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          "XDG_CONFIG_HOME=~/.remote-nvim/workspaces/ajfdalfj/.config XDG_DATA_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/share XDG_STATE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/state XDG_CACHE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.cache ~/.remote-nvim/nvim-downloads/stable/bin/nvim --listen 0.0.0.0:32123 --headless",
+          match.is_string(),
+          "-t -L 52232:localhost:32123",
+          match.is_function()
+        )
+      end)
+
+      it("when a working directory is set", function()
+        provider._remote_working_dir = "/home/test-user"
+        provider:_launch_remote_neovim_server()
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          "~/.remote-nvim/nvim-downloads/stable/bin/nvim -l ~/.remote-nvim/scripts/free_port_finder.lua",
+          match.is_string()
+        )
+        assert.stub(local_free_port_stub).was.called()
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          "XDG_CONFIG_HOME=~/.remote-nvim/workspaces/ajfdalfj/.config XDG_DATA_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/share XDG_STATE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.local/state XDG_CACHE_HOME=~/.remote-nvim/workspaces/ajfdalfj/.cache ~/.remote-nvim/nvim-downloads/stable/bin/nvim --listen 0.0.0.0:32123 --headless --cmd ':cd /home/test-user'",
+          match.is_string(),
+          "-t -L 52232:localhost:32123",
+          match.is_function()
+        )
+      end)
     end)
   end)
 
