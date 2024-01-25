@@ -13,6 +13,13 @@
 ## To do
 
 - Add tests for the added code
+  - Progress view
+  - Provider
+  - global utils
+    1. os_name()
+    2. neovim_version()
+- Update minimum Neovim version to 0.9.0
+- Handle stable and nightly detection
 - Update README.md
   - Mention that when changing `progress_view` params, respect nui documentation
   - Add info about ":RemoteInfo"

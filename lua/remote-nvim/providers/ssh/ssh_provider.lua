@@ -14,7 +14,7 @@ function SSHProvider:init(opts)
   self.conn_opts = self:_cleanup_conn_options(self.conn_opts)
   self.executor = SSHExecutor(self.host, self.conn_opts)
   self.unique_host_id = opts.unique_host_id or self:_get_unique_host_id()
-  self.provider_type = opts.provider_type
+  self.provider_type = opts.provider_type or "ssh"
 end
 
 ---Generate host identifer using host and port on host

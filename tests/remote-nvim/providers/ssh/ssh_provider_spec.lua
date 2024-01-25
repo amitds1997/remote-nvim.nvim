@@ -11,6 +11,32 @@ describe("SSH Provider", function()
     assert.equals("-p 3011", ssh_provider.conn_opts)
   end)
 
+  it("should correctly set unique host ID when passed manually as an option", function()
+    local unique_host_id = "custom-host-id"
+    local provider = SSHProvider({
+      host = "localhost",
+      unique_host_id = unique_host_id,
+    })
+    assert.equals(unique_host_id, provider.unique_host_id)
+  end)
+
+  describe("should correctly set provider type", function()
+    it("when it is provided manually", function()
+      local provider = SSHProvider({
+        host = "localhost",
+        provider_type = "devpod",
+      })
+      assert.equals("devpod", provider.provider_type)
+    end)
+
+    it("when not provided to 'ssh'", function()
+      local provider = SSHProvider({
+        host = "localhost",
+      })
+      assert.equals("ssh", provider.provider_type)
+    end)
+  end)
+
   it("should remove host name from connection options (if present)", function()
     local ssh_provider = SSHProvider({ host = "localhost", conn_opts = { "localhost -p 3011" } })
     assert.equals("-p 3011", ssh_provider.conn_opts)

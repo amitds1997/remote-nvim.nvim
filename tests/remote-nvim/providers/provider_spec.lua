@@ -47,6 +47,15 @@ describe("Provider", function()
     assert.equals("", provider.conn_opts)
   end)
 
+  it("should correctly set unique host ID when passed manually as an option", function()
+    local unique_host_id = "custom-host-id"
+    provider = Provider({
+      host = provider_host,
+      unique_host_id = unique_host_id,
+    })
+    assert.equals(unique_host_id, provider.unique_host_id)
+  end)
+
   describe("should handle setting workspace variables", function()
     local detect_remote_os_stub, get_remote_neovim_version_preference_stub
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)

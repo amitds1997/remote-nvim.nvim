@@ -153,17 +153,6 @@ function M.truncate_log()
   end
 end
 
----Define a function to check if an element exists in a list
----@return boolean contains Returns if the list contains the given element
-function M.contains(list, element)
-  for _, value in ipairs(list) do
-    if value == element then
-      return true
-    end
-  end
-  return false
-end
-
 ---Get OS name of the system
 ---@return string os_name Name of the OS
 function M.os_name()

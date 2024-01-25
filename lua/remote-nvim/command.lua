@@ -1,4 +1,3 @@
-local contains = require("remote-nvim.utils").contains
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
@@ -118,12 +117,12 @@ end, {
       return running_sessions
     end
     local host_ids = vim.fn.filter(running_sessions, function(_, item)
-      return not contains(args, item)
+      return not vim.tbl_contains(args, item)
     end)
     local completion_word = table.remove(args, #args)
 
     -- If we have not provided any input, then the last word is the last completion
-    if contains(running_sessions, completion_word) then
+    if vim.tbl_contains(running_sessions, completion_word) then
       return host_ids
     end
     return vim.fn.matchfuzzy(running_sessions, completion_word)
@@ -141,12 +140,12 @@ vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
       return valid_hosts
     end
     local host_ids = vim.fn.filter(valid_hosts, function(_, item)
-      return not contains(args, item)
+      return not vim.tbl_contains(args, item)
     end)
     local completion_word = table.remove(args, #args)
 
     -- If we have not provided any input, then the last word is the last completion
-    if contains(valid_hosts, completion_word) then
+    if vim.tbl_contains(valid_hosts, completion_word) then
       return host_ids
     end
     return vim.fn.matchfuzzy(host_ids, completion_word)
@@ -211,12 +210,12 @@ end, {
       return running_sessions
     end
     local host_ids = vim.fn.filter(running_sessions, function(_, item)
-      return not contains(args, item)
+      return not vim.tbl_contains(args, item)
     end)
     local completion_word = table.remove(args, #args)
 
     -- If we have not provided any input, then the last word is the last completion
-    if contains(running_sessions, completion_word) then
+    if vim.tbl_contains(running_sessions, completion_word) then
       return host_ids
     end
     return vim.fn.matchfuzzy(running_sessions, completion_word)
@@ -240,12 +239,12 @@ end, {
       return hosts
     end
     local host_ids = vim.fn.filter(hosts, function(_, item)
-      return not contains(args, item)
+      return not vim.tbl_contains(args, item)
     end)
     local completion_word = table.remove(args, #args)
 
     -- If we have not provided any input, then the last word is the last completion
-    if contains(hosts, completion_word) then
+    if vim.tbl_contains(hosts, completion_word) then
       return host_ids
     end
     return vim.fn.matchfuzzy(host_ids, completion_word)

@@ -2,7 +2,6 @@ local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local Popup = require("nui.popup")
 local Split = require("nui.split")
-local utils = require("remote-nvim.utils")
 local hl_groups = require("remote-nvim.colors").hl_groups
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
@@ -297,7 +296,7 @@ function ProgressView:_setup_progress_view_pane()
         highlight = hl_groups.RemoteNvimFailure
       elseif node_status == "running" then
         highlight = hl_groups.RemoteNvimRunning
-      elseif utils.contains({ "run_node", "section_node" }, node_type) then
+      elseif vim.tbl_contains({ "run_node", "section_node" }, node_type) then
         highlight = hl_groups.RemoteNvimHeading
       elseif node_type == "stdout_node" then
         highlight = hl_groups.RemoteNvimOutput
@@ -308,7 +307,7 @@ function ProgressView:_setup_progress_view_pane()
 
       ---@type progress_view_node_type[]
       local section_nodes = { "section_node", "run_node" }
-      if utils.contains(section_nodes, node.type) then
+      if vim.tbl_contains(section_nodes, node.type) then
         line:append(node:is_expanded() and " " or " ", highlight)
       else
         line:append(" ")
@@ -319,7 +318,7 @@ function ProgressView:_setup_progress_view_pane()
       end
       line:append(node.text, highlight)
 
-      if node_type == "run_node" and utils.contains({ "success", "failed" }, node_status) then
+      if node_type == "run_node" and vim.tbl_contains({ "success", "failed" }, node_status) then
         line:append(" (no longer active)", hl_groups.RemoteNvimSubInfo.name)
       end
 
@@ -649,7 +648,7 @@ function ProgressView:update_status(status, should_update_parent_status, node)
     end
   end
 
-  if not utils.contains({ "success", "warning" }, node.status) then
+  if not vim.tbl_contains({ "success", "warning" }, node.status) then
     node:expand()
   end
 
