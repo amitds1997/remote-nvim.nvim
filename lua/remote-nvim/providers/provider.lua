@@ -732,11 +732,11 @@ function Provider:clean_up_remote_host()
         exit_cb
       )
     end
-    vim.notify("Cleanup on remote host completed", vim.log.levels.INFO)
+    vim.notify(("Cleanup on remote host '%s' completed"):format(self.host), vim.log.levels.INFO)
 
     self._config_provider:remove_workspace_config(self.unique_host_id)
     self:hide_progress_view_window()
-  end, "Cleaning up remote host")
+  end, ("Cleaning up '%s' host"):format(self.host))
 end
 
 ---@private
@@ -800,10 +800,12 @@ end
 function Provider:_add_stdout_to_progress_view_window(node)
   return function(stdout_chunk)
     if stdout_chunk and stdout_chunk ~= "" then
-      self.progress_viewer:add_progress_node({
-        type = "stdout_node",
-        text = stdout_chunk:gsub("\n", ""),
-      }, node)
+      for _, chunk in ipairs(vim.split(stdout_chunk, "\n", { plain = true, trimempty = true })) do
+        self.progress_viewer:add_progress_node({
+          type = "stdout_node",
+          text = chunk,
+        }, node)
+      end
     end
   end
 end
