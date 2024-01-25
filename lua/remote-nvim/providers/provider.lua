@@ -295,10 +295,12 @@ end
 ---@param selection_opts table
 ---@return string selected_choice Selected choice
 function Provider:get_selection(choices, selection_opts)
-  local section_node = self.progress_viewer:add_progress_node({
-    type = "section_node",
-    text = ("Choice: %s"):format(selection_opts.prompt),
-  })
+  local section_node = vim.schedule(function()
+    return self.progress_viewer:add_progress_node({
+      type = "section_node",
+      text = ("Choice: %s"):format(selection_opts.prompt),
+    })
+  end)
   local choice = provider_utils.get_selection(choices, selection_opts)
 
   -- If the choice fails, we cannot move further so we stop the coroutine executing
@@ -537,10 +539,15 @@ end
 ---@param fn function Function to run inside the coroutine
 ---@param desc string Description of operation being performed
 function Provider:_run_code_in_coroutine(fn, desc)
-  local co = coroutine.create(fn)
-  local success, _ = coroutine.resume(co)
+  local co = coroutine.create(function()
+    xpcall(fn, function(err)
+      self.logger.error(debug.traceback(coroutine.running(), ("'%s' failed"):format(desc)), err)
+      vim.notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR)
+    end)
+  end)
+  local success, res_or_err = coroutine.resume(co)
   if not success then
-    self.logger.error(debug.traceback(co, ("'%s' failed"):format(desc)))
+    self.logger.error(debug.traceback(co, ("'%s' failed"):format(desc)), res_or_err)
     vim.notify("An error occurred. Check logs using :RemoteLog", vim.log.levels.ERROR)
   end
 end

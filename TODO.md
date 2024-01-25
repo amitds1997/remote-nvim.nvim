@@ -6,6 +6,10 @@
 2. Correct way to handle detaching the Remote Neovim server from the remote instance
 3. Add CONTRIBUTING.md
 
+## Backlog
+
+1. Use `plenary.async`
+
 ## To do
 
 - Add tests for the added code
