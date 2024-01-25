@@ -630,7 +630,7 @@ function Provider:_get_local_client_start_preference(override_session_preference
     should_start_client = get_saved_choice
   end
 
-  if override_session_preference and utils.contains({ "Yes", "No" }, choice) then
+  if override_session_preference and vim.tbl_contains({ "Yes", "No" }, choice) then
     should_start_client = (choice == "Yes" and true) or false
   end
 
