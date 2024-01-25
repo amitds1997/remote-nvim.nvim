@@ -13,8 +13,6 @@
 ## To do
 
 - Add tests for the added code
-- Save configuration only after we have successfully established connection e.g.
-  do a failed connection and it still creates workspace
 - Update README.md
   - Mention that when changing `progress_view` params, respect nui documentation
   - Add info about ":RemoteInfo"
