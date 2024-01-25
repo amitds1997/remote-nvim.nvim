@@ -40,7 +40,8 @@ function M.get_selection(choices, selection_opts)
 end
 
 ---Get Neovim versions that satisfy the minimum neovim version constraint
-function M.get_neovim_versions()
+---@return table<string, string>[] valid_neovim_versions Valid Neovim versions supported by the plugin
+function M.get_valid_neovim_versions()
   local res
   local co = coroutine.running()
   if co then
@@ -61,13 +62,16 @@ function M.get_neovim_versions()
       },
     })
   end
+  local resp = vim.json.decode(res.body)
 
-  local available_versions = { "stable" }
-  for _, version_info in ipairs(vim.json.decode(res.body)) do
-    local version = version_info["tag_name"]
+  local valid_versions = {}
+  local nightly_commit_id = ""
+  table.insert(valid_versions, { tag = "stable" })
+  for _, version in ipairs(resp) do
+    local version_name = version["tag_name"]
 
-    if version ~= "stable" and version ~= "nightly" then
-      local major, minor, patch = version:match("v(%d+)%.(%d+)%.(%d+)")
+    if not vim.tbl_contains({ "stable", "nightly" }, version_name) then
+      local major, minor, patch = version_name:match("v(%d+)%.(%d+)%.(%d+)")
       local target_major, target_minor, target_patch =
         require("remote-nvim.constants").MIN_NEOVIM_VERSION:match("v(%d+)%.(%d+)%.(%d+)")
 
@@ -84,12 +88,17 @@ function M.get_neovim_versions()
         or (major == target_major and minor > target_minor)
         or (major == target_major and minor == target_minor and patch >= target_patch)
       then
-        table.insert(available_versions, version)
+        table.insert(valid_versions, { tag = version_name, commit = version["target_commitish"] })
       end
+    elseif version_name == "nightly" then
+      nightly_commit_id = version["target_commitish"]
+    elseif version_name == "stable" then
+      valid_versions[1].commit = version["target_commitish"]
     end
   end
-  table.insert(available_versions, "nightly")
-  return available_versions
+  table.insert(valid_versions, { tag = "nightly", commit = nightly_commit_id })
+
+  return valid_versions
 end
 
 ---Get an ephemeral free port on the local machine

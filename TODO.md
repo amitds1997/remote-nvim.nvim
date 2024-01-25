@@ -29,8 +29,6 @@
         segment
     13. `add_progress_view_run_section` collapses all nodes and expands current one
     14. `add_output_node` adds the node
-- Update minimum Neovim version to 0.9.0
-- Handle stable and nightly detection
 - Update README.md
   - Mention that when changing `progress_view` params, respect nui documentation
   - Add info about ":RemoteInfo"

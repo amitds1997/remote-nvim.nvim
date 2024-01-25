@@ -334,19 +334,34 @@ end
 ---@return string neovim_version Version running on the remote host
 function Provider:_get_remote_neovim_version_preference()
   if self._remote_neovim_version == nil then
-    local valid_neovim_versions = provider_utils.get_neovim_versions()
+    local valid_neovim_versions = provider_utils.get_valid_neovim_versions()
+    local version_map = {}
+    local possible_choices = {}
+    for _, version in ipairs(valid_neovim_versions) do
+      version_map[version.tag] = version.commit
+
+      if version.tag ~= "stable" then
+        table.insert(possible_choices, version.tag)
+      end
+    end
 
     -- Get client version
-    local api_info = vim.version()
-    local client_version = "v" .. table.concat({ api_info.major, api_info.minor, api_info.patch }, ".")
+    local client_version = "v" .. utils.neovim_version()
 
-    self._remote_neovim_version = self:get_selection(valid_neovim_versions, {
-      prompt = "What Neovim version should be installed on remote host?",
-      format_item = function(ver)
-        if ver == client_version then
-          return "Install Neovim " .. ver .. " (Your client version)"
+    self._remote_neovim_version = self:get_selection(possible_choices, {
+      prompt = "Which Neovim version should be installed on remote?",
+      format_item = function(version)
+        local choice_str = (version ~= "nightly" and ("Neovim %s "):format(version)) or "Nightly version "
+
+        if version_map["stable"] == version_map[version] then
+          choice_str = choice_str .. "(stable release) "
         end
-        return "Install Neovim " .. ver
+
+        if (version == client_version) or (vim.endswith(client_version, "dev") and version == "nightly") then
+          choice_str = choice_str .. "(locally installed)"
+        end
+
+        return choice_str
       end,
     })
   end
