@@ -88,7 +88,7 @@ function ProgressView:init()
       ns_id = self.progress_view_hl_ns,
       relative = progress_view_config.relative or "editor",
       position = progress_view_config.position or "50%",
-      size = progress_view_config.size or "70%",
+      size = progress_view_config.size or "50%",
       win_options = self.progress_view_win_options,
       border = progress_view_config.border or "rounded",
       anchor = progress_view_config.anchor,
