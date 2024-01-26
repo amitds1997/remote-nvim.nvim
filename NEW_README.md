@@ -4,7 +4,7 @@ Adds support for [remote development](https://code.visualstudio.com/docs/remote/
 and [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers)
 to Neovim (just like VSCode).
 
-_**This plugin is still under initial development. So, breaking changes are expected. Any such change would be
+_**This plugin has not yet reached maturity. So, breaking changes are expected. Any such change would be
 communicated through [this GitHub discussion](https://github.com/amitds1997/remote-nvim.nvim/discussions/78).**_
 
 ## ✨ Features
@@ -172,3 +172,30 @@ Below is the default configuration. Please read the associated comments before c
 > [!NOTE]
 > Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
 > parts of the plugin might be broken.
+
+## 🤖 Available commands
+
+| Command            | What does it do?                                                                                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `:RemoteStart`     | Connect to a remote instance. If remote neovim server is already running, allows users to launch local client?                                              |
+| `:RemoteStop`      | Stop running Neovim server and close session                                                                                                                |
+| `:RemoteInfo`      | Get information about any sessions created in the current Neovim run. Opens up the Progress Viewer.                                                         |
+| `:RemoteCleanup`   | Delete workspace and/or entire remote neovim setup from the remote instance. Also, cleanups the configuration for the remote resource.                      |
+| `:RemoteConfigDel` | Delete record of remote instance that no longer exists from saved session records. Prefer `:RemoteCleanup` if you can still connect to the remote instance. |
+
+## ⚠️ Caveats
+
+- Launched neovim server is bound to the Neovim instance from which it is launched. If you close the instance,
+  the remote Neovim server will also get closed. This has been done to ensure proper cleanup of launched sessions
+  and prevent orphan Neovim servers.
+- The current implementation launches a headless server on the remote machine and then launches a TUI to connect
+  to it. This means that if you quit the TUI using regular operations, the server also gets closed. If you just want
+  to close the TUI, that is currently not possible. You can read more in [this Neovim
+  discussion](https://github.com/neovim/neovim/issues/23093).
+- Neovim versions `< v0.9.2` are incompatible with versions `> v0.9.2` due to a breaking UI change introduced in
+  `v0.9.2`. For more information, read the [release notes for
+  v0.9.2](https://github.com/neovim/neovim/releases/tag/v0.9.2).
+
+## 🌟 Credits
+
+**_A big thank you to the amazing Neovim community for Neovim and the plugins! ❤️_**
