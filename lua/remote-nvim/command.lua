@@ -155,14 +155,14 @@ vim.api.nvim_create_user_command("RemoteCleanup", M.RemoteCleanup, {
 vim.api.nvim_create_user_command("RemoteStop", function(opts)
   local host_ids = vim.split(vim.trim(opts.args), "%s+")
   local sessions = remote_nvim.session_provider:get_all_sessions()
+  local running_sessions = {}
+  for host_id, session in pairs(sessions) do
+    if session:is_remote_server_running() then
+      table.insert(running_sessions, host_id)
+    end
+  end
 
-  if #vim.tbl_keys(sessions) == 0 then
-    vim.notify("No active sessions found. Please start remote session(s) with :RemoteStart first", vim.log.levels.WARN)
-    return
-  elseif #host_ids > 1 then
-    vim.notify("Please pass only one host at a time", vim.log.levels.WARN)
-    return
-  elseif #host_ids == 1 and vim.trim(host_ids[1]) ~= "" then
+  if #host_ids == 1 and vim.trim(host_ids[1]) ~= "" then
     local session = sessions[host_ids[1]]
 
     if session == nil or not session:is_remote_server_running() then
@@ -171,14 +171,13 @@ vim.api.nvim_create_user_command("RemoteStop", function(opts)
       session:stop_neovim()
       session:hide_progress_view_window()
     end
+  elseif #host_ids > 1 then
+    vim.notify("Please pass only one host at a time", vim.log.levels.WARN)
+    return
+  elseif (#vim.tbl_keys(sessions) == 0) or #running_sessions == 0 then
+    vim.notify("No active sessions found. Please start remote session(s) with :RemoteStart first", vim.log.levels.WARN)
+    return
   else
-    local running_sessions = {}
-    for host_id, session in pairs(sessions) do
-      if session:is_remote_server_running() then
-        table.insert(running_sessions, host_id)
-      end
-    end
-
     vim.ui.select(running_sessions, {
       prompt = "Choose active session that needs to be closed",
     }, function(choice)

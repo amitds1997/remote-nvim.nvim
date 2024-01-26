@@ -683,10 +683,16 @@ end
 ---Stop running Neovim instance (if any)
 function Provider:stop_neovim()
   if self:is_remote_server_running() then
-    local cmd = ("nvim --server localhost:%s --remote-send ':q<CR>'"):format(self._local_free_port)
-    vim.fn.system(cmd)
+    vim.system(
+      { "nvim", "--server", ("localhost:%s"):format(self._local_free_port), "--remote-send", ":qall!<CR>" },
+      { text = true },
+      function(res)
+        if res.code == 0 then
+          self:_reset()
+        end
+      end
+    )
   end
-  self:_reset()
 end
 
 ---Cleanup remote host
