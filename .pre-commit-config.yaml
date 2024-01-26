@@ -27,6 +27,8 @@ repos:
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.36.0
     hooks:
+      - id: markdownlint-fix
+        exclude: CHANGELOG.md
       - id: markdownlint
         exclude: CHANGELOG.md
   - repo: https://github.com/JohnnyMorganz/StyLua
