@@ -20,7 +20,7 @@ jobs:
         uses: kdheepak/panvimdoc@v3.0.6
         with:
           vimdoc: remote-nvim
-          version: Neovim >= 0.8.0
+          version: Neovim >= 0.9.0
           demojify: true
           treesitter: true
           dedupsubheadings: false
