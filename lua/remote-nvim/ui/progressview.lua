@@ -143,8 +143,7 @@ end
 ---@private
 ---Set top line for each of the buffer
 ---@param bufnr number Buffer ID
----@param clear_buffer boolean? Should clear buffer
-function ProgressView:_set_top_line(bufnr, clear_buffer)
+function ProgressView:_set_top_line(bufnr)
   vim.bo[bufnr].readonly = false
   vim.bo[bufnr].modifiable = true
 
@@ -154,9 +153,7 @@ function ProgressView:_set_top_line(bufnr, clear_buffer)
   local progress_hl = (bufnr == self.progress_view.bufnr) and active_hl or inactive_hl
   local si_hl = (bufnr == self.session_info_pane_bufnr) and active_hl or inactive_hl
 
-  if clear_buffer then
-    vim.api.nvim_buf_set_lines(bufnr, 0, vim.api.nvim_buf_line_count(bufnr) - 1, true, {})
-  end
+  vim.api.nvim_buf_set_lines(bufnr, 0, vim.api.nvim_buf_line_count(bufnr) - 1, true, {})
   vim.api.nvim_buf_set_lines(bufnr, 0, 0, true, { "" })
   local line_count = vim.api.nvim_buf_line_count(bufnr)
 
@@ -226,6 +223,7 @@ end
 
 ---Add a session node
 ---@param session_info_node remote-nvim.ui.ProgressView.SessionInfoNode Node input
+---@return NuiTree.Node node Session node created and added to the tree
 function ProgressView:add_session_node(session_info_node)
   ---Find the parent node
   ---@param node_type session_node_type The type of the session node
@@ -258,17 +256,21 @@ function ProgressView:add_session_node(session_info_node)
   end
 
   self.session_info_pane_tree:render(self.session_info_tree_render_linenr)
+
+  return node
 end
 
 ---Start progress view with a new run
 ---@param title string Title for the run
+---@return NuiTree.Node run_node Created run node
 function ProgressView:start_run(title)
-  self:add_progress_node({
+  local run_node = self:add_progress_node({
     text = title,
     type = "run_node",
   })
-
   self:_setup_session_info_pane()
+
+  return run_node
 end
 
 ---@private
@@ -404,7 +406,7 @@ end
 ---@private
 ---Set up "Session Info" pane
 function ProgressView:_setup_session_info_pane()
-  self:_set_top_line(self.session_info_pane_bufnr, true)
+  self:_set_top_line(self.session_info_pane_bufnr)
   self.session_info_tree_render_linenr = vim.api.nvim_buf_line_count(self.session_info_pane_bufnr) + 1
   self:_initialize_session_info_tree()
 
@@ -598,10 +600,10 @@ function ProgressView:add_progress_node(node, parent_node)
 
   ---@type NuiTree.Node
   local created_node
-  if node.type == "section_node" then
-    created_node = self:_add_progress_view_section(node, parent_node)
-  elseif node.type == "run_node" then
-    created_node = self:_add_progress_view_run_section(node)
+  if node.type == "run_node" then
+    created_node = self:_add_progress_view_run_heading(node)
+  elseif node.type == "section_node" then
+    created_node = self:_add_progress_view_section_heading(node, parent_node)
   else
     created_node = self:_add_progress_view_output_node(node, parent_node)
   end
@@ -646,14 +648,13 @@ function ProgressView:update_status(status, should_update_parent_status, node)
     end
   end
 
-  if not vim.tbl_contains({ "success", "warning" }, node.status) then
-    node:expand()
-  end
-
   -- If it is a successful node, we close it
   if status == "success" then
     node:collapse()
+  else
+    node:expand()
   end
+
   self.progress_view_pane_tree:render(self.progress_view_tree_render_linenr)
 end
 
@@ -662,7 +663,7 @@ end
 ---@param node remote-nvim.ui.ProgressView.ProgressInfoNode Section node to be inserted into progress view
 ---@param parent_node NuiTree.Node? Node under which the new node should be inserted
 ---@return NuiTree.Node section_node The created section node
-function ProgressView:_add_progress_view_section(node, parent_node)
+function ProgressView:_add_progress_view_section_heading(node, parent_node)
   parent_node = parent_node or self.active_progress_view_run_node
   assert(parent_node ~= nil, "Run section node should not be nil")
 
@@ -687,7 +688,7 @@ end
 ---Add new progress view run section
 ---@param node remote-nvim.ui.ProgressView.ProgressInfoNode Run node to insert into progress view
 ---@return NuiTree.Node created_node Created run node
-function ProgressView:_add_progress_view_run_section(node)
+function ProgressView:_add_progress_view_run_heading(node)
   self.active_progress_view_run_node = NuiTree.Node({
     text = node.text,
     type = node.type,
