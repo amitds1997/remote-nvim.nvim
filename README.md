@@ -1,238 +1,201 @@
 # 🚀 Remote Nvim
 
-**remote-nvim.nvim** brings the [remote development (similar to VSCode)](https://code.visualstudio.com/docs/remote/remote-overview)
-to Neovim. If you use this plugin along with [devpod](https://github.com/loft-sh/devpod),
-this also enables Dev Containers development natively from Neovim using this
-plugin.
+Adds support for [remote development](https://code.visualstudio.com/docs/remote/remote-overview)
+and [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers)
+to Neovim (just like VSCode).
 
-Plugin has been tested to work on Linux and MacOS. WSL and Windows support is
-planned (Author does not currently have access to Windows machine so contributions
-are welcome).
-
-🚧 **This plugin is still experimental. Breaking changes are expected (not a
-lot though).** 🚧
-
-## Demo
-
-[![Tutorial for remote-nvim.nvim plugin v0.0.1](http://img.youtube.com/vi/5qbDq1lGEx4/0.jpg)
-](http://www.youtube.com/watch?v=5qbDq1lGEx4 "Remote development on Neovim using
-remote-nvim.nvim")
-
-## 📜 Requirements
-
-### On your local machine 💻
-
-1. An OpenSSH client.
-2. Neovim >= 0.8.0 and `nvim` command on your PATH.
-3. Binaries: **curl**
-4. Following plugins:
-   1. [nui.nvim](https://github.com/MunifTanjim/nui.nvim) - For UI elements
-   2. [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) - For standard
-      functions
-   3. [nvim-notify](https://github.com/rcarriga/nvim-notify) - For progress notifications
-   4. [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) -
-      For telescope extension (also the current default setup UI)
-
-### On your remote machine ☁️
-
-1. A running OpenSSH compliant server
-2. Access to internet (to download Neovim)
-3. Binaries: **curl** or **wget**; **tar** (if your remote machine is MacOS)
-4. **bash** must be present
+_**This plugin has not yet reached maturity. So, breaking changes are expected. Any such change would be
+communicated through [this GitHub discussion](https://github.com/amitds1997/remote-nvim.nvim/discussions/78).**_
 
 ## ✨ Features
 
-- [x] Automatically install Neovim on remote
-- [x] No changes to your system environment
-- [x] Automatic copying over your local Neovim configuration
-- [x] Remember past sessions so that we can easily connect back to them
-- [x] Control over how to launch your local client
-- [x] Support for password-based SSH authentication
-- [x] Automatic syncing of your local Neovim config on next run (or not, if you
-  so choose!)
-- [x] Support to pick up hosts from your SSH configs
-- [x] Support to clean up everything on your remote
-- [x] Support for dev containers (using [devpod](https://github.com/loft-sh/devpod))
-- [ ] Remote development inside Docker container
-- [ ] Installation using local network when remote does not have access to internet
+| Remote mode                   | Current support                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| SSH (using password)          | ✅                                                                             |
+| SSH (using SSH key)           | ✅                                                                             |
+| SSH (using `ssh_config` file) | ✅                                                                             |
+| Docker image                  | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
+| Docker container              | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
+| Devcontainer                  | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
+
+[Remote Tunnels](https://code.visualstudio.com/docs/remote/tunnels)
+is a Microsoft-specific features and will not be supported. If
+you have an alternative though, I would be happy to integrate it into the plugin.
+
+### Planned features
+
+- **Dynamic port forwarding** - I already have a clear path to implementing this,
+  but waiting for complete support for devcontainers to be present and then
+  integrate this. For tracking, see [#77](https://github.com/amitds1997/remote-nvim.nvim/issues/77).
+  For more feature details, see [similar implementation in
+  VSCode](https://code.visualstudio.com/docs/devcontainers/containers#_temporarily-forwarding-a-port).
+
+<details>
+<summary><b>✨ Other noice features</b></summary>
+
+- Automatically install and launch Neovim
+- No changes to your remote environment
+- Can copy over and sync your local Neovim configuration to remote
+- Saves your past sessions automatically so you can easily reconnect
+- Easily cleanup the remote machine once you are done with a single command
+
+</details>
+
+## 📜 Requirements
+
+### OS support
+
+| Support level                     | OS                                                                      |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| ✅ **Supported**                   | Linux, MacOS                                                            |
+| 🚧 **In progress**                 | FreeBSD ([#71](https://github.com/amitds1997/remote-nvim.nvim/pull/71)) |
+| 🟡 **Planned but not implemented** | Windows, WSL                                                            |
+
+### Local machine 💻
+
+- OpenSSH client
+- Neovim >= 0.9.0 (as `nvim`)
+- Binaries: `curl`
+
+### Remote machine ☁️
+
+- OpenSSH-compliant SSH server
+- Connectivity to [GitHub.com](https://github.com) (to download Neovim release)
+- Binaries: `curl` or `wget`
+- `bash` shell must be available
 
 ## 📥 Installation
 
-### [lazy.nvim](https://github.com/folke/lazy.nvim)
+Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
    "amitds1997/remote-nvim.nvim",
-   version = "*", -- This keeps it pinned to semantic releases
+   version = "*", -- Pin to GitHub releases
    dependencies = {
-       "nvim-lua/plenary.nvim",
-       "MunifTanjim/nui.nvim",
-       "rcarriga/nvim-notify",
-       -- This would be an optional dependency eventually
-       "nvim-telescope/telescope.nvim",
+       "nvim-lua/plenary.nvim", -- For standard functions
+       "MunifTanjim/nui.nvim", -- To build the plugin UI
+       "nvim-telescope/telescope.nvim", -- For picking b/w different remote methods
    },
-   config = true, -- This calls the default setup(); make sure to call it
+   config = true,
 }
 ```
 
-After installation, run `:checkhealth remote-nvim` to verify that you have
-everything you need. This might fail if you have not initialized the plugin
-using `setup()` call.
+If you use any other plugin manager, ensure that you call `require("remote-nvim").setup()`.
 
-## ⚙️ Configuration
+<details>
+<summary><b>⚙️ Advanced configuration</b></summary>
 
-These are the default values. Alter them as needed for your personal use.
+Below is the default configuration. Please read the associated comments before changing the value.
 
 ```lua
-{
-  -- Configuration for SSH connections made using this plugin
+ {
+  -- Configuration for SSH connections
   ssh_config = {
-  -- Binary with this name would be searched on your runtime path and would be
-  -- used to run SSH commands. Rename this if your SSH binary is something else
-    ssh_binary = "ssh",
-    -- Similar to `ssh_binary`, but for copying over files onto remote server
-    scp_binary = "scp",
-    -- All your SSH config file paths.
-    ssh_config_file_paths = { "$HOME/.ssh/config" },
-    -- This helps the plugin to understand when the underlying binary expects
-    -- input from user. This is useful for password-based authentication and
-    -- key-based authentication.
-    -- Explanation for each prompt:
-    -- match - string - This would be matched with the SSH output to decide if
-    -- SSH is waiting for input. This is a plain match (not a regex one)
-    -- type - string - Takes two values "secret" or "plain". "secret" indicates
-    -- that the value you would enter is a secret and should not be logged into
-    -- your input history
-    -- input_prompt - string - What is the input prompt that should be shown to
-    -- user when this match happens
-    -- value_type - string - Takes two values "static" and "dynamic". "static"
-    -- means that the value can be cached for the same prompt for future commands
-    -- (e.g. your password) so that you do not have to keep typing it again and
-    -- again. This is retained in-memory and is not logged anywhere. When you
-    -- close the editor, it is cleared from memory. "dynamic" is for something
-    -- like MFA codes which change every time.
+    ssh_binary = "ssh", -- Binary to use for running SSH command
+    scp_binary = "scp", -- Binary to use for running SSH copy commands
+    ssh_config_file_paths = { "$HOME/.ssh/config" }, -- Which files should be considered to contain the ssh host configurations. NOTE: `Include` is respected in the provided files.
+
+    -- These are useful for password-based SSH authentication.
+    -- It provides parsing pattern for the plugin to detect that an input is requested.
+    -- Each element contains the following attributes:
+    -- match - The string to match (plain matching is done)
+    -- type - Supports two values "plain"|"secret". Secret means when you provide the value, it should not be stored in the completion history of Neovim.
+    -- value - Default value for the prompt
+    -- value_type - "static"|"dynamic". For things like password, it would be needed for each new connection that the plugin initiates which could be obtrusive.
+    -- So, we save the value (only for current session's interval) to ease the process. If set to "dynamic", we do not save the value even for the session. You have to provide a fresh value each time.
     ssh_prompts = {
       {
         match = "password:",
         type = "secret",
-        input_prompt = "Enter password: ",
         value_type = "static",
         value = "",
       },
       {
         match = "continue connecting (yes/no/[fingerprint])?",
         type = "plain",
-        input_prompt = "Do you want to continue connection (yes/no)? ",
         value_type = "static",
         value = "",
       },
     },
   },
-  -- Installation script location on local machine (If you have your own custom
-  -- installation script and you do not want to use the packaged install script.
-  -- It should accept the same inputs as the packaged install script though)
-  neovim_install_script_path = util.path_join(util.is_windows,
-  util.get_package_root(), "scripts", "neovim_install.sh"),
-  -- Where is your personal Neovim config stored?
+
+  -- Path to the script that would be copied to the remote and called to ensure that neovim gets installed.
+  -- Default path is to the plugin's own ./scripts/neovim_install.sh file.
+  neovim_install_script_path = utils.path_join(
+    utils.is_windows,
+    vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h"),
+    "scripts",
+    "neovim_install.sh"
+  ),
+
+  -- Modify the UI for the plugin's progress viewer.
+  -- type can be "split" or "popup". All options from https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup and https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/split are supported.
+  -- Note that some options like "border" are only available for "popup".
+  progress_view = {
+    type = "popup",
+  },
+
+  -- Path to the user's Neovim configuration files. These would be copied to the remote if user chooses to do so.
   neovim_user_config_path = vim.fn.stdpath("config"),
+
+  -- Local client configuration
   local_client_config = {
-    -- modify this function to override how your client launches
-    -- function should accept two arguments function(local_port, workspace_config)
-    -- local_port is the port on which the remote server is available locally
-    -- workspace_config contains the workspace config. For all attributes present
-    -- in it, see WorkspaceConfig in ./lua/remote-nvim/config.lua.
-    -- See examples of callback in https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes
-    callback = nil,
-    -- [Subject to change]: These values may be subject to change, so there
-    -- might be a breaking change. Right now, it uses the [plenary.nvim#win_float.percentage_range_window](https://github.com/nvim-lua/plenary.nvim/blob/267282a9ce242bbb0c5dc31445b6d353bed978bb/lua/plenary/window/float.lua#L138C25-L138C25)
-    default_client_config = {
-      col_percent = 0.9,
-      row_percent = 0.9,
-      win_opts = {
-        winblend = 0,
-      },
-      border_opts = {
-        topleft = "╭",
-        topright = "╮",
-        top = "─",
-        left = "│",
-        right = "│",
-        botleft = "╰",
-        botright = "╯",
-        bot = "─",
-      },
-    },
+    -- You can supply your own callback that should be called to create the local client. This is the default implementation.
+    -- Two arguments are passed to the callback:
+    -- port: Local port at which the remote server is available
+    -- workspace_config: Workspace configuration for the host. For all the properties available, see https://github.com/amitds1997/remote-nvim.nvim/blob/main/lua/remote-nvim/providers/provider.lua#L4
+    -- A sample implementation using WezTerm tab is at: https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes
+    callback = function(port, _)
+      require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), function(exit_code)
+        if exit_code ~= 0 then
+          vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
+        end
+      end)
+    end,
+  },
+
+  -- Plugin log related configuration [PREFER NOT TO CHANGE THIS]
+  log = {
+    -- Where is the log file
+    filepath = utils.path_join(utils.is_windows, vim.fn.stdpath("state"), ("%s.log"):format(constants.PLUGIN_NAME)),
+    -- Level of logging
+    level = "info",
+    -- At what size, should we truncate the logs
+    max_size = 1024 * 1024 * 2, -- 2MB
   },
 }
 ```
 
-On remote, the installation happens inside the `.remote-nvim` folder in the user's
-home directory.
+</details>
 
-## 📌 Usage
+> [!NOTE]
+> Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
+> parts of the plugin might be broken.
 
-Following user commands are available.
+## 🤖 Available commands
 
-### RemoteStart
-
-Used to setup/start session on a remote host. It can optionally take an input as
-one of your earlier saved host configuration to make start faster. If ran without
-an option, it launched a Telescope extension that guides you towards creating a
-remote session.
-
-### RemoteStop
-
-The plugin allows you to stop the remote server that was launched on a host.
-Takes an argument from any of the running sessions.
-
-### RemoteLog
-
-See the plugin log file to see what the plugin is doing. It does not log much,
-until you drop to the debug level. To start logging in debug level, start your
-Neovim instance as `REMOTE_NVIM_LOG_LEVEL="debug" nvim`
-
-### RemoteSessionInfo
-
-Provides you a view of all your currently running sessions. In case, you decided
-not to start a client, the connection string that can be used to connect to any
-of the running remote servers also shows up on this info box.
-
-### RemoteCleanup
-
-If you decide that you want to clean up remote neovim from a host or are in a
-situation where you need to start afresh, you can use this command. It takes as
-an argument input the remote host that you want to cleanup. Once you cleanup, it
-deletes the local saved configuration for the host, so next time, you can start
-afresh.
-
-### RemoteConfigDel
-
-Sometimes, you are working on a remote instance and that remote instance is no
-longer there. And you have this one config just left in there that keeps nagging
-you. This takes any number of arguments where each argument is a saved workspace
-configuration that you want to delete from your local. Think of this as your
-Remote Neovim sweeping broom.
+| Command            | What does it do?                                                                                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `:RemoteStart`     | Connect to a remote instance. If remote neovim server is already running, allows users to launch local client?                                              |
+| `:RemoteStop`      | Stop running Neovim server and close session                                                                                                                |
+| `:RemoteInfo`      | Get information about any sessions created in the current Neovim run. Opens up the Progress Viewer.                                                         |
+| `:RemoteCleanup`   | Delete workspace and/or entire remote neovim setup from the remote instance. Also, cleanups the configuration for the remote resource.                      |
+| `:RemoteConfigDel` | Delete record of remote instance that no longer exists from saved session records. Prefer `:RemoteCleanup` if you can still connect to the remote instance. |
 
 ## ⚠️ Caveats
 
-- Just because how Neovim server and client currently work, it is not possible
-  to deterministically close a TUI so in case you do a `:q`, the server and the
-  client both die. You can read the [discussion here](https://github.com/neovim/neovim/issues/23093)
-  to figure out your own way forward to just close a TUI or else just relaunch the
-  session using `:RemoteStart`. It should be fast, after setup, if you are on a
-  good network.
-- Launched remote server is bound to your Neovim instance. If you close your local
-  instance, the remote server will also get closed.
-- Sometimes, our Neovim configurations are buggy and when your client launches,
-  you would see a fresh, clean Neovim installation (assuming you copied your
-  Neovim config over). This is no fault with the plugin. Run `:messages` to see
-  what went wrong. Usually, `git` or some other necessary binary might be unavailable
-  on the remote in some docker systems.
+- Launched neovim server is bound to the Neovim instance from which it is launched. If you close the instance,
+  the remote Neovim server will also get closed. This has been done to ensure proper cleanup of launched sessions
+  and prevent orphan Neovim servers.
+- The current implementation launches a headless server on the remote machine and then launches a TUI to connect
+  to it. This means that if you quit the TUI using regular operations, the server also gets closed. If you just want
+  to close the TUI, that is currently not possible. You can read more in [this Neovim
+  discussion](https://github.com/neovim/neovim/issues/23093).
+- Neovim versions `< v0.9.2` are incompatible with versions `> v0.9.2` due to a breaking UI change introduced in
+  `v0.9.2`. For more information, read the [release notes for
+  v0.9.2](https://github.com/neovim/neovim/releases/tag/v0.9.2).
 
-## Credits
+## 🌟 Credits
 
-I have learnt a lot from all the different plugins; and want to extend a thank
-you to all the plugin authors. You all are awesome ❤️
-
-The package structure, CIs have been borrowed with some modifications from the
-[lazy.nvim](https://github.com/folke/lazy.nvim/) plugin.
+**_A big thank you to the amazing Neovim community for Neovim and the plugins! ❤️_**
