@@ -359,16 +359,15 @@ describe("Provider", function()
   end)
 
   it("should stop running remote server if needed", function()
-    local system_stub = stub(vim.fn, "system")
+    local system_stub = stub(vim, "system")
     provider._setup_running = true
     provider._remote_server_process_id = 2100
     provider._local_free_port = "52212"
 
     provider:stop_neovim()
-    assert.equals(false, provider._setup_running)
-    assert.equals(nil, provider._remote_server_process_id)
-    assert.equals(nil, provider._local_free_port)
-    assert.stub(system_stub).was.called()
+    assert
+      .stub(system_stub).was
+      .called_with({ "nvim", "--server", "localhost:52212", "--remote-send", ":qall!<CR>" }, { text = true }, match.is_function())
   end)
 
   describe("should determine correctly if remote server is running", function()
