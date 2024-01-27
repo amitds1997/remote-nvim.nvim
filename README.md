@@ -188,26 +188,54 @@ Below is the default configuration. Please read the associated comments before c
 
 <details>
 <summary><b>RemoteStart</b></summary>
+  Remote with password:
+  
+  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/6cd2f3fc-3dcc-482f-a6ae-373084d36ca5
+
+  Remote with SSH config file:
+  
+  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0c-6a7c-4304-a68d-3b75256afea6
+
 </details>
 
 <details>
 <summary><b>RemoteStop</b></summary>
+  
+  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/b2603583-c80a-41e5-b94e-9e80c56d557c
+  
 </details>
 
 <details>
 <summary><b>RemoteInfo</b></summary>
+  
+  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ceb24934-a132-4d0c-8172-7ba58679c467
+  
 </details>
+
+
+
+
 
 <details>
 <summary><b>RemoteCleanup</b></summary>
+  
+  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896dda5-b73f-47e4-8e56-72f661e1a623
+  
 </details>
+
 
 <details>
 <summary><b>RemoteConfigDel</b></summary>
+  
+  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15
+  
+  
 </details>
+
 
 <details>
 <summary><b>RemoteLog</b></summary>
+  
 </details>
 
 ## ⚠️ Caveats
