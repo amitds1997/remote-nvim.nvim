@@ -173,6 +173,58 @@ Below is the default configuration. Please read the associated comments before c
 > Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
 > parts of the plugin might be broken.
 
+## 🎥 Demos
+
+<details>
+<summary><b>How to connect to saved host using SSH config file</b></summary>
+
+[Remote with SSH
+config file](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/6cd2f3fc-3dcc-482f-a6ae-373084d36ca5)
+
+</details>
+
+<details>
+<summary><b>How to connect to SSH server with password based auth</b></summary>
+
+[Remote with
+password](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0c-6a7c-4304-a68d-3b75256afea6)
+
+</details>
+
+<details>
+<summary><b>Stop running Neovim server</b></summary>
+
+[Stop running remote Neovim
+session](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/b2603583-c80a-41e5-b94e-9e80c56d557c)
+
+Alternatively, just exit from the Neovim instance using which you launched the server.
+
+</details>
+
+<details>
+<summary><b>Get information about any Remote Neovim launched session</b></summary>
+
+[Get information about Remote
+Neovim session](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ceb24934-a132-4d0c-8172-7ba58679c467)
+
+</details>
+
+<details>
+<summary><b>Delete this plugin's created resources from the remote machine</b></summary>
+
+[Delete all resources created by
+this plugin](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896dda5-b73f-47e4-8e56-72f661e1a623)
+
+</details>
+
+<details>
+<summary><b>Delete saved configuration about a remote host</b></summary>
+
+[Delete saved remote
+configuration](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15)
+
+</details>
+
 ## 🤖 Available commands
 
 | Command            | What does it do?                                                                                                                                            |
@@ -184,59 +236,7 @@ Below is the default configuration. Please read the associated comments before c
 | `:RemoteConfigDel` | Delete record of remote instance that no longer exists from saved session records. Prefer `:RemoteCleanup` if you can still connect to the remote instance. |
 | `:RemoteLog`       | Open the plugin log file. This is most useful when debugging. `:RemoteInfo` should surface all information needed. If not, open an issue.                   |
 
-### Demos for each command
-
-<details>
-<summary><b>RemoteStart</b></summary>
-  Remote with password:
-  
-  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/6cd2f3fc-3dcc-482f-a6ae-373084d36ca5
-
-  Remote with SSH config file:
-  
-  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0c-6a7c-4304-a68d-3b75256afea6
-
-</details>
-
-<details>
-<summary><b>RemoteStop</b></summary>
-  
-  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/b2603583-c80a-41e5-b94e-9e80c56d557c
-  
-</details>
-
-<details>
-<summary><b>RemoteInfo</b></summary>
-  
-  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ceb24934-a132-4d0c-8172-7ba58679c467
-  
-</details>
-
-
-
-
-
-<details>
-<summary><b>RemoteCleanup</b></summary>
-  
-  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896dda5-b73f-47e4-8e56-72f661e1a623
-  
-</details>
-
-
-<details>
-<summary><b>RemoteConfigDel</b></summary>
-  
-  https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15
-  
-  
-</details>
-
-
-<details>
-<summary><b>RemoteLog</b></summary>
-  
-</details>
+For demos about the commands, see the [demos](#-demos) section.
 
 ## ⚠️ Caveats
 
