@@ -175,4 +175,29 @@ function M.neovim_version()
   return neovim_version_str
 end
 
+---Substitute substring in one string with another
+---@param str string String in which substituion should happen
+---@param sub_str string String to be substituted
+---@param repl string? Replacement string
+---@return string res_str String to return
+function M.plain_substitute(str, sub_str, repl)
+  local start_idx, end_idx = str:find(sub_str, nil, true)
+  if start_idx == nil then
+    return str
+  end
+
+  local res_str = ""
+  repl = repl or ""
+  if start_idx and start_idx > 1 then
+    res_str = res_str .. str:sub(1, start_idx - 1)
+  end
+
+  res_str = res_str .. repl
+  if end_idx and end_idx < #str then
+    res_str = res_str .. str:sub(end_idx + 1)
+  end
+
+  return res_str
+end
+
 return M

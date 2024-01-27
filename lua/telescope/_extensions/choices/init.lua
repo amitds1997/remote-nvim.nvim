@@ -30,6 +30,12 @@ end
 
 return function()
   local choices = gen_choices()
+  if not require("remote-nvim.providers.devpod.devpod_helper").get_devcontainer_root() then
+    choices = vim.tbl_filter(function(entry)
+      return entry.value ~= "devpod-launch-devcontainer"
+    end, choices)
+  end
+
   if #vim.tbl_keys(require("remote-nvim").session_provider:get_saved_host_configs()) == 0 then
     choices = vim.tbl_filter(function(entry)
       return entry.value ~= "remote-nvim-known-workspace"
