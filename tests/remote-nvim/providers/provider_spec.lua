@@ -13,42 +13,95 @@ describe("Provider", function()
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
+<<<<<<< HEAD
 
     provider = Provider({
       host = provider_host,
       progress_view = mock(require("remote-nvim.ui.progressview"), true),
     })
     stub(vim, "notify")
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+    provider = Provider(provider_host)
+    notifier_stub = stub(provider.notifier, "notify")
+=======
+
+    provider = Provider({
+      host = provider_host,
+      log_viewer = mock(require("remote-nvim.ui.progressview"), true),
+    })
+    notifier_stub = stub(vim, "notify")
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
   end)
 
   describe("should handle array-type connections options", function()
     it("when it is not empty", function()
+<<<<<<< HEAD
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011", "-t", "-x" },
       })
       assert.equals("-p 3011 -t -x", provider.conn_opts)
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+      provider = Provider(provider_host, { "-p", "3011", "-t", "-x" })
+      assert.equals(provider.conn_opts, "-p 3011 -t -x")
+=======
+      provider = Provider({
+        host = provider_host,
+        conn_opts = { "-p", "3011", "-t", "-x" },
+      })
+      assert.equals(provider.conn_opts, "-p 3011 -t -x")
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
     end)
 
     it("when it is an empty array", function()
+<<<<<<< HEAD
       provider = Provider({
         host = provider_host,
         conn_opts = {},
       })
       assert.equals("", provider.conn_opts)
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+      provider = Provider(provider_host, {})
+      assert.equals(provider.conn_opts, "")
+=======
+      provider = Provider({
+        host = provider_host,
+        conn_opts = {},
+      })
+      assert.equals(provider.conn_opts, "")
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
     end)
   end)
 
   it("should handle missing connection options correctly", function()
+<<<<<<< HEAD
     provider = Provider({
       host = provider_host,
     })
     assert.equals("", provider.conn_opts)
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+    provider = Provider(provider_host)
+    assert.equals(provider.conn_opts, "")
+=======
+    provider = Provider({
+      host = provider_host,
+    })
+    assert.equals(provider.conn_opts, "")
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
 
+<<<<<<< HEAD
     provider = Provider({ host = provider_host, conn_opts = nil })
     assert.equals("", provider.conn_opts)
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+    provider = Provider(provider_host, nil)
+    assert.equals(provider.conn_opts, "")
+=======
+    provider = Provider({ host = provider_host, conn_opts = nil })
+    assert.equals(provider.conn_opts, "")
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
   end)
 
+<<<<<<< HEAD
   it("should correctly set unique host ID when passed manually as an option", function()
     local unique_host_id = "custom-host-id"
     provider = Provider({
@@ -58,16 +111,30 @@ describe("Provider", function()
     assert.equals(unique_host_id, provider.unique_host_id)
   end)
 
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+  it("should handle string connection options correctly", function()
+    provider = Provider(provider_host, "-p 3011 -t -x")
+    assert.equals(provider.conn_opts, "-p 3011 -t -x")
+  end)
+
+=======
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
   describe("should handle setting workspace variables", function()
     local detect_remote_os_stub, get_remote_neovim_version_preference_stub
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
     before_each(function()
+<<<<<<< HEAD
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011" },
         progress_view = mock(require("remote-nvim.ui.progressview"), true),
       })
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+      provider = Provider(provider_host, { "-p", "3011" })
+=======
+      provider = Provider({ host = provider_host, conn_opts = { "-p", "3011" } })
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
       detect_remote_os_stub = stub(provider, "_get_remote_os")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
 
@@ -264,8 +331,16 @@ describe("Provider", function()
       local co = coroutine.create(function()
         provider:get_selection({}, {})
       end)
+<<<<<<< HEAD
       local _, ret_or_err = coroutine.resume(co)
       assert.equals(nil, ret_or_err)
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+      coroutine.resume(co)
+      assert.stub(notifier_stub).was.called_with(provider.notifier, "No selection made", vim.log.levels.WARN, true)
+=======
+      coroutine.resume(co)
+      assert.stub(notifier_stub).was.called_with("No selection made", vim.log.levels.WARN)
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
     end)
 
     it("when choice selection is done", function()
@@ -480,8 +555,22 @@ describe("Provider", function()
       provider._setup_running = true
 
       provider:_setup_remote()
+<<<<<<< HEAD
       local run_command_stub = stub(provider, "run_command")
       assert.stub(run_command_stub).was.not_called()
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+      assert
+        .stub(notify_once_stub).was
+        .called_with(
+          provider.notifier,
+          "Another instance of setup is already running. Wait for it to complete",
+          vim.log.levels.WARN
+        )
+=======
+      assert
+        .stub(notifier_stub).was
+        .called_with("Another instance of setup is already running. Wait for it to complete", vim.log.levels.WARN)
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
     end)
 
     describe("and runs correct commands", function()
@@ -798,7 +887,18 @@ describe("Provider", function()
       local defined_callback_stub = stub(remote_nvim.config.local_client_config, "callback")
       provider:_setup_workspace_variables()
       provider:_launch_local_neovim_client()
+<<<<<<< HEAD
       assert.stub(defined_callback_stub).was.not_called()
+||||||| parent of 77b1e39 (feat: add support for docker and devcontainers)
+      assert
+        .stub(notifier_stub).was
+        .called_with(provider.notifier, "Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO, true)
+=======
+
+      assert
+        .stub(notifier_stub).was
+        .called_with("Run :RemoteSessionInfo to find local client command", vim.log.levels.INFO)
+>>>>>>> 77b1e39 (feat: add support for docker and devcontainers)
     end)
 
     it("when user wants to launch client", function()

@@ -17,10 +17,13 @@ function SessionProvider:get_or_initialize_session(opts)
   local provider
 
   opts.conn_opts = opts.conn_opts or {}
-  opts.progress_view = require("remote-nvim.ui.progressview")()
+  opts.devpod_opts = opts.devpod_opts or {}
+  opts.log_viewer = require("remote-nvim.ui.progressview")()
 
   if opts.provider_type == "ssh" then
     provider = require("remote-nvim.providers.ssh.ssh_provider")(opts)
+  elseif opts.provider_type == "devpod" then
+    provider = require("remote-nvim.providers.devpod.devpod_helper").get_devpod_provider(opts)
   else
     error("Unknown provider type")
   end

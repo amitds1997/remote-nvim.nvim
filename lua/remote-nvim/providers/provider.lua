@@ -62,6 +62,7 @@ local utils = require("remote-nvim.utils")
 ---@field progress_view remote-nvim.ui.ProgressView?
 ---@field unique_host_id string? Unique host ID
 ---@field provider_type provider_type Provider type
+---@field devpod_opts remote-nvim.providers.devpod.DevpodOpts? Devpod options
 
 ---Create new provider instance
 ---@param opts remote-nvim.providers.ProviderOpts Provider options
@@ -85,7 +86,8 @@ function Provider:init(opts)
   self._neovim_launch_number = 1
 
   -- Remote configuration parameters
-  self._remote_working_dir = nil
+  opts.devpod_opts = opts.devpod_opts or {}
+  self._remote_working_dir = opts.devpod_opts.working_dir
 
   ---@diagnostic disable-next-line: missing-fields
   self._host_config = {}

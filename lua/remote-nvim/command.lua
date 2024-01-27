@@ -1,3 +1,4 @@
+local contains = require("remote-nvim.utils").contains
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
