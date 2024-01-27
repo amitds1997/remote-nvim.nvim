@@ -1,4 +1,4 @@
-*remote-nvim.txt*       For Neovim >= 0.9.0       Last change: 2024 January 26
+*remote-nvim.txt*       For Neovim >= 0.9.0       Last change: 2024 January 27
 
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
@@ -223,7 +223,26 @@ AVAILABLE COMMANDS                            *remote-nvim-available-commands*
   :RemoteConfigDel   Delete record of remote instance that no longer exists from
                      saved session records. Prefer :RemoteCleanup if you can still
                      connect to the remote instance.
+
+  :RemoteLog         Open the plugin log file. This is most useful when debugging.
+                     :RemoteInfo should surface all information needed. If not, open
+                     an issue.
   ----------------------------------------------------------------------------------
+
+DEMOS FOR EACH COMMAND ~
+
+RemoteStart ~
+
+RemoteStop ~
+
+RemoteInfo ~
+
+RemoteCleanup ~
+
+RemoteConfigDel ~
+
+RemoteLog ~
+
 
 CAVEATS                                                  *remote-nvim-caveats*
 
