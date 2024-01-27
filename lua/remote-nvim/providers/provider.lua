@@ -27,8 +27,8 @@
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private logger plenary.logger Logger instance
 ---@field private _setup_running boolean Is the setup running?
----@field private _neovim_launch_number number Active run number
----@field private _cleanup_run_number number Active run number
+---@field protected _neovim_launch_number number Active run number
+---@field protected _cleanup_run_number number Active run number
 ---@field private _local_free_port string? Free port available on local machine
 ---@field private _local_neovim_install_script_path string Local path where Neovim installation script is stored
 ---@field private _remote_neovim_home string Directory where all remote neovim data would be stored on host
@@ -68,6 +68,7 @@ local utils = require("remote-nvim.utils")
 ---@param opts remote-nvim.providers.ProviderOpts Provider options
 function Provider:init(opts)
   assert(opts.host ~= nil, "Host must be provided")
+  assert(opts.progress_view ~= nil, "Progress viewer cannot be nil")
   self.host = opts.host
 
   opts.conn_opts = opts.conn_opts or {}
@@ -209,6 +210,7 @@ function Provider:_add_session_info()
   end
 
   add_config_info("Plugin log path ", remote_nvim.config.log.filepath)
+  add_config_info("Unique host ID", self.unique_host_id)
 
   add_local_info("OS             ", utils.os_name())
   add_local_info("Neovim version ", utils.neovim_version())
@@ -230,7 +232,7 @@ function Provider:_reset()
   self._local_free_port = nil
 end
 
----@private
+---@protected
 ---@title string Title for the run
 function Provider:start_progress_view_run(title)
   self.progress_viewer:start_run(title)
@@ -316,6 +318,9 @@ function Provider:get_selection(choices, selection_opts)
 
   -- If the choice fails, we cannot move further so we stop the coroutine executing
   if choice == nil then
+    if self._setup_running then
+      self._setup_running = false
+    end
     self.progress_viewer:add_progress_node({
       type = "stdout_node",
       status = "failed",
@@ -725,11 +730,15 @@ function Provider:_launch_local_neovim_client()
 end
 
 ---@protected
-function Provider:_launch_neovim()
+---@param start_run boolean? Should a new run be started
+function Provider:_launch_neovim(start_run)
+  start_run = start_run or false
   if not self:is_remote_server_running() then
     self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
-    self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
-    self._neovim_launch_number = self._neovim_launch_number + 1
+    if start_run then
+      self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
+      self._neovim_launch_number = self._neovim_launch_number + 1
+    end
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
@@ -757,6 +766,9 @@ function Provider:stop_neovim()
       { text = true },
       function(res)
         if res.code == 0 then
+          vim.schedule(function()
+            self:hide_progress_view_window()
+          end)
           self:_reset()
         end
       end
@@ -764,55 +776,60 @@ function Provider:stop_neovim()
   end
 end
 
+---@protected
+function Provider:_clean_up_remote_host()
+  self:start_progress_view_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
+  self._cleanup_run_number = self._cleanup_run_number + 1
+  self:_setup_workspace_variables()
+  local deletion_choices = {
+    "Delete neovim workspace (Choose if multiple people use the same user account)",
+    "Delete remote neovim from remote host (Nuke it!)",
+  }
+
+  local cleanup_choice = self:get_selection(deletion_choices, {
+    prompt = "Choose what should be cleaned up?",
+  })
+
+  -- Stop neovim first to avoid interference from running plugins and services
+  self:stop_neovim()
+
+  local exit_cb = function(node)
+    return function(exit_code)
+      self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
+      if exit_code == 0 then
+        self:hide_progress_view_window()
+      else
+        self:show_progress_view_window()
+      end
+      self:_reset()
+    end
+  end
+
+  if cleanup_choice == deletion_choices[1] then
+    self:run_command(
+      ("rm -rf %s"):format(self._remote_workspace_id_path),
+      ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path),
+      nil,
+      exit_cb
+    )
+  elseif cleanup_choice == deletion_choices[2] then
+    self:run_command(
+      ("rm -rf %s"):format(self._remote_neovim_home),
+      "Delete remote neovim created directories from remote machine",
+      nil,
+      exit_cb
+    )
+  end
+  vim.notify(("Cleanup on remote host '%s' completed"):format(self.host), vim.log.levels.INFO)
+
+  self._config_provider:remove_workspace_config(self.unique_host_id)
+  self:hide_progress_view_window()
+end
+
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
-    self:start_progress_view_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
-    self._cleanup_run_number = self._cleanup_run_number + 1
-    self:_setup_workspace_variables()
-    local deletion_choices = {
-      "Delete neovim workspace (Choose if multiple people use the same user account)",
-      "Delete remote neovim from remote host (Nuke it!)",
-    }
-
-    local cleanup_choice = self:get_selection(deletion_choices, {
-      prompt = "Choose what should be cleaned up?",
-    })
-
-    -- Stop neovim first to avoid interference from running plugins and services
-    self:stop_neovim()
-
-    local exit_cb = function(node)
-      return function(exit_code)
-        self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
-        if exit_code == 0 then
-          self:hide_progress_view_window()
-        else
-          self:show_progress_view_window()
-        end
-        self:_reset()
-      end
-    end
-
-    if cleanup_choice == deletion_choices[1] then
-      self:run_command(
-        ("rm -rf %s"):format(self._remote_workspace_id_path),
-        ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path),
-        nil,
-        exit_cb
-      )
-    elseif cleanup_choice == deletion_choices[2] then
-      self:run_command(
-        ("rm -rf %s"):format(self._remote_neovim_home),
-        "Delete remote neovim created directories from remote machine",
-        nil,
-        exit_cb
-      )
-    end
-    vim.notify(("Cleanup on remote host '%s' completed"):format(self.host), vim.log.levels.INFO)
-
-    self._config_provider:remove_workspace_config(self.unique_host_id)
-    self:hide_progress_view_window()
+    self:_clean_up_remote_host()
   end, ("Cleaning up '%s' host"):format(self.host))
 end
 

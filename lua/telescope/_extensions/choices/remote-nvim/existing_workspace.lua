@@ -73,7 +73,7 @@ local function remote_nvim_existing_workspace_action(opts)
           remote_nvim.session_provider
             :get_or_initialize_session({
               host = workspace_data.host,
-              provider_type = "ssh", -- Before saving configuration, we convert all providers to SSH provider connections so if it is existing, the current configuration stored reflects the SSH configuration
+              provider_type = workspace_data.provider,
               unique_host_id = host_identifier,
               conn_opts = { workspace_data.connection_options },
             })

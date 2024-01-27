@@ -1,11 +1,10 @@
-local contains = require("remote-nvim.utils").contains
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
 local M = {}
 
 function M.RemoteStart(opts)
-  local host_identifier = opts.args
+  local host_identifier = vim.trim(opts.args)
   if host_identifier == "" then
     require("telescope").extensions["remote-nvim"].connect()
   else
@@ -20,6 +19,7 @@ function M.RemoteStart(opts)
           host = workspace_config.host,
           provider_type = workspace_config.provider,
           conn_opts = { workspace_config.connection_options },
+          unique_host_id = host_identifier,
         })
         :launch_neovim()
     end
@@ -68,6 +68,7 @@ function M.RemoteCleanup(opts)
           host = workspace_config.host,
           provider_type = workspace_config.provider,
           conn_opts = { workspace_config.connection_options },
+          unique_host_id = host_id,
         })
         :clean_up_remote_host()
     end
@@ -170,7 +171,6 @@ vim.api.nvim_create_user_command("RemoteStop", function(opts)
       vim.notify(("No active remote session to '%s' found"):format(host_ids[1]), vim.log.levels.WARN)
     else
       session:stop_neovim()
-      session:hide_progress_view_window()
     end
   elseif #host_ids > 1 then
     vim.notify("Please pass only one host at a time", vim.log.levels.WARN)
@@ -186,7 +186,6 @@ vim.api.nvim_create_user_command("RemoteStop", function(opts)
         vim.notify("No session selected")
       else
         sessions[choice]:stop_neovim()
-        sessions[choice]:hide_progress_view_window()
       end
     end)
   end

@@ -20,7 +20,7 @@ function M.get_devpod_provider(opts)
   if opts.devpod_opts.provider then
     -- If the provider does not exist, let's create it
     local provider_output = vim.json.decode(vim.fn.system(("%s provider list --output json"):format(devpod_binary)))
-    if not require("remote-nvim.utils").contains(vim.tbl_keys(provider_output), opts.devpod_opts.provider) then
+    if not vim.tbl_contains(vim.tbl_keys(provider_output), opts.devpod_opts.provider) then
       vim.fn.system(("%s provider add %s"):format(devpod_binary, opts.devpod_opts.provider))
     end
 
@@ -30,6 +30,7 @@ function M.get_devpod_provider(opts)
   if opts.devpod_opts.devpod_id then
     local id = string.lower(opts.devpod_opts.devpod_id)
     id = id:gsub("[^a-z0-9]+", "-"):sub(1, 48)
+    opts.unique_host_id = id
     table.insert(opts.conn_opts, ("--id %s"):format(id))
   end
 
