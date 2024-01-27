@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.2.0](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.3...v0.2.0) (2024-01-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* improve version detection and bump minimum neovim version to 0.9.0
+
+### Features
+
+* add drop down when there are multiple active session with :RemoteStop ([2d715c1](https://github.com/amitds1997/remote-nvim.nvim/commit/2d715c1a960bf3a72844e4ebaac60fc467030955))
+* add highlight groups and show correct pane when client is not launched ([3ae2ffb](https://github.com/amitds1997/remote-nvim.nvim/commit/3ae2ffb8fb3854b2c389d3bb9318588ef77264a6))
+* add host and connection details to session info ([25aa5d9](https://github.com/amitds1997/remote-nvim.nvim/commit/25aa5d9e595760be851de77e3714545f19e3d78b))
+* add keymap help window ([446d16a](https://github.com/amitds1997/remote-nvim.nvim/commit/446d16a06757585ff566a11b3c38cde41d9fe3fd))
+* add session info pane ([bf2f93a](https://github.com/amitds1997/remote-nvim.nvim/commit/bf2f93a822f4bf713d3f47ad5e74307eae2ae987))
+* improve :RemoteStart behaviour ([245e6e7](https://github.com/amitds1997/remote-nvim.nvim/commit/245e6e7ed315c857a9f0aa110f17c9b12e821fe0))
+* improve manual ssh input and remote connection check ([b03a196](https://github.com/amitds1997/remote-nvim.nvim/commit/b03a196e236a3f28243a4dcdc267a32f3f5c124c))
+* improve version detection and bump minimum neovim version to 0.9.0 ([c4c3c44](https://github.com/amitds1997/remote-nvim.nvim/commit/c4c3c44b666abf5e1195483a2c3a09f86f5311ba))
+* set correct defaults for progressview window ([f87e418](https://github.com/amitds1997/remote-nvim.nvim/commit/f87e418c0f96eec5ee309ac5e24d9e299dac49ef))
+* switch to table opts and add logviewer ([2fb2707](https://github.com/amitds1997/remote-nvim.nvim/commit/2fb2707e6677c786cec554c63248cad97d6fd54f))
+
+
+### Bug Fixes
+
+* better tracebacks and correct schedule wrapping ([d3093cd](https://github.com/amitds1997/remote-nvim.nvim/commit/d3093cd30d5b372d577faf81247b7498bdcabd67))
+* correct color coding when we cleanup remote ([ef4bad6](https://github.com/amitds1997/remote-nvim.nvim/commit/ef4bad6d774480ae9af998fcdecaafd2312edb2c))
+* correct neovim version checks ([690a835](https://github.com/amitds1997/remote-nvim.nvim/commit/690a835cc247be8dc4c9b6d23b3aa386047109b4))
+* correctly close remote session even if changes are pending ([330f90f](https://github.com/amitds1997/remote-nvim.nvim/commit/330f90f88c223206fb0af4e1979fa4b6a96aaef7))
+* format markdown files and add pre-commit selene hook ([#72](https://github.com/amitds1997/remote-nvim.nvim/issues/72)) ([0a7bd8f](https://github.com/amitds1997/remote-nvim.nvim/commit/0a7bd8ff05834899961d165654b6556f61a35129))
+* multiple popups do not work together and write detailed traceback ([271a77c](https://github.com/amitds1997/remote-nvim.nvim/commit/271a77cbd86a121a1a53cf3f5bfe2d4088fba261))
+* squash recursive .remote-nvim bug ([39df787](https://github.com/amitds1997/remote-nvim.nvim/commit/39df787f1f85eb61f9ac309e685af99b3b5d5b18))
+* **telescope:** correct finder name in the preview window for existing workspaces ([75475bf](https://github.com/amitds1997/remote-nvim.nvim/commit/75475bff57b20a9b8ee999828d8093a949b6feb8))
+* use dynamic uv definition to handle deprecated loop ([14d6e07](https://github.com/amitds1997/remote-nvim.nvim/commit/14d6e0765b09cd028dbdd5f513de68b52e7b367a))
+
 ## [0.1.3](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.2...v0.1.3) (2023-11-02)
 
 
