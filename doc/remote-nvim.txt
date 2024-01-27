@@ -7,6 +7,7 @@ Table of Contents                              *remote-nvim-table-of-contents*
   - Features                                            |remote-nvim-features|
   - Requirements                                    |remote-nvim-requirements|
   - Installation                                    |remote-nvim-installation|
+  - Demos                                                  |remote-nvim-demos|
   - Available commands                        |remote-nvim-available-commands|
   - Caveats                                              |remote-nvim-caveats|
   - Credits                                              |remote-nvim-credits|
@@ -203,6 +204,42 @@ changing the value.
   [!NOTE] Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are
   available. If missing, parts of the plugin might be broken.
 
+DEMOS                                                      *remote-nvim-demos*
+
+How to connect to saved host using SSH config file ~
+
+Remote with SSH config file
+<https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/6cd2f3fc-3dcc-482f-a6ae-373084d36ca5>
+
+How to connect to SSH server with password based auth ~
+
+Remote with password
+<https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0c-6a7c-4304-a68d-3b75256afea6>
+
+Stop running Neovim server ~
+
+Stop running remote Neovim session
+<https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/b2603583-c80a-41e5-b94e-9e80c56d557c>
+
+Alternatively, just exit from the Neovim instance using which you launched the
+server.
+
+Get information about any Remote Neovim launched session ~
+
+Get information about Remote Neovim session
+<https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ceb24934-a132-4d0c-8172-7ba58679c467>
+
+Delete this plugin’s created resources from the remote machine ~
+
+Delete all resources created by this plugin
+<https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896dda5-b73f-47e4-8e56-72f661e1a623>
+
+Delete saved configuration about a remote host ~
+
+Delete saved remote configuration
+<https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15>
+
+
 AVAILABLE COMMANDS                            *remote-nvim-available-commands*
 
   ----------------------------------------------------------------------------------
@@ -228,42 +265,7 @@ AVAILABLE COMMANDS                            *remote-nvim-available-commands*
                      :RemoteInfo should surface all information needed. If not, open
                      an issue.
   ----------------------------------------------------------------------------------
-
-DEMOS FOR EACH COMMAND ~
-
-RemoteStart ~
-
-Remote with password:
-
-
-https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/6cd2f3fc-3dcc-482f-a6ae-373084d36ca5
-
-Remote with SSH config file:
-
-
-https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0c-6a7c-4304-a68d-3b75256afea6
-
-RemoteStop ~
-
-
-https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/b2603583-c80a-41e5-b94e-9e80c56d557c
-
-RemoteInfo ~
-
-
-https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ceb24934-a132-4d0c-8172-7ba58679c467
-
-RemoteCleanup ~
-
-
-https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896dda5-b73f-47e4-8e56-72f661e1a623
-
-RemoteConfigDel ~
-
-
-https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15
-
-RemoteLog ~
+For demos about the commands, see the |remote-nvim-demos| section.
 
 
 CAVEATS                                                  *remote-nvim-caveats*
