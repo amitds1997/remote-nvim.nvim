@@ -11,9 +11,9 @@ communicated through [this GitHub discussion](https://github.com/amitds1997/remo
 
 | Remote mode                   | Current support                                                               |
 | ----------------------------- | ----------------------------------------------------------------------------- |
-| SSH (using password)          | ✅                                                                             |
-| SSH (using SSH key)           | ✅                                                                             |
-| SSH (using `ssh_config` file) | ✅                                                                             |
+| SSH (using password)          | _Fully supported_ ✅                                                           |
+| SSH (using SSH key)           | _Fully supported_ ✅                                                           |
+| SSH (using `ssh_config` file) | _Fully supported_ ✅                                                           |
 | Docker image                  | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
 | Docker container              | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
 | Devcontainer                  | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
@@ -194,6 +194,8 @@ password](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0
 <details>
 <summary><b>Stop running Neovim server</b></summary>
 
+This continues from the _How to connect to saved host using SSH config file_ demo above.
+
 [Stop running remote Neovim
 session](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/b2603583-c80a-41e5-b94e-9e80c56d557c)
 
@@ -212,6 +214,8 @@ Neovim session](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/c
 <details>
 <summary><b>Delete this plugin's created resources from the remote machine</b></summary>
 
+This deletes the resources created during the _How to connect to saved host using SSH config file_ demo above.
+
 [Delete all resources created by
 this plugin](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896dda5-b73f-47e4-8e56-72f661e1a623)
 
@@ -219,6 +223,9 @@ this plugin](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/3896
 
 <details>
 <summary><b>Delete saved configuration about a remote host</b></summary>
+
+We disabled connectivity to the host we connected to in _How to connect to SSH server with password based auth_
+to replicate this scenario.
 
 [Delete saved remote
 configuration](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15)
