@@ -263,7 +263,7 @@ For demos about the commands, see the [demos](#-demos) section.
   to it. This means that if you quit the TUI using regular operations, the server also gets closed. If you just want
   to close the TUI, that is currently not possible. You can read more in [this Neovim
   discussion](https://github.com/neovim/neovim/issues/23093).
-- Neovim versions `< v0.9.2` are incompatible with versions `> v0.9.2` due to a breaking UI change introduced in
+- Neovim versions `< v0.9.2` are incompatible with versions `>= v0.9.2` due to a breaking UI change introduced in
   `v0.9.2`. For more information, read the [release notes for
   v0.9.2](https://github.com/neovim/neovim/releases/tag/v0.9.2).
 
