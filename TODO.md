@@ -9,15 +9,3 @@
 ## Backlog
 
 1. Use `plenary.async`
-
-## To do
-
-- Update README.md
-  - Mention that when changing `progress_view` params, respect nui documentation
-  - Add info about ":RemoteInfo"
-  - Add how ":RemoteStart" behaves
-    - Explain the 4 choices that you have
-    - Explain local client launch behaviour when server is not running
-  - Add more information about callback
-  - Add deprecated to heading of ":RemoteSessionInfo"
-  - Add BREAKING_CHANGES discussion page link.
