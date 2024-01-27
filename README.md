@@ -226,7 +226,7 @@ configuration](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7
 </details>
 
 <details>
-<summary><b><i>Complete video going over an older version of the tutorial</i></b></summary>
+<summary><b><i>Youtube video going over an older version of the plugin</i></b></summary>
 
 [![Tutorial for remote-nvim.nvim plugin v0.0.1](http://img.youtube.com/vi/5qbDq1lGEx4/0.jpg)
 ](http://www.youtube.com/watch?v=5qbDq1lGEx4 "Remote development on Neovim using
