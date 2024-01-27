@@ -102,8 +102,13 @@ M.default_opts = {
 ---@param opts remote-nvim.config.PluginConfig User provided plugin configuration
 ---@return nil
 M.setup = function(opts)
-  if vim.fn.has("nvim-0.8.0") ~= 1 then
-    return vim.notify("remote-nvim.nvim requires Neovim >= 0.8.0", vim.log.levels.ERROR, { title = "remote-nvim.nvim" })
+  local min_neovim_version = require("remote-nvim.constants").MIN_NEOVIM_VERSION:sub(2)
+  if not vim.fn.has(("nvim-%s"):format(min_neovim_version)) then
+    vim.notify_once(
+      ("remote-nvim.nvim requires Neovim >= %s"):format(min_neovim_version),
+      vim.log.levels.ERROR,
+      { title = "remote-nvim.nvim" }
+    )
   end
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
   M.session_provider = require("remote-nvim.providers.session_provider")()

@@ -1,6 +1,6 @@
 local M = {}
 local constants = require("remote-nvim.constants")
-M.uv = vim.fn.has("0.10") and vim.uv or vim.loop
+M.uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
