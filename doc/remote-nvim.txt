@@ -239,7 +239,7 @@ Delete saved configuration about a remote host ~
 Delete saved remote configuration
 <https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a7f2a9b0-3d04-4c7b-9cea-4fa2a2efdf15>
 
-Complete video going over an older version of the tutorial ~
+Youtube video going over an older version of the plugin ~
 
 <http://www.youtube.com/watch?v=5qbDq1lGEx4>
 
