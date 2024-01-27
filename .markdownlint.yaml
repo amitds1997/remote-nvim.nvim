@@ -9,4 +9,4 @@ MD013:
   strict: true
   stern: true
 MD033:
-  allowed_elements: [details, summary, br, b]
+  allowed_elements: [details, summary, br, b, i]
