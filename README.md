@@ -182,6 +182,33 @@ Below is the default configuration. Please read the associated comments before c
 | `:RemoteInfo`      | Get information about any sessions created in the current Neovim run. Opens up the Progress Viewer.                                                         |
 | `:RemoteCleanup`   | Delete workspace and/or entire remote neovim setup from the remote instance. Also, cleanups the configuration for the remote resource.                      |
 | `:RemoteConfigDel` | Delete record of remote instance that no longer exists from saved session records. Prefer `:RemoteCleanup` if you can still connect to the remote instance. |
+| `:RemoteLog`       | Open the plugin log file. This is most useful when debugging. `:RemoteInfo` should surface all information needed. If not, open an issue.                   |
+
+### Demos for each command
+
+<details>
+<summary><b>RemoteStart</b></summary>
+</details>
+
+<details>
+<summary><b>RemoteStop</b></summary>
+</details>
+
+<details>
+<summary><b>RemoteInfo</b></summary>
+</details>
+
+<details>
+<summary><b>RemoteCleanup</b></summary>
+</details>
+
+<details>
+<summary><b>RemoteConfigDel</b></summary>
+</details>
+
+<details>
+<summary><b>RemoteLog</b></summary>
+</details>
 
 ## ⚠️ Caveats
 
