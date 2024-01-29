@@ -5,9 +5,9 @@ local devpod_binary = remote_nvim.config.devpod.binary
 local M = {}
 
 ---@class remote-nvim.providers.devpod.DevpodOpts
+---@field source string? What is the source for the current workspace
 ---@field working_dir string? Working directory to set when launching the client
 ---@field provider string? Name of the devpod provider
----@field devpod_id? string
 
 ---Get correctly initialized devpod provider instance
 ---@param opts remote-nvim.providers.ProviderOpts Options to pass to the DevpodProvider
@@ -16,6 +16,7 @@ function M.get_devpod_provider(opts)
   local DevpodProvider = require("remote-nvim.providers.devpod.devpod_provider")
   opts = opts or {}
   opts.conn_opts = opts.conn_opts or {}
+  opts.devpod_opts = opts.devpod_opts or {}
 
   if opts.devpod_opts.provider then
     -- If the provider does not exist, let's create it
@@ -27,11 +28,9 @@ function M.get_devpod_provider(opts)
     table.insert(opts.conn_opts, ("--provider=%s"):format(opts.devpod_opts.provider))
   end
 
-  if opts.devpod_opts.devpod_id then
-    local id = string.lower(opts.devpod_opts.devpod_id)
-    id = id:gsub("[^a-z0-9]+", "-"):sub(1, 48)
-    opts.unique_host_id = id
-    table.insert(opts.conn_opts, ("--id %s"):format(id))
+  if opts.unique_host_id then
+    local id = string.lower(opts.unique_host_id)
+    opts.unique_host_id = id:gsub("[^a-z0-9]+", "-"):sub(1, 48)
   end
 
   if remote_nvim.config.devpod.dotfiles then
@@ -41,6 +40,8 @@ function M.get_devpod_provider(opts)
   if remote_nvim.config.devpod.gpg_agent_forwarding then
     table.insert(opts.conn_opts, "--gpg-agent-forwarding")
   end
+
+  opts.devpod_opts.source = opts.devpod_opts.source or opts.host
 
   return DevpodProvider(opts)
 end

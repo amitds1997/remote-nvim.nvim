@@ -20,6 +20,7 @@
 - Handle scenario when:
   - User neovim configuration path does not exist
   - SSH configuration path does not exist
+  - Devpod SSH config file does not exist
 - Make things async
   - Convert coroutine logic into util
   - Replace vim.fn.system with async version
@@ -35,3 +36,6 @@
   - Time of creation
 - Fix when user clicks out of the box when selecting if to launch local client and then it is stuck
   with saying "Neovim server is already running". Check if this also occurs during earlier choices.
+- We would have to set up a command to auto close servers and workspaces.
+- Fix `devcontainer launch`, `image launch` and `container launch`. Check for relaunch after deleting it from outside.
+- Ask user if they want to stop the running container if it is setup as a devcontainer

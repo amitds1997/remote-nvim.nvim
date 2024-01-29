@@ -76,6 +76,9 @@ local function remote_nvim_existing_workspace_action(opts)
               provider_type = workspace_data.provider,
               unique_host_id = host_identifier,
               conn_opts = { workspace_data.connection_options },
+              devpod_opts = {
+                source = workspace_data.source,
+              },
             })
             :launch_neovim()
         end)

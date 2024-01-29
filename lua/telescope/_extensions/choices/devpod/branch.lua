@@ -19,9 +19,9 @@ local function branch_action(_)
     :get_or_initialize_session({
       host = ("%s@%s"):format(git_uri, branch),
       provider_type = "devpod",
+      unique_host_id = ("%s-%s"):format(uri_components[#uri_components], branch),
       devpod_opts = {
         provider = "docker",
-        devpod_id = ("%s-%s"):format(uri_components[#uri_components], branch),
       },
     })
     :launch_neovim()

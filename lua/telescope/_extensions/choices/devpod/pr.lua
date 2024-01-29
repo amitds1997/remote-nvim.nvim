@@ -19,9 +19,9 @@ local function pr_action(_)
     :get_or_initialize_session({
       host = ("%s@pull/%s/head"):format(git_uri, pr_number),
       provider_type = "devpod",
+      unique_host_id = ("%s-pr-%s"):format(uri_components[#uri_components], pr_number),
       devpod_opts = {
         provider = "docker",
-        devpod_id = ("%s-pr-%s"):format(uri_components[#uri_components], pr_number),
       },
     })
     :launch_neovim()

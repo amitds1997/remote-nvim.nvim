@@ -19,9 +19,9 @@ local function commit_action(_)
     :get_or_initialize_session({
       host = ("%s@sha256:%s"):format(git_uri, commit),
       provider_type = "devpod",
+      unique_host_id = ("%s-%s"):format(uri_components[#uri_components], commit),
       devpod_opts = {
         provider = "docker",
-        devpod_id = ("%s-%s"):format(uri_components[#uri_components], commit),
       },
     })
     :launch_neovim()

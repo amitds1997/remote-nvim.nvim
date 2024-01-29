@@ -12,11 +12,13 @@
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 ---@field offline_mode boolean? Should we operate in offline mode
+---@field source string? What is the source for the current configuration
 
 ---@class remote-nvim.providers.Provider: remote-nvim.Object
 ---@field host string Host name
 ---@field conn_opts string Connection options
 ---@field provider_type provider_type Type of provider
+---@field protected source string? What is the source for the provider
 ---@field protected unique_host_id string Unique host identifier
 ---@field protected executor remote-nvim.providers.Executor Executor instance
 ---@field protected local_executor remote-nvim.providers.Executor Local executor instance
@@ -89,6 +91,7 @@ function Provider:init(opts)
   -- Remote configuration parameters
   opts.devpod_opts = opts.devpod_opts or {}
   self._remote_working_dir = opts.devpod_opts.working_dir
+  self.source = opts.devpod_opts.source or nil
 
   ---@diagnostic disable-next-line: missing-fields
   self._host_config = {}
@@ -116,6 +119,7 @@ function Provider:_setup_workspace_variables()
       remote_neovim_home = nil,
       config_copy = nil,
       client_auto_start = nil,
+      source = self.source,
       workspace_id = utils.generate_random_string(10),
     })
   else
@@ -229,6 +233,7 @@ end
 function Provider:_reset()
   self._setup_running = false
   self._remote_server_process_id = nil
+  self._jobstop_called = false
   self._local_free_port = nil
 end
 
@@ -602,12 +607,14 @@ function Provider:_launch_remote_neovim_server()
         port_forward_opts,
         function(node)
           return function(exit_code)
-            self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
-            if exit_code == 0 then
+            local status = "failed"
+            if (exit_code == 0) or self._jobstop_called then
+              status = "success"
               self:hide_progress_view_window()
             else
               self:show_progress_view_window()
             end
+            self.progress_viewer:update_status(status, true, node)
             self:_reset()
           end
         end
@@ -759,25 +766,20 @@ function Provider:launch_neovim()
 end
 
 ---Stop running Neovim instance (if any)
-function Provider:stop_neovim()
+---@param cb function? Callback to execute on completion of command
+function Provider:stop_neovim(cb)
   if self:is_remote_server_running() then
-    vim.system(
-      { "nvim", "--server", ("localhost:%s"):format(self._local_free_port), "--remote-send", ":qall!<CR>" },
-      { text = true },
-      function(res)
-        if res.code == 0 then
-          vim.schedule(function()
-            self:hide_progress_view_window()
-          end)
-          self:_reset()
-        end
-      end
-    )
+    self._jobstop_called = true
+    vim.fn.jobstop(self._remote_server_process_id)
+  end
+  if cb ~= nil then
+    cb()
   end
 end
 
 ---@protected
-function Provider:_clean_up_remote_host()
+---@param cb function? Callback function to invoke
+function Provider:_clean_up_remote_host(cb)
   self:start_progress_view_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
   self._cleanup_run_number = self._cleanup_run_number + 1
   self:_setup_workspace_variables()
@@ -800,6 +802,9 @@ function Provider:_clean_up_remote_host()
         self:hide_progress_view_window()
       else
         self:show_progress_view_window()
+      end
+      if cb ~= nil then
+        cb(exit_code)
       end
       self:_reset()
     end
@@ -827,9 +832,10 @@ function Provider:_clean_up_remote_host()
 end
 
 ---Cleanup remote host
-function Provider:clean_up_remote_host()
+---@param cb function? Callback function to invoke
+function Provider:clean_up_remote_host(cb)
   self:_run_code_in_coroutine(function()
-    self:_clean_up_remote_host()
+    self:_clean_up_remote_host(cb)
   end, ("Cleaning up '%s' host"):format(self.host))
 end
 
@@ -837,13 +843,18 @@ end
 ---Handle job completion
 ---@param desc string Description of the job
 ---@param is_local_executor boolean? Is the command executing on the local executor
+---@param node NuiTree.Node? Node to update in progress view
+---@param set_status boolean? Should status be set by job completion
 ---@return integer exit_code Exit code of the job being handled
-function Provider:_handle_job_completion(desc, is_local_executor)
+function Provider:_handle_job_completion(desc, is_local_executor, node, set_status)
   is_local_executor = is_local_executor or false
   local executor = is_local_executor and self.local_executor or self.executor
   local exit_code = executor:last_job_status()
+  set_status = set_status or false
   if exit_code ~= 0 then
-    self.progress_viewer:update_status("failed", true)
+    if set_status then
+      self.progress_viewer:update_status("failed", true, node)
+    end
     if self._setup_running then
       self._setup_running = false
     end
@@ -855,10 +866,16 @@ function Provider:_handle_job_completion(desc, is_local_executor)
       )
       coroutine.yield(exit_code)
     else
+      self.logger.error(
+        debug.traceback(),
+        ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(self.executor:job_stdout(), "\n"))
+      )
       error(("'%s' failed"):format(desc))
     end
   else
-    self.progress_viewer:update_status("success")
+    if set_status then
+      self.progress_viewer:update_status("success", false, node)
+    end
   end
   return exit_code
 end
@@ -891,7 +908,7 @@ function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_execu
     exit_cb = exit_cb,
     stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
   })
-  self:_handle_job_completion(desc)
+  self:_handle_job_completion(desc, section_node, exit_cb == nil)
 end
 
 ---@private
@@ -941,7 +958,7 @@ function Provider:upload(local_paths, remote_path, desc)
   self.executor:upload(local_path, remote_path, {
     stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
   })
-  self:_handle_job_completion(desc)
+  self:_handle_job_completion(desc, section_node, true)
 end
 
 return Provider

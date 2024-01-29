@@ -14,9 +14,9 @@ local function repo_action(_)
     :get_or_initialize_session({
       host = git_uri,
       provider_type = "devpod",
+      unique_host_id = ("%s-remote"):format(uri_components[#uri_components]),
       devpod_opts = {
         provider = "docker",
-        devpod_id = ("%s-remote"):format(uri_components[#uri_components]),
       },
     })
     :launch_neovim()

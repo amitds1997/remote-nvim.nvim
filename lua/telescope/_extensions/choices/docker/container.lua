@@ -39,6 +39,7 @@ local function show_container_list(container_list)
           host = name,
           conn_opts = { "--source", source },
           provider_type = "devpod",
+          unique_host_id = choice.ID,
           devpod = {
             provider = "docker",
             working_dir = working_dir,

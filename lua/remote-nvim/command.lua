@@ -20,6 +20,9 @@ function M.RemoteStart(opts)
           provider_type = workspace_config.provider,
           conn_opts = { workspace_config.connection_options },
           unique_host_id = host_identifier,
+          devpod_opts = {
+            source = workspace_config.source,
+          },
         })
         :launch_neovim()
     end
@@ -69,6 +72,9 @@ function M.RemoteCleanup(opts)
           provider_type = workspace_config.provider,
           conn_opts = { workspace_config.connection_options },
           unique_host_id = host_id,
+          devpod_opts = {
+            source = workspace_config.source,
+          },
         })
         :clean_up_remote_host()
     end
