@@ -5,7 +5,6 @@ set -eo pipefail
 
 # Create a temporary directory to handle any remote nvim data location things
 temp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t 'neovim_download')
-cd "$temp_dir" || exit 1
 
 cleanup_function() {
 	# Function to delete the directory, change "/path/to/directory" to the actual directory path
@@ -184,5 +183,7 @@ if [[ -z $nvim_version || -z $remote_nvim_dir ]]; then
 	exit 1
 fi
 
-download_neovim_script="$(dirname "$0")/neovim_download.sh"
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+download_neovim_script="$SCRIPT_DIR/neovim_download.sh"
+cd "$temp_dir" || exit 1
 install_neovim
