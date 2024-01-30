@@ -71,25 +71,7 @@ function M.get_valid_neovim_versions()
     local version_name = version["tag_name"]
 
     if not vim.tbl_contains({ "stable", "nightly" }, version_name) then
-      local major, minor, patch = version_name:match("v(%d+)%.(%d+)%.(%d+)")
-      local target_major, target_minor, target_patch =
-        require("remote-nvim.constants").MIN_NEOVIM_VERSION:match("v(%d+)%.(%d+)%.(%d+)")
-
-      major = tonumber(major)
-      minor = tonumber(minor)
-      patch = tonumber(patch)
-
-      target_major = tonumber(target_major)
-      target_minor = tonumber(target_minor)
-      target_patch = tonumber(target_patch)
-
-      if
-        major > target_major
-        or (major == target_major and minor > target_minor)
-        or (major == target_major and minor == target_minor and patch >= target_patch)
-      then
-        table.insert(valid_versions, { tag = version_name, commit = version["target_commitish"] })
-      end
+      table.insert(valid_versions, { tag = version_name, commit = version["target_commitish"] })
     elseif version_name == "nightly" then
       nightly_commit_id = version["target_commitish"]
     elseif version_name == "stable" then
@@ -115,6 +97,57 @@ function M.find_free_port()
   end
 
   return tostring(result["port"])
+end
+
+function M.is_greater_neovim_version(version1, version2)
+  -- Order would be as follows
+  -- 1. Stable
+  -- 2. Any recognized Neovim version of format vX.Y.Z
+  -- 3. Nightly
+  local specialVersions = { ["nightly"] = 1, ["stable"] = 2 }
+
+  if specialVersions[version1] then
+    if specialVersions[version2] then
+      return specialVersions[version1] > specialVersions[version2]
+    else
+      return version1 == "stable"
+    end
+  elseif specialVersions[version2] then
+    return version2 ~= "stable"
+  else
+    local pattern = "v(%d+)%.(%d+)%.(%d+)"
+
+    local major1, minor1, patch1 = version1:match(pattern)
+    local major2, minor2, patch2 = version2:match(pattern)
+
+    major1, minor1, patch1 = tonumber(major1), tonumber(minor1), tonumber(patch1)
+    major2, minor2, patch2 = tonumber(major2), tonumber(minor2), tonumber(patch2)
+
+    assert(patch1 ~= nil, ("Invalid version passed '%s'"):format(version1))
+    assert(patch2 ~= nil, ("Invalid version passed '%s'"):format(version2))
+
+    if major1 == major2 then
+      if minor1 == minor2 then
+        return patch1 > patch2
+      else
+        return minor1 > minor2
+      end
+    else
+      return major1 > major2
+    end
+  end
+end
+
+---@param os os_type OS name
+---@param version string Release version
+function M.get_offline_neovim_release_name(os, version)
+  if os == "Linux" then
+    return ("nvim-%s-linux.appimage"):format(version)
+  elseif os == "macOS" then
+    return ("nvim-%s-macos.tar.gz"):format(version)
+  else
+    error(("Unsupported OS: %s"):format(os))
+  end
 end
 
 return M

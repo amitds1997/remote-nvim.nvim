@@ -175,4 +175,8 @@ function M.neovim_version()
   return neovim_version_str
 end
 
+function M.get_plugin_root()
+  return vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h")
+end
+
 return M

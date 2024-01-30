@@ -11,6 +11,7 @@
 ---@field remote_neovim_home string? Path on remote host where remote-neovim installs/configures things
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
+---@field offline_mode boolean? Should we operate in offline mode
 
 ---@class remote-nvim.providers.Provider: remote-nvim.Object
 ---@field host string Host name
@@ -18,8 +19,10 @@
 ---@field provider_type provider_type Type of provider
 ---@field protected unique_host_id string Unique host identifier
 ---@field protected executor remote-nvim.providers.Executor Executor instance
+---@field protected local_executor remote-nvim.providers.Executor Local executor instance
 ---@field protected notifier remote-nvim.providers.Notifier Notification handler
 ---@field protected progress_viewer remote-nvim.ui.ProgressView Progress viewer for progress
+---@field private offline_mode boolean Operating in offline mode or not
 ---@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private logger plenary.logger Logger instance
@@ -42,6 +45,7 @@
 ---@field private _remote_xdg_cache_path  string Get workspace specific XDG cache path
 ---@field private _remote_neovim_config_path  string Get neovim configuration path on the remote host
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
+---@field private _remote_neovim_download_script_path  string Get Neovim download script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
 ---@field protected _remote_working_dir string? Working directory on the remote server
 local Provider = require("remote-nvim.middleclass")("Provider")
@@ -69,11 +73,13 @@ function Provider:init(opts)
   self.conn_opts = self:_cleanup_conn_options(table.concat(opts.conn_opts, " "))
   self.logger = utils.get_logger()
   self._config_provider = remote_nvim.session_provider:get_config_provider()
+  self.offline_mode = remote_nvim.config.offline_mode.enabled or false
 
   -- These should be overriden in implementing classes
   self.unique_host_id = opts.unique_host_id or self.host
   self.provider_type = "local"
-  self.executor = Executor()
+  self.local_executor = Executor()
+  self.executor = self.local_executor
   self.progress_viewer = opts.progress_view
   self._cleanup_run_number = 1
   self._neovim_launch_number = 1
@@ -121,6 +127,7 @@ function Provider:_setup_workspace_variables()
       os = self._host_config.os,
     })
   end
+  self._remote_os = self._host_config.os
 
   -- Gather remote neovim version, if not setup
   if self._host_config.neovim_version == nil then
@@ -131,7 +138,6 @@ function Provider:_setup_workspace_variables()
   end
 
   -- Set variables from the fetched configuration
-  self._remote_os = self._host_config.os
   self._remote_is_windows = self._remote_os == "Windows" and true or false
   self._remote_neovim_version = self._host_config.neovim_version
 
@@ -153,6 +159,8 @@ function Provider:_setup_workspace_variables()
     self._remote_scripts_path,
     vim.fn.fnamemodify(remote_nvim.config.neovim_install_script_path, ":t")
   )
+  self._remote_neovim_download_script_path =
+    utils.path_join(self._remote_is_windows, self._remote_scripts_path, "neovim_download.sh")
   self._remote_workspace_id_path =
     utils.path_join(self._remote_is_windows, self._remote_workspaces_path, self._remote_workspace_id)
 
@@ -334,19 +342,35 @@ end
 ---@return string neovim_version Version running on the remote host
 function Provider:_get_remote_neovim_version_preference()
   if self._remote_neovim_version == nil then
-    local valid_neovim_versions = provider_utils.get_valid_neovim_versions()
-    local version_map = {}
-    local possible_choices = {}
-    for _, version in ipairs(valid_neovim_versions) do
-      version_map[version.tag] = version.commit
+    local version_map, possible_choices
+    if self.offline_mode and remote_nvim.config.offline_mode.no_github then
+      assert(self._remote_os ~= nil, "OS should not be nil")
+      version_map = require("remote-nvim.offline-mode").get_available_neovim_version_files(self._remote_os)
+      possible_choices = vim.tbl_keys(version_map)
+      assert(
+        #possible_choices > 0,
+        "There are no locally available Neovim versions. Disable GitHub check in offline mode or disable offline mode completely."
+      )
+    else
+      local valid_neovim_versions = provider_utils.get_valid_neovim_versions()
+      version_map = {}
+      possible_choices = {}
+      for _, version in ipairs(valid_neovim_versions) do
+        version_map[version.tag] = version.commit
 
-      if version.tag ~= "stable" then
-        table.insert(possible_choices, version.tag)
+        if version.tag ~= "stable" then
+          table.insert(possible_choices, version.tag)
+        end
       end
     end
 
     -- Get client version
     local client_version = "v" .. utils.neovim_version()
+    possible_choices = vim.tbl_filter(function(ver)
+      return ver == "nightly"
+        or provider_utils.is_greater_neovim_version(ver, require("remote-nvim.constants").MIN_NEOVIM_VERSION)
+    end, possible_choices)
+    table.sort(possible_choices, provider_utils.is_greater_neovim_version)
 
     self._remote_neovim_version = self:get_selection(possible_choices, {
       prompt = "Which Neovim version should be installed on remote?",
@@ -412,13 +436,18 @@ end
 ---Get remote neovim binary path
 ---@return string binary_path remote neovim binary path
 function Provider:_remote_neovim_binary_path()
+  return utils.path_join(self._remote_is_windows, self:_remote_neovim_binary_dir(), "bin", "nvim")
+end
+
+---@private
+---Get remote neovim binary directory
+---@return string binary_dir Remote neovim binary directory
+function Provider:_remote_neovim_binary_dir()
   return utils.path_join(
     self._remote_is_windows,
     self._remote_neovim_home,
     "nvim-downloads",
-    self._remote_neovim_version,
-    "bin",
-    "nvim"
+    self._remote_neovim_version
   )
 end
 
@@ -436,6 +465,7 @@ function Provider:_setup_remote()
       self._remote_xdg_cache_path,
       self._remote_xdg_state_path,
       self._remote_xdg_data_path,
+      self:_remote_neovim_binary_dir(),
     }
     local mkdirs_cmds = {}
     for _, dir in ipairs(necessary_dirs) do
@@ -460,12 +490,49 @@ function Provider:_setup_remote()
     end
 
     -- Set correct permissions and install Neovim
-    local install_neovim_cmd = ([[chmod +x %s && %s -v %s -d %s]]):format(
+    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && %s -v %s -d %s]]):format(
+      self._remote_neovim_download_script_path,
       self._remote_neovim_install_script_path,
       self._remote_neovim_install_script_path,
       self._remote_neovim_version,
       self._remote_neovim_home
     )
+
+    if self.offline_mode then
+      -- We need to ensure that we download Neovim version locally and then push it to the remote
+      if not remote_nvim.config.offline_mode.no_github then
+        self:run_command(
+          ("%s -o %s -v %s -d %s"):format(
+            utils.path_join(utils.is_windows, utils.get_plugin_root(), "scripts", "neovim_download.sh"),
+            self._remote_os,
+            self._remote_neovim_version,
+            remote_nvim.config.offline_mode.cache_dir
+          ),
+          "Downloading Neovim release locally",
+          nil,
+          nil,
+          true
+        )
+      end
+
+      local local_release_path = utils.path_join(
+        utils.is_windows,
+        remote_nvim.config.offline_mode.cache_dir,
+        provider_utils.get_offline_neovim_release_name(self._remote_os, self._remote_neovim_version)
+      )
+      local local_release_checksum_path = ("%s.sha256sum"):format(local_release_path)
+      self:upload(
+        {
+          local_release_path,
+          local_release_checksum_path,
+        },
+        utils.path_join(self._remote_is_windows, self:_remote_neovim_binary_dir()),
+        "Upload Neovim release from local to remote"
+      )
+
+      install_neovim_cmd = install_neovim_cmd .. " -o"
+    end
+
     self:run_command(install_neovim_cmd, "Installing Neovim (if required)")
 
     -- Upload user neovim config, if necessary
@@ -750,9 +817,12 @@ end
 ---@private
 ---Handle job completion
 ---@param desc string Description of the job
+---@param is_local_executor boolean? Is the command executing on the local executor
 ---@return integer exit_code Exit code of the job being handled
-function Provider:_handle_job_completion(desc)
-  local exit_code = self.executor:last_job_status()
+function Provider:_handle_job_completion(desc, is_local_executor)
+  is_local_executor = is_local_executor or false
+  local executor = is_local_executor and self.local_executor or self.executor
+  local exit_code = executor:last_job_status()
   if exit_code ~= 0 then
     self.progress_viewer:update_status("failed", true)
     if self._setup_running then
@@ -762,7 +832,7 @@ function Provider:_handle_job_completion(desc)
     if co then
       self.logger.error(
         debug.traceback(co, ("'%s' failed."):format(desc)),
-        ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(self.executor:job_stdout(), "\n"))
+        ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(executor:job_stdout(), "\n"))
       )
       coroutine.yield(exit_code)
     else
@@ -780,8 +850,11 @@ end
 ---@param desc string Description of the command running
 ---@param extra_opts string? Extra options to pass to the underlying command
 ---@param exit_cb function? Exit callback to execute
-function Provider:run_command(command, desc, extra_opts, exit_cb)
+---@param on_local_executor boolean? Should run this command on the local executor
+function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_executor)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
+  on_local_executor = on_local_executor or false
+  local executor = on_local_executor and self.local_executor or self.executor
   local section_node = self.progress_viewer:add_progress_node({
     text = desc,
     type = "section_node",
@@ -794,7 +867,7 @@ function Provider:run_command(command, desc, extra_opts, exit_cb)
   if exit_cb ~= nil then
     exit_cb = exit_cb(section_node)
   end
-  self.executor:run_command(command, {
+  executor:run_command(command, {
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
     stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
@@ -820,10 +893,20 @@ end
 
 ---@protected
 ---Upload data from local to remote host
----@param local_path string Local path
+---@param local_paths string|string[] Local path
 ---@param remote_path string Path on the remote
 ---@param desc string Description of the command running
-function Provider:upload(local_path, remote_path, desc)
+function Provider:upload(local_paths, remote_path, desc)
+  if type(local_paths) == "string" then
+    local_paths = { local_paths }
+  end
+
+  for _, path in ipairs(local_paths) do
+    if not require("plenary.path"):new({ path }):exists() then
+      error(("Local path '%s' does not exist"):format(path))
+    end
+  end
+  local local_path = table.concat(local_paths, " ")
   self.logger.fmt_debug(
     "[%s][%s] Uploading %s to %s on remote",
     self.provider_type,
@@ -831,9 +914,7 @@ function Provider:upload(local_path, remote_path, desc)
     local_path,
     remote_path
   )
-  if not require("plenary.path"):new({ local_path }):exists() then
-    error(("Local path '%s' does not exist"):format(local_path))
-  end
+
   local section_node = self.progress_viewer:add_progress_node({
     text = desc,
     type = "section_node",
