@@ -32,6 +32,11 @@ local utils = require("remote-nvim.utils")
 ---@field level string Logging level
 ---@field max_size integer Max file size, after which it will be truncated
 
+---@class remote-nvim.config.PluginConfig.OfflineModeConfig
+---@field enabled boolean Is the offline mode enabled
+---@field no_github boolean Do not reach to GitHub at all
+---@field cache_dir string Path to the cache directory
+
 ---@class remote-nvim.config.PluginConfig.ProgressViewConfig
 ---@field type "popup"|"split" Type of holder to launch
 ---@field relative nui_layout_option_relative_type|nui_layout_option_relative? How should split/popup be placed
@@ -48,6 +53,7 @@ local utils = require("remote-nvim.utils")
 --server is stored. This is assumed to be a directory and entire directory would be copied over
 ---@field progress_view remote-nvim.config.PluginConfig.ProgressViewConfig Progress view configuration
 ---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig Configuration for the local client
+---@field offline_mode remote-nvim.config.PluginConfig.OfflineModeConfig Offline mode configuration
 ---@field log remote-nvim.config.PluginConfig.LogConfig Plugin logging options
 
 M.default_opts = {
@@ -72,12 +78,18 @@ M.default_opts = {
   },
   neovim_install_script_path = utils.path_join(
     utils.is_windows,
-    vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h"),
+    utils.get_plugin_root(),
     "scripts",
     "neovim_install.sh"
   ),
   progress_view = {
     type = "popup",
+  },
+  offline_mode = {
+    enabled = false,
+    no_github = false,
+    ---@diagnostic disable-next-line:param-type-mismatch
+    cache_dir = utils.path_join(utils.is_windows, vim.fn.stdpath("cache"), constants.PLUGIN_NAME, "version_cache"),
   },
   ---@diagnostic disable-next-line:assign-type-mismatch
   neovim_user_config_path = vim.fn.stdpath("config"),

@@ -22,6 +22,11 @@ communicated through [this GitHub discussion](https://github.com/amitds1997/remo
 is a Microsoft-specific features and will not be supported. If
 you have an alternative though, I would be happy to integrate it into the plugin.
 
+### Implemented features
+
+- **Offline mode** - If the remote does not have access to GitHub, Neovim release can be locally
+  downloaded and then transferred to the remote. For more details, see [Offline mode](#-offline-mode).
+
 ### Planned features
 
 - **Dynamic port forwarding** - I already have a clear path to implementing this,
@@ -55,14 +60,21 @@ you have an alternative though, I would be happy to integrate it into the plugin
 
 - OpenSSH client
 - Neovim >= 0.9.0 (as `nvim`)
+
+Following are also needed unless you are working with [Offline mode (No GitHub)](#offline-on-remote-and-local-machine):
+
 - Binaries: `curl`
+- Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub
 
 ### Remote machine ☁️
 
 - OpenSSH-compliant SSH server
-- Connectivity to [GitHub.com](https://github.com) (to download Neovim release)
-- Binaries: `curl` or `wget`
 - `bash` shell must be available
+
+Following are also needed unless you are working with [Offline mode](#-offline-mode):
+
+- Binaries: `curl` or `wget`
+- Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub
 
 ## 📥 Installation
 
@@ -134,6 +146,17 @@ Below is the default configuration. Please read the associated comments before c
   -- Note that some options like "border" are only available for "popup".
   progress_view = {
     type = "popup",
+  },
+
+
+  -- Offline mode configuration. For more details, see the "Offline mode" section below.
+  offline_mode = {
+    -- Should offline mode be enabled?
+    enabled = false,
+    -- Do not connect to GitHub at all. Not even to get release information.
+    no_github = false,
+    -- What path should be looked at to find locally available releases
+    cache_dir = utils.path_join(utils.is_windows, vim.fn.stdpath("cache"), constants.PLUGIN_NAME, "version_cache"),
   },
 
   -- Path to the user's Neovim configuration files. These would be copied to the remote if user chooses to do so.
@@ -241,6 +264,9 @@ remote-nvim.nvim")
 
 </details>
 
+All these demos use a custom callback that I use to launch Neovim [in a separate Wezterm
+tab](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes).
+
 ## 🤖 Available commands
 
 | Command            | What does it do?                                                                                                                                            |
@@ -253,6 +279,70 @@ remote-nvim.nvim")
 | `:RemoteLog`       | Open the plugin log file. This is most useful when debugging. `:RemoteInfo` should surface all information needed. If not, open an issue.                   |
 
 For demos about the commands, see the [demos](#-demos) section.
+
+## 📴 Offline mode
+
+There are two types of offline modes available:
+
+1. Offline on remote
+2. Offline on remote and local machine
+
+The plugin connects to [neovim/neovim](https://github.com/neovim/neovim) repo on GitHub twice. First time, it tries to
+fetch the latest releases available for Neovim that can be installed to the remote. The second time, on the
+remote machine, it connects to download the Neovim release.
+
+### Offline on remote
+
+On enabling this, Neovim release will be downloaded locally and then copied over to the remote. Plugin would
+connect to GitHub once to get the list of Neovim versions available. To enable this,
+
+```lua
+require("remote-nvim").setup({
+  -- Add your other configuration parameters as usual
+  offline_mode = {
+    enabled = true,
+    no_github = false,
+  },
+})
+```
+
+### Offline on remote and local machine
+
+On enabling this, GitHub will not be connected with at all. This is useful for scenarions when you face connection
+issues with GitHub. _**This is an advanced scenario so make sure that you actually need it**_.
+
+It assumes that you already have Neovim releases available locally along with their checksum files. Note that, _release
+names are expected to follow a certain pattern._ So, please use the provided script to download releases and drop them
+in the cache directory where the plugin would read from. If no releases are available, the plugin would not be able to
+proceed further.
+
+**Steps for downloading releases:** This command is run from the plugin's root. You can run it from anywhere as long as
+you have the correct path to the script. Adjust script path as per where the plugin gets installed on your system.
+Alternatively, you can also clone the repo at a separate location and run this script from inside the cloned repo.
+
+```bash
+./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type>
+
+# <version> can be stable, nightly or any Neovim release provided like v0.9.4
+# <cache-dir> is the path in which the Neovim release and it's checksum should be downloaded. This should be same as the cache_dir plugin configuration value else it won't be
+# detected by the plugin. See configuration below.
+# <os-type> specifies which OS's binaries should be downloaded. Supported values are "Linux" and "macOS"
+```
+
+To enable this,
+
+```lua
+require("remote-nvim").setup({
+  -- Add your other configuration parameters as usual
+  offline_mode = {
+    enabled = true,
+    no_github = true,
+    -- Add this only if you want to change the path where the Neovim releases are downloaded/located.
+    -- Default location is the output of :lua= vim.fn.stdpath("cache") .. "/remote-nvim.nvim/version_cache"
+    -- cache_dir = <custom-path>,
+  },
+})
+```
 
 ## ⚠️ Caveats
 

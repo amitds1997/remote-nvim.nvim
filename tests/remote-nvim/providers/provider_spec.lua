@@ -1,6 +1,7 @@
 ---@diagnostic disable:invisible
 describe("Provider", function()
   local assert = require("luassert.assert")
+  ---@type remote-nvim.RemoteNeovim
   local remote_nvim = require("remote-nvim")
   local Provider = require("remote-nvim.providers.provider")
   local stub = require("luassert.stub")
@@ -151,6 +152,7 @@ describe("Provider", function()
       assert.equals(("%s/workspaces"):format(remote_home), provider._remote_workspaces_path)
       assert.equals(("%s/scripts"):format(remote_home), provider._remote_scripts_path)
       assert.equals(("%s/scripts/neovim_install.sh"):format(remote_home), provider._remote_neovim_install_script_path)
+      assert.equals(("%s/scripts/neovim_download.sh"):format(remote_home), provider._remote_neovim_download_script_path)
       assert.equals(("%s/workspaces/%s"):format(remote_home, workspace_id), provider._remote_workspace_id_path)
 
       -- XDG variables
@@ -167,6 +169,62 @@ describe("Provider", function()
         ("%s/workspaces/%s/.config/nvim"):format(remote_home, workspace_id),
         provider._remote_neovim_config_path
       )
+    end)
+  end)
+
+  describe("should correctly gather available neovim versions", function()
+    local offline_mode_config, offline_neovim_version_fetch_stub, online_neovim_version_fetch_stub
+    before_each(function()
+      offline_mode_config = vim.deepcopy(remote_nvim.config.offline_mode)
+      offline_neovim_version_fetch_stub =
+        stub(require("remote-nvim.offline-mode"), "get_available_neovim_version_files")
+      online_neovim_version_fetch_stub = stub(require("remote-nvim.providers.utils"), "get_valid_neovim_versions")
+
+      stub(provider, "get_selection").returns("stable")
+
+      provider._remote_neovim_version = nil
+      provider._remote_os = "Linux"
+    end)
+
+    it("when in offline mode but GitHub access is turned off", function()
+      provider.offline_mode = true
+      remote_nvim.config.offline_mode.no_github = true
+      offline_neovim_version_fetch_stub.returns({ ["stable"] = "/root/neovim/binary/neovim-stable-linux.appimage" })
+
+      provider:_get_remote_neovim_version_preference()
+
+      assert.stub(offline_neovim_version_fetch_stub).was.called_with(provider._remote_os)
+      assert.stub(online_neovim_version_fetch_stub).was.not_called()
+    end)
+
+    it("when in offline mode and GitHub access is not turned off", function()
+      provider.offline_mode = true
+      remote_nvim.config.offline_mode.no_github = false
+      online_neovim_version_fetch_stub.returns({
+        { tag = "v0.9.5", commit = "8744ee8783a8597f9fce4a573ae05aca2f412120" },
+      })
+
+      provider:_get_remote_neovim_version_preference()
+
+      assert.stub(offline_neovim_version_fetch_stub).was.not_called()
+      assert.stub(online_neovim_version_fetch_stub).was.called()
+    end)
+
+    it("when in online mode", function()
+      provider.offline_mode = false
+      remote_nvim.config.offline_mode.enabled = false
+
+      online_neovim_version_fetch_stub.returns({
+        { tag = "stable", commit = "8744ee8783a8597f9fce4a573ae05aca2f412120" },
+      })
+      provider:_get_remote_neovim_version_preference()
+
+      assert.stub(offline_neovim_version_fetch_stub).was.not_called()
+      assert.stub(online_neovim_version_fetch_stub).was.called()
+    end)
+
+    after_each(function()
+      remote_nvim.config.offline_mode = offline_mode_config
     end)
   end)
 
@@ -396,11 +454,12 @@ describe("Provider", function()
     end)
   end)
 
-  it("should provide correct remote neovim binary path", function()
+  it("should provide correct remote neovim binary paths", function()
     provider._remote_is_windows = false
     provider._remote_neovim_home = "~/.remote-nvim"
     provider._remote_neovim_version = "stable"
 
+    assert.equals("~/.remote-nvim/nvim-downloads/stable", provider:_remote_neovim_binary_dir())
     assert.equals("~/.remote-nvim/nvim-downloads/stable/bin/nvim", provider:_remote_neovim_binary_path())
   end)
 
@@ -426,11 +485,12 @@ describe("Provider", function()
     end)
 
     describe("and runs correct commands", function()
-      local run_command_stub, upload_stub
+      local run_command_stub, upload_stub, offline_mode_config
 
       before_each(function()
         run_command_stub = stub(provider, "run_command")
         upload_stub = stub(provider, "upload")
+        offline_mode_config = vim.deepcopy(remote_nvim.config.offline_mode)
 
         provider._config_provider:add_workspace_config(provider.unique_host_id, {
           provider = "local",
@@ -447,6 +507,7 @@ describe("Provider", function()
       end)
 
       after_each(function()
+        remote_nvim.config.offline_mode = offline_mode_config
         provider._config_provider:remove_workspace_config(provider.unique_host_id)
       end)
 
@@ -456,7 +517,7 @@ describe("Provider", function()
         -- create directories
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "mkdir -p ~/.remote-nvim/workspaces && mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share",
+          "mkdir -p ~/.remote-nvim/workspaces && mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share && mkdir -p ~/.remote-nvim/nvim-downloads/stable",
           match.is_string()
         )
 
@@ -473,7 +534,7 @@ describe("Provider", function()
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim",
           match.is_string()
         )
 
@@ -513,6 +574,50 @@ describe("Provider", function()
           match.is_string()
         )
         remote_nvim.default_opts.neovim_install_script_path = default_install_script_path
+      end)
+
+      it("when you are in offline mode but GitHub is disabled", function()
+        provider.offline_mode = true
+        remote_nvim.config.offline_mode.no_github = true
+
+        local release_path = ("%s/nvim-stable-linux.appimage"):format(remote_nvim.config.offline_mode.cache_dir)
+        local release_checksum_path = ("%s.sha256sum"):format(release_path)
+
+        provider:_setup_remote()
+        assert.stub(upload_stub).was.called_with(match.is_ref(provider), {
+          release_path,
+          release_checksum_path,
+        }, "~/.remote-nvim/nvim-downloads/stable", match.is_string())
+
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -o",
+          match.is_string()
+        )
+      end)
+
+      it("when you are in offline mode but GitHub is enabled", function()
+        provider.offline_mode = true
+        remote_nvim.config.offline_mode.no_github = false
+
+        provider:_setup_remote()
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          ("%s/scripts/neovim_download.sh -o Linux -v stable -d %s"):format(
+            require("remote-nvim.utils").get_plugin_root(),
+            remote_nvim.config.offline_mode.cache_dir
+          ),
+          match.is_string(),
+          nil,
+          nil,
+          true
+        )
+
+        assert.stub(run_command_stub).was.called_with(
+          match.is_ref(provider),
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -o",
+          match.is_string()
+        )
       end)
     end)
   end)
