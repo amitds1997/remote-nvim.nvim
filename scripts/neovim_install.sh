@@ -23,7 +23,7 @@ Options:
   -d       Specify directory for storing Neovim binaries.
            NOTE: Installation would happen in 'nvim-downloads' subdirectory.
   -f       Force installation. Would overwrite any existing installation.
-	-o       Offline mode. Assume release is already downloaded.
+  -o       Offline mode. Assume release is already downloaded.
   -h       Display this help message and exit.
 EOM
 }
