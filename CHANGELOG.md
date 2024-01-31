@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.0...v0.2.1) (2024-01-31)
+
+
+### Features
+
+* add offline mode ([#81](https://github.com/amitds1997/remote-nvim.nvim/issues/81)) ([a978017](https://github.com/amitds1997/remote-nvim.nvim/commit/a978017cc6878c862bb830334b3c51ff6e535a05))
+
 ## [0.2.0](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.1.3...v0.2.0) (2024-01-27)
 
 
