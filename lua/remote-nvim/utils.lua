@@ -4,6 +4,7 @@ M.uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+M.path_separator = M.is_windows and "\\" or "/"
 
 ---Get logger
 ---@return plenary.logger logger Logger instance

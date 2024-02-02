@@ -43,11 +43,40 @@ end
 ---@param job_opts remote-nvim.provider.Executor.JobOpts
 function SSHExecutor:upload(localSrcPath, remoteDestPath, job_opts)
   job_opts = job_opts or {}
+  job_opts.compression = job_opts.compression or {}
 
-  local remotePath = ("%s:%s"):format(self.host, remoteDestPath)
-  local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, localSrcPath, remotePath)
+  if job_opts.compression.enabled or false then
+    local paths = vim.split(localSrcPath, " ")
+    local prefix_path_set = {}
+    local dirs = {}
+    local separator = require("remote-nvim.utils").path_separator
+    for _, path in ipairs(paths) do
+      local splits = vim.split(path, separator, { plain = true })
+      prefix_path_set[table.concat(splits, separator, 1, #splits - 1)] = true
+      table.insert(dirs, splits[#splits])
+    end
+    local prefix_paths = vim.tbl_keys(prefix_path_set)
+    assert(
+      #prefix_paths == 1,
+      ("There should be only one unique path head per compressed upload. Current paths: %s"):format(
+        vim.inspect(prefix_paths)
+      )
+    )
 
-  return self:run_executor_job(scp_command, job_opts)
+    local ssh_command = self:_build_run_command(("tar xvzf - -C %s"):format(remoteDestPath, remoteDestPath), job_opts)
+    local command = ("tar czf - --no-xattrs --disable-copyfile %s --numeric-owner --no-acls --no-same-owner --no-same-permissions -C %s %s | %s"):format(
+      table.concat(job_opts.compression.additional_opts or {}, " "),
+      prefix_paths[1],
+      table.concat(dirs, " "),
+      ssh_command
+    )
+    return self:run_executor_job(command, job_opts)
+  else
+    local remotePath = ("%s:%s"):format(self.host, remoteDestPath)
+    local scp_command = ("%s %s %s %s"):format(self.scp_binary, self.scp_conn_opts, localSrcPath, remotePath)
+
+    return self:run_executor_job(scp_command, job_opts)
+  end
 end
 
 ---Download data from remote path to local path
@@ -62,10 +91,12 @@ function SSHExecutor:download(remoteSrcPath, localDescPath, job_opts)
   return self:run_executor_job(scp_command, job_opts)
 end
 
----Run command on the remote host
+---@private
+---Build the SSH command to be run on the remote host
 ---@param command string Command to be run on the remote host
 ---@param job_opts remote-nvim.provider.Executor.JobOpts
-function SSHExecutor:run_command(command, job_opts)
+---@return string generated_command The SSH command that should be run on local to run the passed command on remote
+function SSHExecutor:_build_run_command(command, job_opts)
   job_opts = job_opts or {}
 
   -- Append additional connection options (if any)
@@ -76,8 +107,14 @@ function SSHExecutor:run_command(command, job_opts)
   local host_conn_opts = conn_opts == "" and self.host or conn_opts .. " " .. self.host
 
   -- Shell escape the passed command
-  local ssh_command = ("%s %s %s"):format(self.ssh_binary, host_conn_opts, vim.fn.shellescape(command))
-  return self:run_executor_job(ssh_command, job_opts)
+  return ("%s %s %s"):format(self.ssh_binary, host_conn_opts, vim.fn.shellescape(command))
+end
+
+---Run command on the remote host
+---@param command string Command to be run on the remote host
+---@param job_opts remote-nvim.provider.Executor.JobOpts
+function SSHExecutor:run_command(command, job_opts)
+  return self:run_executor_job(self:_build_run_command(command, job_opts), job_opts)
 end
 
 ---@private

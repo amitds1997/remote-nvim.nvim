@@ -49,10 +49,13 @@ local utils = require("remote-nvim.utils")
 ---@class remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure
 ---@field base string Path to the base directory
 ---@field dirs "*"|string[] "*" means all directories in the path. When a string array is specified, it means subdirectories in the `base` directory
+---@field compression remote-nvim.provider.Executor.JobOpts.CompressionOpts? Should the transfer be compressed or uncompressed
 
 ---@class remote-nvim.config.PluginConfig.Remote.CopyDirs
 ---@field config remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_CONFIG_HOME/neovim. Default is output of :lua= vim.fn.stdpath("config"). Default `base` when not specified is vim.fn.stdpath("config").
 ---@field data remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_DATA_HOME/neovim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("data")
+---@field state remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_STATE_HOME/neovim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("state")
+---@field cache remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_CACHE_HOME/neovim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("cache")
 
 ---@class remote-nvim.config.PluginConfig.Remote
 ---@field copy_dirs remote-nvim.config.PluginConfig.Remote.CopyDirs Which directories should be copied over to the remote
@@ -95,11 +98,33 @@ M.default_opts = {
         ---@diagnostic disable-next-line:assign-type-mismatch
         base = vim.fn.stdpath("config"),
         dirs = "*",
+        compression = {
+          enabled = false,
+        },
       },
       data = {
         ---@diagnostic disable-next-line:assign-type-mismatch
         base = vim.fn.stdpath("data"),
         dirs = {},
+        compression = {
+          enabled = true,
+        },
+      },
+      cache = {
+        ---@diagnostic disable-next-line:assign-type-mismatch
+        base = vim.fn.stdpath("cache"),
+        dirs = {},
+        compression = {
+          enabled = true,
+        },
+      },
+      state = {
+        ---@diagnostic disable-next-line:assign-type-mismatch
+        base = vim.fn.stdpath("state"),
+        dirs = {},
+        compression = {
+          enabled = true,
+        },
       },
     },
   },
