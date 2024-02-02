@@ -712,7 +712,7 @@ function Provider:_launch_local_neovim_client()
   if self:_get_local_client_start_preference() then
     self:_wait_for_server_to_be_ready()
 
-    remote_nvim.config.local_client_config.callback(
+    remote_nvim.config.client_callback(
       self._local_free_port,
       self._config_provider:get_workspace_config(self.unique_host_id)
     )

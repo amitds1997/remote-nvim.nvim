@@ -25,7 +25,7 @@ local utils = require("remote-nvim.utils")
 ---@field ssh_prompts remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt[] List of SSH prompts that should be considered for input
 
 ---@class remote-nvim.config.RemoteConfig.LocalClientConfig
----@field callback function<string, remote-nvim.providers.WorkspaceConfig> Function that would be called upon to start a Neovim client if not nil
+---@field callback function<string, remote-nvim.providers.WorkspaceConfig> Function that would be called upon to start a Neovim client
 
 ---@class remote-nvim.config.PluginConfig.LogConfig
 ---@field filepath string Location of log file
@@ -46,13 +46,22 @@ local utils = require("remote-nvim.utils")
 ---@field anchor nui_layout_option_anchor? What to anchor the popup with
 ---@field zindex number? What should be the z-index for the popup
 
+---@class remote-nvim.config.PluginConfig.Remote.CopyDirs
+---@field config string Directory containing your Neovim configuration. It will be placed at XDG_CONFIG_HOME/neovim path on the remote.
+---@field data string|string[] Directories to be picked from inside vim.fn.stdpath("data") on local. These directories will be placed at XDG_DATA_HOME/neovim on the remote.
+
+---@class remote-nvim.config.PluginConfig.Remote
+---@field copy_dirs remote-nvim.config.PluginConfig.Remote.CopyDirs Which directories should be copied over to the remote
+
 ---@class remote-nvim.config.PluginConfig
 ---@field ssh_config remote-nvim.config.PluginConfig.SSHConfig SSH configuration
 ---@field neovim_install_script_path string Local path where neovim installation script is stored
----@field neovim_user_config_path string Local path where the neovim configuration to be copied over to the remote
+---@field neovim_user_config_path string? Local path where the neovim configuration to be copied over to the remote
+---@field remote remote-nvim.config.PluginConfig.Remote Configurations related to the remote
 --server is stored. This is assumed to be a directory and entire directory would be copied over
 ---@field progress_view remote-nvim.config.PluginConfig.ProgressViewConfig Progress view configuration
----@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig Configuration for the local client
+---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig? Configuration for the local client
+---@field client_callback function<string, remote-nvim.providers.WorkspaceConfig> Function that would be called upon to start a Neovim client
 ---@field offline_mode remote-nvim.config.PluginConfig.OfflineModeConfig Offline mode configuration
 ---@field log remote-nvim.config.PluginConfig.LogConfig Plugin logging options
 
@@ -76,6 +85,20 @@ M.default_opts = {
       },
     },
   },
+  remote = {
+    copy_dirs = {
+      ---@diagnostic disable-next-line:assign-type-mismatch
+      config = vim.fn.stdpath("config"),
+      data = "",
+    },
+  },
+  client_callback = function(port, _)
+    require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), function(exit_code)
+      if exit_code ~= 0 then
+        vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
+      end
+    end)
+  end,
   neovim_install_script_path = utils.path_join(
     utils.is_windows,
     utils.get_plugin_root(),
@@ -90,17 +113,6 @@ M.default_opts = {
     no_github = false,
     ---@diagnostic disable-next-line:param-type-mismatch
     cache_dir = utils.path_join(utils.is_windows, vim.fn.stdpath("cache"), constants.PLUGIN_NAME, "version_cache"),
-  },
-  ---@diagnostic disable-next-line:assign-type-mismatch
-  neovim_user_config_path = vim.fn.stdpath("config"),
-  local_client_config = {
-    callback = function(port, _)
-      require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), function(exit_code)
-        if exit_code ~= 0 then
-          vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
-        end
-      end)
-    end,
   },
   log = {
     ---@diagnostic disable-next-line:param-type-mismatch
@@ -123,6 +135,30 @@ M.setup = function(opts)
     )
   end
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
+
+  if M.config.neovim_user_config_path ~= nil then
+    M.config.remote.copy_dirs.config = M.config.neovim_user_config_path
+    vim.deprecate(
+      "neovim_user_config_path to define neovim configuration path",
+      "remote.copy_dirs.config in configuration setup",
+      "v0.3.0",
+      constants.PLUGIN_NAME,
+      false
+    )
+  end
+
+  M.config.local_client_config = M.config.local_client_config or {}
+  if M.config.local_client_config.callback ~= nil then
+    M.config.client_callback = M.config.local_client_config.callback
+    vim.deprecate(
+      "local_client_config.client_callback to define callback",
+      "client_callback key in setup",
+      "v0.3.0",
+      constants.PLUGIN_NAME,
+      false
+    )
+  end
+
   M.session_provider = require("remote-nvim.providers.session_provider")()
   require("remote-nvim.command")
   require("remote-nvim.colors").setup()

@@ -795,7 +795,7 @@ describe("Provider", function()
       provider._config_provider:update_workspace_config(provider.unique_host_id, {
         client_auto_start = false,
       })
-      local defined_callback_stub = stub(remote_nvim.config.local_client_config, "callback")
+      local defined_callback_stub = stub(remote_nvim.config, "client_callback")
       provider:_setup_workspace_variables()
       provider:_launch_local_neovim_client()
       assert.stub(defined_callback_stub).was.not_called()
@@ -807,7 +807,7 @@ describe("Provider", function()
       })
       provider:_setup_workspace_variables()
       stub(provider, "_wait_for_server_to_be_ready")
-      local defined_callback_stub = stub(remote_nvim.config.local_client_config, "callback")
+      local defined_callback_stub = stub(remote_nvim.config, "client_callback")
 
       provider:_launch_local_neovim_client()
       assert.stub(defined_callback_stub).was.called()
