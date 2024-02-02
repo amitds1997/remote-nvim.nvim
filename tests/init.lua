@@ -39,6 +39,14 @@ function M.setup()
   M.load("nvim-telescope/telescope.nvim")
 
   require("remote-nvim").setup({
+    remote = {
+      copy_dirs = {
+        data = {
+          base = "/Users/amitsingh/.local/share/nvim",
+          dirs = { "lazy" },
+        },
+      },
+    },
     log = {
       level = "debug",
       max_size = 0,

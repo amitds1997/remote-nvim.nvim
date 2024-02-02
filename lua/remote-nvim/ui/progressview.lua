@@ -1,3 +1,4 @@
+local Deque = require("remote-nvim.structs.deque")
 local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
 local Popup = require("nui.popup")
@@ -43,6 +44,7 @@ local remote_nvim = require("remote-nvim")
 ---@field private progress_view_hl_ns integer Namespace for all progress view custom highlights
 ---@field private progress_view_buf_options table<string, any> Buffer options for Progress View
 ---@field private progress_view_win_options table<string, any> Window options for Progress View
+---@field private section_deque_map table<string, remote-nvim.structs.Deque> Deque to handle too much output
 local ProgressView = require("remote-nvim.middleclass")("ProgressView")
 
 function ProgressView:init()
@@ -101,6 +103,8 @@ function ProgressView:init()
   self.session_info_pane_tree = nil
   self.active_progress_view_section_node = nil
   self.progress_view_keymap_options = { noremap = true, nowait = true }
+  self.section_deque_map = {}
+  self.max_output_lines = 30
 
   self:_setup_progress_view_pane()
   self:_setup_session_info_pane()
@@ -681,6 +685,9 @@ function ProgressView:_add_progress_view_section_heading(node, parent_node)
   self.active_progress_view_section_node = section_node
   self.active_progress_view_section_node:expand()
 
+  -- We initialize a dequeu for the section
+  self.section_deque_map[section_node:get_id()] = Deque()
+
   return section_node
 end
 
@@ -711,11 +718,41 @@ function ProgressView:_add_progress_view_output_node(node, parent_node)
   parent_node = parent_node or self.active_progress_view_section_node
   assert(parent_node ~= nil, "Parent node should not be nil")
 
+  ---@type remote-nvim.structs.Deque
+  local deque = self.section_deque_map[parent_node:get_id()]
+
+  -- Add node as child to the section node
   local created_node = NuiTree.Node({
     text = node.text,
     type = node.type,
   })
   self.progress_view_pane_tree:add_node(created_node, parent_node:get_id())
+
+  if created_node.type == "stdout_node" then
+    deque:pushright(created_node)
+  end
+
+  if deque:len() == self.max_output_lines - 1 then
+    self.progress_view_pane_tree:add_node(
+      NuiTree.Node({
+        text = "More than 30 lines of output. Will only show last 30 lines...",
+        type = "stdout_node",
+      }),
+      parent_node:get_id()
+    )
+    for _, elem_node in deque:ipairs_left() do
+      local rnode = self.progress_view_pane_tree:remove_node(elem_node:get_id())
+      self.progress_view_pane_tree:add_node(rnode, parent_node:get_id())
+    end
+  end
+
+  if deque:len() > self.max_output_lines then
+    ---@type NuiTree.Node
+    local removed_node = deque:popleft()
+    if removed_node ~= nil and self.progress_view_pane_tree:get_node(removed_node:get_id()) ~= nil then
+      self.progress_view_pane_tree:remove_node(removed_node:get_id())
+    end
+  end
 
   return created_node
 end

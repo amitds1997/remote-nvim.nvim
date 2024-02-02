@@ -540,7 +540,7 @@ describe("Provider", function()
 
         assert.stub(upload_stub).was.called_with(
           match.is_ref(provider),
-          remote_nvim.config.neovim_user_config_path,
+          provider._local_path_to_remote_neovim_config,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
           match.is_string()
         )
@@ -555,7 +555,7 @@ describe("Provider", function()
         provider:_setup_remote()
         assert.stub(upload_stub).was.not_called_with(
           match.is_ref(provider),
-          remote_nvim.config.neovim_user_config_path,
+          provider._local_path_to_remote_neovim_config,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
           match.is_string()
         )

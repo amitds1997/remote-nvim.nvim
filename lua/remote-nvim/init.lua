@@ -46,9 +46,13 @@ local utils = require("remote-nvim.utils")
 ---@field anchor nui_layout_option_anchor? What to anchor the popup with
 ---@field zindex number? What should be the z-index for the popup
 
+---@class remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure
+---@field base string Path to the base directory
+---@field dirs "*"|string[] "*" means all directories in the path. When a string array is specified, it means subdirectories in the `base` directory
+
 ---@class remote-nvim.config.PluginConfig.Remote.CopyDirs
----@field config string Directory containing your Neovim configuration. It will be placed at XDG_CONFIG_HOME/neovim path on the remote.
----@field data string|string[] Directories to be picked from inside vim.fn.stdpath("data") on local. These directories will be placed at XDG_DATA_HOME/neovim on the remote.
+---@field config remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_CONFIG_HOME/neovim. Default is output of :lua= vim.fn.stdpath("config"). Default `base` when not specified is vim.fn.stdpath("config").
+---@field data remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_DATA_HOME/neovim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("data")
 
 ---@class remote-nvim.config.PluginConfig.Remote
 ---@field copy_dirs remote-nvim.config.PluginConfig.Remote.CopyDirs Which directories should be copied over to the remote
@@ -87,9 +91,16 @@ M.default_opts = {
   },
   remote = {
     copy_dirs = {
-      ---@diagnostic disable-next-line:assign-type-mismatch
-      config = vim.fn.stdpath("config"),
-      data = "",
+      config = {
+        ---@diagnostic disable-next-line:assign-type-mismatch
+        base = vim.fn.stdpath("config"),
+        dirs = "*",
+      },
+      data = {
+        ---@diagnostic disable-next-line:assign-type-mismatch
+        base = vim.fn.stdpath("data"),
+        dirs = {},
+      },
     },
   },
   client_callback = function(port, _)
@@ -137,7 +148,10 @@ M.setup = function(opts)
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
 
   if M.config.neovim_user_config_path ~= nil then
-    M.config.remote.copy_dirs.config = M.config.neovim_user_config_path
+    M.config.remote.copy_dirs.config = {
+      base = M.config.neovim_user_config_path,
+      dirs = "*",
+    }
     vim.deprecate(
       "neovim_user_config_path to define neovim configuration path",
       "remote.copy_dirs.config in configuration setup",
