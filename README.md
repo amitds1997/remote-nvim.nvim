@@ -60,6 +60,7 @@ you have an alternative though, I would be happy to integrate it into the plugin
 
 - OpenSSH client
 - Neovim >= 0.9.0 (as `nvim`)
+- Binaries: `tar` (if you use compressed uploads)
 
 Following are also needed unless you are working with [Offline mode (No GitHub)](#offline-on-remote-and-local-machine):
 
@@ -159,24 +160,59 @@ Below is the default configuration. Please read the associated comments before c
     cache_dir = utils.path_join(utils.is_windows, vim.fn.stdpath("cache"), constants.PLUGIN_NAME, "version_cache"),
   },
 
-  -- Path to the user's Neovim configuration files. These would be copied to the remote if user chooses to do so.
-  neovim_user_config_path = vim.fn.stdpath("config"),
-
-  -- Local client configuration
-  local_client_config = {
-    -- You can supply your own callback that should be called to create the local client. This is the default implementation.
-    -- Two arguments are passed to the callback:
-    -- port: Local port at which the remote server is available
-    -- workspace_config: Workspace configuration for the host. For all the properties available, see https://github.com/amitds1997/remote-nvim.nvim/blob/main/lua/remote-nvim/providers/provider.lua#L4
-    -- A sample implementation using WezTerm tab is at: https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes
-    callback = function(port, _)
-      require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), function(exit_code)
-        if exit_code ~= 0 then
-          vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
-        end
-      end)
-    end,
+  -- Remote configuration
+  remote = {
+    -- List of directories that should be copied over
+    copy_dirs = {
+      -- What to copy to remote's Neovim config directory
+      config = {
+        base = vim.fn.stdpath("config"), -- Path from where data has to be copied
+        dirs = "*", -- Directories that should be copied over. "*" means all directories. To specify a subset, use a list like {"lazy", "mason"} where "lazy", "mason" are subdirectories
+        -- under path specified in `base`.
+        compression = {
+          enabled = false, -- Should compression be enabled or not
+          additional_opts = {} -- Any additional options that should be used for compression. Any argument that is passed to `tar` (for compression) can be passed here as separate elements.
+        },
+      },
+      -- What to copy to remote's Neovim data directory
+      data = {
+        base = vim.fn.stdpath("data"),
+        dirs = {},
+        compression = {
+          enabled = true,
+        },
+      },
+      -- What to copy to remote's Neovim cache directory
+      cache = {
+        base = vim.fn.stdpath("cache"),
+        dirs = {},
+        compression = {
+          enabled = true,
+        },
+      },
+      -- What to copy to remote's Neovim state directory
+      state = {
+        base = vim.fn.stdpath("state"),
+        dirs = {},
+        compression = {
+          enabled = true,
+        },
+      },
+    },
   },
+
+  -- You can supply your own callback that should be called to create the local client. This is the default implementation.
+  -- Two arguments are passed to the callback:
+  -- port: Local port at which the remote server is available
+  -- workspace_config: Workspace configuration for the host. For all the properties available, see https://github.com/amitds1997/remote-nvim.nvim/blob/main/lua/remote-nvim/providers/provider.lua#L4
+  -- A sample implementation using WezTerm tab is at: https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes
+  client_callback = function(port, _)
+    require("remote-nvim.ui").float_term(("nvim --server localhost:%s --remote-ui"):format(port), function(exit_code)
+      if exit_code ~= 0 then
+        vim.notify(("Local client failed with exit code %s"):format(exit_code), vim.log.levels.ERROR)
+      end
+    end)
+  end,
 
   -- Plugin log related configuration [PREFER NOT TO CHANGE THIS]
   log = {
@@ -343,6 +379,62 @@ require("remote-nvim").setup({
   },
 })
 ```
+
+#### Copying additional directories to remote neovim
+
+Above process would prevent the plugin (remote-nvim.nvim) from connecting to GitHub, but nothing is stopping the
+plugins defined in your configuration from connecting to the internet. To prevent this, you can copy your other
+Neovim directories onto the remote to prevent at least your plugin manager from doing so since all your dependencies
+would already be in their right locations. Note: _some plugins such as nvim-treesitter might still connect to the
+internet and there is nothing this plugin can do to restrict that (and neither does this plugin aim to do that)_.
+In such cases, you have 3 alternatives:
+
+1. Turn off the plugin
+2. Make configuration changes (if possible) for it to not connect to internet
+3. Find an alternative to that plugin
+
+To turn off the plugin only on remote instances, one simple condition would be to check if Neovim is running in
+`headless` mode (That's how this plugin launches your remote neovim instance).
+
+With that out of the way, let's focus on how you can copy additional Neovim directories onto remote.
+
+```lua
+require("remote-nvim").setup({
+  remote = {
+    copy_dirs = {
+      data = {
+        base = vim.fn.stdpath("data"), -- Path from where data has to be copied. You can choose to copy entire path or subdirectories inside using `dirs`
+        dirs = { "lazy" }, -- Directories inside `base` to copy over. If this is set to string "*"; it means entire `base` should be copied over
+        compression = {
+          enabled = true, -- Should data be compressed before uploading
+          additional_opts = { "--exclude-vcs" }, -- Any arguments that can be passed to `tar` for compression can be specified here to improve your compression
+        },
+      },
+      -- cache = {
+      --   base = vim.fn.stdpath("cache"),
+      --   dirs = {},
+      --   compression = {
+      --     enabled = true,
+      --   },
+      -- },
+      -- state = {
+      --   base = vim.fn.stdpath("state"),
+      --   dirs = {},
+      --   compression = {
+      --     enabled = true,
+      --   },
+      -- },
+    },
+  },
+})
+```
+
+The above configuration indicates that the `lazy` directory inside your Neovim `data` directory should be copied over
+onto the remote in it's `data` directory. You can similarly specify what should be copied inside the `data`, `state`,
+`cache` or `config` directory on remote.
+
+If specified directories are going to contain a lot of data, it's _highly recommended_ to enable compression when
+uploading by setting `compression.enabled` to `true` for those particular uploads.
 
 ## ⚠️ Caveats
 
