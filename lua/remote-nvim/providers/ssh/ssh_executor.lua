@@ -1,4 +1,5 @@
 local Executor = require("remote-nvim.providers.executor")
+local utils = require("remote-nvim.utils")
 
 ---@class remote-nvim.providers.ssh.SSHExecutor: remote-nvim.providers.Executor
 ---@field super remote-nvim.providers.Executor
@@ -47,27 +48,19 @@ function SSHExecutor:upload(localSrcPath, remoteDestPath, job_opts)
 
   if job_opts.compression.enabled or false then
     local paths = vim.split(localSrcPath, " ")
-    local prefix_path_set = {}
-    local dirs = {}
-    local separator = require("remote-nvim.utils").path_separator
-    for _, path in ipairs(paths) do
-      local splits = vim.split(path, separator, { plain = true })
-      prefix_path_set[table.concat(splits, separator, 1, #splits - 1)] = true
-      table.insert(dirs, splits[#splits])
-    end
-    local prefix_paths = vim.tbl_keys(prefix_path_set)
+    local parent_dir, subdirs = utils.find_common_parent(paths)
     assert(
-      #prefix_paths == 1,
-      ("There should be only one unique path head per compressed upload. Current paths: %s"):format(
-        vim.inspect(prefix_paths)
+      parent_dir ~= "",
+      ("All directories to be uploaded from local should share a common ancestor. Passed paths: %s"):format(
+        table.concat(paths, " ")
       )
     )
 
     local ssh_command = self:_build_run_command(("tar xvzf - -C %s"):format(remoteDestPath, remoteDestPath), job_opts)
     local command = ("tar czf - --no-xattrs --disable-copyfile %s --numeric-owner --no-acls --no-same-owner --no-same-permissions -C %s %s | %s"):format(
       table.concat(job_opts.compression.additional_opts or {}, " "),
-      prefix_paths[1],
-      table.concat(dirs, " "),
+      parent_dir,
+      table.concat(subdirs, " "),
       ssh_command
     )
     return self:run_executor_job(command, job_opts)

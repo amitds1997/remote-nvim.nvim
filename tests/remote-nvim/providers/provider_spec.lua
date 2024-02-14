@@ -10,15 +10,21 @@ describe("Provider", function()
   ---@type remote-nvim.providers.Provider
   local provider
   local provider_host
+  local remote_nvim_config_copy
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
+    remote_nvim_config_copy = vim.deepcopy(remote_nvim.config)
 
     provider = Provider({
       host = provider_host,
       progress_view = mock(require("remote-nvim.ui.progressview"), true),
     })
     stub(vim, "notify")
+  end)
+
+  after_each(function()
+    remote_nvim.config = remote_nvim_config_copy
   end)
 
   describe("should handle array-type connections options", function()
@@ -169,6 +175,41 @@ describe("Provider", function()
         ("%s/workspaces/%s/.config/nvim"):format(remote_home, workspace_id),
         provider._remote_neovim_config_path
       )
+    end)
+
+    it("by correctly setting local copy dirs variables", function()
+      remote_nvim.config.remote.copy_dirs = {
+        config = {
+          base = "a/b",
+          dirs = { "c", "d" },
+        },
+        data = {
+          base = "d/e",
+          dirs = "*",
+          compression = {
+            enabled = false,
+          },
+        },
+        cache = {
+          base = "f",
+          dirs = {},
+          compression = {
+            enabled = true,
+          },
+        },
+        state = {
+          base = "h/e",
+          dirs = { "x", "y", "z" },
+        },
+      }
+      provider:_setup_workspace_variables()
+
+      assert.are.same({ "a/b/c", "a/b/d" }, provider._local_path_to_remote_neovim_config)
+      assert.are.same({
+        data = { "d/e" },
+        cache = {},
+        state = { "h/e/x", "h/e/y", "h/e/z" },
+      }, provider._local_path_copy_dirs)
     end)
   end)
 
@@ -618,6 +659,58 @@ describe("Provider", function()
           match.is_ref(provider),
           "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -o",
           match.is_string()
+        )
+      end)
+
+      it("when additional directories are to be copied", function()
+        remote_nvim.config.remote.copy_dirs = {
+          config = {
+            base = "a/b",
+            dirs = { "c", "d" },
+          },
+          data = {
+            base = "data-path",
+            dirs = "*",
+            compression = {
+              enabled = false,
+            },
+          },
+          cache = {
+            base = "cache-path",
+            dirs = { "dir1", "dir2" },
+            compression = {
+              enabled = true,
+            },
+          },
+          state = {
+            base = "state-path",
+            dirs = {},
+          },
+        }
+
+        provider:_setup_workspace_variables()
+        provider:_setup_remote()
+
+        assert.stub(upload_stub).was.called_with(
+          match.is_ref(provider),
+          { "cache-path/dir1", "cache-path/dir2" },
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.cache/nvim",
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.cache.compression
+        )
+        assert.stub(upload_stub).was.not_called_with(
+          match.is_ref(provider),
+          { "state-path" },
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.local/state/nvim",
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.state.compression
+        )
+        assert.stub(upload_stub).was.called_with(
+          match.is_ref(provider),
+          { "data-path" },
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.local/share/nvim",
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.data.compression
         )
       end)
     end)

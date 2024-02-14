@@ -68,6 +68,7 @@ local function get_copy_paths(copy_config)
       type(local_dirs) == "table",
       "remote.config.copy_dirs.config.dirs should either be '*' or a list of subdirectories"
     )
+
     local local_paths = {}
     for _, subdir in ipairs(local_dirs) do
       local path = utils.path_join(utils.is_windows, copy_config.base, subdir)
