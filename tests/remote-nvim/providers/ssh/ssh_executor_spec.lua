@@ -64,7 +64,7 @@ describe("SSH Executor", function()
           { compression = { enabled = true } }
         )
         local upload_command =
-          "tar czf - --no-xattrs --disable-copyfile  --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path'"
+          "tar czf - --no-xattrs --disable-copyfile  --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path && chown -R $(whoami) remote-path'"
         assert
           .stub(executor_run_job_stub).was
           .called_with(executor, upload_command, { compression = { enabled = true } })
@@ -92,7 +92,7 @@ describe("SSH Executor", function()
           { compression = { enabled = true, additional_opts = { "--exclude-vcs" } } }
         )
         local upload_command =
-          "tar czf - --no-xattrs --disable-copyfile --exclude-vcs --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path'"
+          "tar czf - --no-xattrs --disable-copyfile --exclude-vcs --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path && chown -R $(whoami) remote-path'"
         assert
           .stub(executor_run_job_stub).was
           .called_with(executor, upload_command, { compression = { enabled = true, additional_opts = { "--exclude-vcs" } } })

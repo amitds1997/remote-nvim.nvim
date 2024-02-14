@@ -56,7 +56,10 @@ function SSHExecutor:upload(localSrcPath, remoteDestPath, job_opts)
       )
     )
 
-    local ssh_command = self:_build_run_command(("tar xvzf - -C %s"):format(remoteDestPath, remoteDestPath), job_opts)
+    local ssh_command = self:_build_run_command(
+      ("tar xvzf - -C %s && chown -R $(whoami) %s"):format(remoteDestPath, remoteDestPath),
+      job_opts
+    )
     local command = ("tar czf - --no-xattrs --disable-copyfile %s --numeric-owner --no-acls --no-same-owner --no-same-permissions -C %s %s | %s"):format(
       table.concat(job_opts.compression.additional_opts or {}, " "),
       parent_dir,
