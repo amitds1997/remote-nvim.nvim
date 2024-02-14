@@ -171,32 +171,7 @@ M.setup = function(opts)
     )
   end
   M.config = vim.tbl_deep_extend("force", M.default_opts, opts or {})
-
-  if M.config.neovim_user_config_path ~= nil then
-    M.config.remote.copy_dirs.config = {
-      base = M.config.neovim_user_config_path,
-      dirs = "*",
-    }
-    vim.deprecate(
-      "neovim_user_config_path to define neovim configuration path",
-      "remote.copy_dirs.config in configuration setup",
-      "v0.3.0",
-      constants.PLUGIN_NAME,
-      false
-    )
-  end
-
-  M.config.local_client_config = M.config.local_client_config or {}
-  if M.config.local_client_config.callback ~= nil then
-    M.config.client_callback = M.config.local_client_config.callback
-    vim.deprecate(
-      "local_client_config.client_callback to define callback",
-      "client_callback key in setup",
-      "v0.3.0",
-      constants.PLUGIN_NAME,
-      false
-    )
-  end
+  M.config = require("remote-nvim.deprecation").handle_deprecations(M.config)
 
   M.session_provider = require("remote-nvim.providers.session_provider")()
   require("remote-nvim.command")
