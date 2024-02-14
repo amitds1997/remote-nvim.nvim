@@ -247,9 +247,30 @@ describe("Progress view should ensure that", function()
       text = "Test section",
     })
     local node = progress_view:_add_progress_view_output_node({
-      type = "run_node",
+      type = "stdout_node",
       text = "Output 1",
     }, section_node)
     assert.is_not_nil(progress_view.progress_view_pane_tree:get_node(node:get_id()))
+  end)
+
+  it("only last 30 output nodes are retained", function()
+    progress_view:start_run("Test run")
+    local section_node = progress_view:_add_progress_view_section_heading({
+      type = "stdout_node",
+      text = "Test section",
+    })
+
+    for i = 1, 60 do
+      progress_view:_add_progress_view_output_node({
+        type = "stdout_node",
+        text = ("Output line %s"):format(i),
+      }, section_node)
+    end
+
+    local output_node
+    for index, node_id in ipairs(vim.list_slice(section_node:get_child_ids(), 2)) do
+      output_node = progress_view.progress_view_pane_tree:get_node(node_id)
+      assert.equals(("Output line %s"):format(index + 30), output_node.text)
+    end
   end)
 end)

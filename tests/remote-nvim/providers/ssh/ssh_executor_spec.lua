@@ -47,13 +47,56 @@ describe("SSH Executor", function()
     it("for default port SCP", function()
       executor:upload("local-path", "remote-path")
       local scp_command = "scp -r local-path remote-host:remote-path"
-      assert.stub(executor_run_job_stub).was.called_with(executor, scp_command, { exit_cb = nil })
+      assert.stub(executor_run_job_stub).was.called_with(executor, scp_command, { compression = {} })
     end)
 
     it("for specified port SCP", function()
       other_executor:upload("local-path", "remote-path")
       local other_scp_command = "scp -P 2310 -r local-path remote-host:remote-path"
-      assert.stub(other_executor_run_job_stub).was.called_with(other_executor, other_scp_command, { exit_cb = nil })
+      assert.stub(other_executor_run_job_stub).was.called_with(other_executor, other_scp_command, { compression = {} })
+    end)
+
+    describe("when compression is turned on", function()
+      it("in default scenario", function()
+        executor:upload(
+          "local-dir/first-path local-dir/second-path local-dir/third-path",
+          "remote-path",
+          { compression = { enabled = true } }
+        )
+        local upload_command =
+          "tar czf - --no-xattrs --disable-copyfile  --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path && chown -R $(whoami) remote-path'"
+        assert
+          .stub(executor_run_job_stub).was
+          .called_with(executor, upload_command, { compression = { enabled = true } })
+      end)
+
+      it("and parent directory cannot be determined", function()
+        assert.error_matches(
+          function()
+            executor:upload(
+              "local-dir1/first-path local-dir2/second-path",
+              "remote-path",
+              { compression = { enabled = true } }
+            )
+          end,
+          "All directories to be uploaded from local should share a common ancestor. Passed paths: local-dir1/first-path local-dir2/second-path",
+          nil,
+          true
+        )
+      end)
+
+      it("when additional compression arguments are passed", function()
+        executor:upload(
+          "local-dir/first-path local-dir/second-path local-dir/third-path",
+          "remote-path",
+          { compression = { enabled = true, additional_opts = { "--exclude-vcs" } } }
+        )
+        local upload_command =
+          "tar czf - --no-xattrs --disable-copyfile --exclude-vcs --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path && chown -R $(whoami) remote-path'"
+        assert
+          .stub(executor_run_job_stub).was
+          .called_with(executor, upload_command, { compression = { enabled = true, additional_opts = { "--exclude-vcs" } } })
+      end)
     end)
   end)
 
@@ -61,13 +104,13 @@ describe("SSH Executor", function()
     it("for default port SCP", function()
       executor:download("remote-path", "local-path")
       local scp_command = "scp -r remote-host:remote-path local-path"
-      assert.stub(executor_run_job_stub).was.called_with(executor, scp_command, { exit_cb = nil })
+      assert.stub(executor_run_job_stub).was.called_with(executor, scp_command, {})
     end)
 
     it("for specified port SCP", function()
       other_executor:download("remote-path", "local-path")
       local other_scp_command = "scp -P 2310 -r remote-host:remote-path local-path"
-      assert.stub(other_executor_run_job_stub).was.called_with(other_executor, other_scp_command, { exit_cb = nil })
+      assert.stub(other_executor_run_job_stub).was.called_with(other_executor, other_scp_command, {})
     end)
   end)
 

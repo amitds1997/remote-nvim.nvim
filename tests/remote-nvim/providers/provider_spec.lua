@@ -10,15 +10,21 @@ describe("Provider", function()
   ---@type remote-nvim.providers.Provider
   local provider
   local provider_host
+  local remote_nvim_config_copy
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
+    remote_nvim_config_copy = vim.deepcopy(remote_nvim.config)
 
     provider = Provider({
       host = provider_host,
       progress_view = mock(require("remote-nvim.ui.progressview"), true),
     })
     stub(vim, "notify")
+  end)
+
+  after_each(function()
+    remote_nvim.config = remote_nvim_config_copy
   end)
 
   describe("should handle array-type connections options", function()
@@ -170,6 +176,41 @@ describe("Provider", function()
         provider._remote_neovim_config_path
       )
     end)
+
+    it("by correctly setting local copy dirs variables", function()
+      remote_nvim.config.remote.copy_dirs = {
+        config = {
+          base = "a/b",
+          dirs = { "c", "d" },
+        },
+        data = {
+          base = "d/e",
+          dirs = "*",
+          compression = {
+            enabled = false,
+          },
+        },
+        cache = {
+          base = "f",
+          dirs = {},
+          compression = {
+            enabled = true,
+          },
+        },
+        state = {
+          base = "h/e",
+          dirs = { "x", "y", "z" },
+        },
+      }
+      provider:_setup_workspace_variables()
+
+      assert.are.same({ "a/b/c", "a/b/d" }, provider._local_path_to_remote_neovim_config)
+      assert.are.same({
+        data = { "d/e" },
+        cache = {},
+        state = { "h/e/x", "h/e/y", "h/e/z" },
+      }, provider._local_path_copy_dirs)
+    end)
   end)
 
   describe("should correctly gather available neovim versions", function()
@@ -291,6 +332,7 @@ describe("Provider", function()
         neovim_version = "stable",
         os = "Linux",
       })
+      provider._local_path_to_remote_neovim_config = {}
     end)
 
     after_each(function()
@@ -517,7 +559,7 @@ describe("Provider", function()
         -- create directories
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "mkdir -p ~/.remote-nvim/workspaces && mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share && mkdir -p ~/.remote-nvim/nvim-downloads/stable",
+          "mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config/nvim && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache/nvim && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state/nvim && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share/nvim && mkdir -p ~/.remote-nvim/nvim-downloads/stable",
           match.is_string()
         )
 
@@ -540,7 +582,7 @@ describe("Provider", function()
 
         assert.stub(upload_stub).was.called_with(
           match.is_ref(provider),
-          remote_nvim.config.neovim_user_config_path,
+          provider._local_path_to_remote_neovim_config,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
           match.is_string()
         )
@@ -555,7 +597,7 @@ describe("Provider", function()
         provider:_setup_remote()
         assert.stub(upload_stub).was.not_called_with(
           match.is_ref(provider),
-          remote_nvim.config.neovim_user_config_path,
+          provider._local_path_to_remote_neovim_config,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
           match.is_string()
         )
@@ -617,6 +659,58 @@ describe("Provider", function()
           match.is_ref(provider),
           "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -o",
           match.is_string()
+        )
+      end)
+
+      it("when additional directories are to be copied", function()
+        remote_nvim.config.remote.copy_dirs = {
+          config = {
+            base = "a/b",
+            dirs = { "c", "d" },
+          },
+          data = {
+            base = "data-path",
+            dirs = "*",
+            compression = {
+              enabled = false,
+            },
+          },
+          cache = {
+            base = "cache-path",
+            dirs = { "dir1", "dir2" },
+            compression = {
+              enabled = true,
+            },
+          },
+          state = {
+            base = "state-path",
+            dirs = {},
+          },
+        }
+
+        provider:_setup_workspace_variables()
+        provider:_setup_remote()
+
+        assert.stub(upload_stub).was.called_with(
+          match.is_ref(provider),
+          { "cache-path/dir1", "cache-path/dir2" },
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.cache/nvim",
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.cache.compression
+        )
+        assert.stub(upload_stub).was.not_called_with(
+          match.is_ref(provider),
+          { "state-path" },
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.local/state/nvim",
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.state.compression
+        )
+        assert.stub(upload_stub).was.called_with(
+          match.is_ref(provider),
+          { "data-path" },
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.local/share/nvim",
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.data.compression
         )
       end)
     end)
@@ -795,7 +889,7 @@ describe("Provider", function()
       provider._config_provider:update_workspace_config(provider.unique_host_id, {
         client_auto_start = false,
       })
-      local defined_callback_stub = stub(remote_nvim.config.local_client_config, "callback")
+      local defined_callback_stub = stub(remote_nvim.config, "client_callback")
       provider:_setup_workspace_variables()
       provider:_launch_local_neovim_client()
       assert.stub(defined_callback_stub).was.not_called()
@@ -807,7 +901,7 @@ describe("Provider", function()
       })
       provider:_setup_workspace_variables()
       stub(provider, "_wait_for_server_to_be_ready")
-      local defined_callback_stub = stub(remote_nvim.config.local_client_config, "callback")
+      local defined_callback_stub = stub(remote_nvim.config, "client_callback")
 
       provider:_launch_local_neovim_client()
       assert.stub(defined_callback_stub).was.called()

@@ -6,10 +6,15 @@
 ---@field protected _job_stdout string[] Job output (if job is running)
 local Executor = require("remote-nvim.middleclass")("Executor")
 
+---@class remote-nvim.provider.Executor.JobOpts.CompressionOpts
+---@field enabled boolean Apply compression
+---@field additional_opts? string[] Additional options to pass to the `tar` command. See `man tar` for possible options
+
 ---@class remote-nvim.provider.Executor.JobOpts
 ---@field additional_conn_opts string? Connection options
 ---@field stdout_cb function? Standard output callback
 ---@field exit_cb function? On exit callback
+---@field compression remote-nvim.provider.Executor.JobOpts.CompressionOpts? Compression options; for upload and download
 
 ---Initialize executor instance
 ---@param host string Host name

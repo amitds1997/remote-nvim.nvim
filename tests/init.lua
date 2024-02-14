@@ -35,7 +35,6 @@ function M.setup()
 
   M.load("MunifTanjim/nui.nvim")
   M.load("nvim-lua/plenary.nvim")
-  M.load("rcarriga/nvim-notify")
   M.load("nvim-telescope/telescope.nvim")
 
   require("remote-nvim").setup({
@@ -43,9 +42,6 @@ function M.setup()
       level = "debug",
       max_size = 0,
     },
-  })
-  require("notify").setup({
-    background_colour = "#000000",
   })
 end
 

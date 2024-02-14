@@ -4,6 +4,7 @@ M.uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
+M.path_separator = M.is_windows and "\\" or "/"
 
 ---Get logger
 ---@return plenary.logger logger Logger instance
@@ -177,6 +178,48 @@ end
 
 function M.get_plugin_root()
   return vim.fn.fnamemodify(debug.getinfo(1).source:sub(2), ":h:h:h")
+end
+
+---Find common parent directory for all passed paths
+---@param paths string[] Paths which would be used to calculate common ancestor
+---@return string?, string[] paths Common ancestor directory; paths relative to parent directory
+function M.find_common_parent(paths)
+  if #paths == 0 then
+    return "", {}
+  end
+  local input_paths = {}
+  for _, input_path in ipairs(paths) do
+    table.insert(input_paths, vim.split(input_path, M.path_separator, { plain = true }))
+  end
+
+  if #input_paths == 1 then
+    local only_path = input_paths[1]
+    return table.concat(only_path, M.path_separator, 1, #only_path - 1), { only_path[#only_path] }
+  end
+
+  -- We start with the assumption that entire path match
+  local end_index = #input_paths[1]
+  local anscestor_path = vim.deepcopy(input_paths[1])
+
+  -- We trim it down to the min matching index
+  for _, path in ipairs(vim.list_slice(input_paths, 2)) do
+    local idx = 1
+    while idx <= #path do
+      if idx > end_index or anscestor_path[idx] ~= path[idx] then
+        break
+      end
+      idx = idx + 1
+    end
+    end_index = math.min(end_index, idx - 1)
+  end
+
+  local parent_dir = table.concat(input_paths[1], M.path_separator, 1, end_index)
+  local sub_dirs = {}
+  for _, path in ipairs(input_paths) do
+    table.insert(sub_dirs, table.concat(path, M.path_separator, end_index + 1))
+  end
+
+  return parent_dir, sub_dirs
 end
 
 return M
