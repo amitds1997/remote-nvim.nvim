@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.2...v0.2.3) (2024-02-14)
+
+
+### Features
+
+* support copying other neovim directories to remote ([#88](https://github.com/amitds1997/remote-nvim.nvim/issues/88)) ([8135d46](https://github.com/amitds1997/remote-nvim.nvim/commit/8135d462047297e236d38f1e6d9eb4b506ca2154))
+
 ## [0.2.1](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.0...v0.2.1) (2024-01-31)
 
 
