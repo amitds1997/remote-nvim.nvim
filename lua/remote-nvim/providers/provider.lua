@@ -433,7 +433,9 @@ end
 function Provider:_get_neovim_config_upload_preference()
   if self._host_config.config_copy == nil then
     local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
-      prompt = "Copy local neovim configuration to remote host? ",
+      prompt = ("Copy config at '%s' to remote host? "):format(
+        table.concat(self._local_path_to_remote_neovim_config, ", ")
+      ),
     })
 
     -- Handle choices
