@@ -291,6 +291,7 @@ describe("Provider", function()
         neovim_version = "stable",
         os = "Linux",
       })
+      provider._local_path_to_remote_neovim_config = {}
     end)
 
     after_each(function()
@@ -517,7 +518,7 @@ describe("Provider", function()
         -- create directories
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "mkdir -p ~/.remote-nvim/workspaces && mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share && mkdir -p ~/.remote-nvim/nvim-downloads/stable",
+          "mkdir -p ~/.remote-nvim/scripts && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.config/nvim && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.cache/nvim && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/state/nvim && mkdir -p ~/.remote-nvim/workspaces/akfdjakjfdk/.local/share/nvim && mkdir -p ~/.remote-nvim/nvim-downloads/stable",
           match.is_string()
         )
 

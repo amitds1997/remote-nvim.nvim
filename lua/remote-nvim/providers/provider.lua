@@ -492,8 +492,8 @@ function Provider:_setup_remote()
     local necessary_dirs = {
       self._remote_scripts_path,
       utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim"),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_state_path, "nvim"),
       utils.path_join(self._remote_is_windows, self._remote_xdg_cache_path, "nvim"),
+      utils.path_join(self._remote_is_windows, self._remote_xdg_state_path, "nvim"),
       utils.path_join(self._remote_is_windows, self._remote_xdg_data_path, "nvim"),
       self:_remote_neovim_binary_dir(),
     }

@@ -114,6 +114,7 @@ end
 ---@param command string Command to be run on the remote host
 ---@param job_opts remote-nvim.provider.Executor.JobOpts
 function SSHExecutor:run_command(command, job_opts)
+  job_opts = job_opts or {}
   return self:run_executor_job(self:_build_run_command(command, job_opts), job_opts)
 end
 
