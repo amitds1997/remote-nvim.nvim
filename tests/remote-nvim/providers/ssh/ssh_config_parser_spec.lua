@@ -1,5 +1,6 @@
 local SSHConfigParser = require("remote-nvim.providers.ssh.ssh_config_parser")
 local assert = require("luassert.assert")
+local stub = require("luassert.stub")
 
 describe("SSH Config parser should", function()
   ---@type remote-nvim.ssh.SSHConfigParser
@@ -7,6 +8,34 @@ describe("SSH Config parser should", function()
 
   before_each(function()
     parser = SSHConfigParser()
+  end)
+
+  describe("handle include paths correctly", function()
+    local logger_stub
+    before_each(function()
+      stub(vim, "notify_once")
+      logger_stub = stub(parser.logger, "fmt_error")
+    end)
+
+    it("when all paths are correct", function()
+      local path = "./data/ISSUE-92/CASE-1/config"
+      parser:parse_config_file(path, debug.getinfo(1, "S").source:sub(2))
+      local parsed_config = parser:get_config()
+
+      assert.is_true(parsed_config["peacock"] ~= nil)
+      assert.is_true(parsed_config["panda"] ~= nil)
+      assert.is_true(parsed_config["rambo"] ~= nil)
+      assert.stub(logger_stub).was_not_called()
+    end)
+
+    it("when there might be incorrect paths", function()
+      parser:parse_config_file("./data/ISSUE-92/CASE-2/config", debug.getinfo(1, "S").source:sub(2))
+      local parsed_config = parser:get_config()
+
+      assert.is_true(parsed_config["panda"] ~= nil)
+      assert.is_true(parsed_config["tantrum"] ~= nil)
+      assert.stub(logger_stub).was_called()
+    end)
   end)
 
   it("parse sample ssh config file", function()

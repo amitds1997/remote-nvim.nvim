@@ -9,6 +9,7 @@
 ---@field global_options remote-nvim.ssh.ParsedHostConfig
 ---@field config table<string, remote-nvim.ssh.SSHConfigHost>
 local SSHConfigParser = require("remote-nvim.middleclass")("SSHConfigParser")
+local core_utils = require("remote-nvim.utils")
 local ssh_utils = require("remote-nvim.providers.ssh.ssh_utils")
 
 --- This is a best effort parsing since we are mostly just interested in getting the hostnames and close-to-accurate
@@ -21,6 +22,7 @@ function SSHConfigParser:init()
   self.current_hosts = nil
   self.known_hosts = {}
   self.in_match_block = false
+  self.logger = core_utils.get_logger()
 end
 
 ---Process an SSH config directive
@@ -61,7 +63,7 @@ function SSHConfigParser:process_directive(key, value, source_file)
     self.in_match_block = true
   elseif key == "Include" then -- Handle Include clause
     self.in_match_block = false
-    self:parse_config_file(value)
+    self:parse_config_file(value, source_file)
   elseif self.current_hosts == nil then -- Handle global options
     self.global_options[key] = value
   else
@@ -113,9 +115,61 @@ function SSHConfigParser:_post_process_all_configs()
   end
 end
 
+---@private
+---Get correctly expanded path as per shell conventions
+---@param path string Path specified in the config file
+---@return string[] paths_to_parse List of files that should be parsed
+function SSHConfigParser:_expand_path(path, parent_file)
+  local parent_dir = parent_file and vim.fs.normalize(vim.fs.dirname(parent_file))
+  local cmd_opts = {
+    text = true,
+    cwd = parent_dir,
+  }
+  local res = vim.system({ "sh", "-c", ("echo %s"):format(path) }, cmd_opts):wait()
+  if res.code ~= 0 then
+    self.logger.error(("Expanding path %s failed. Extra info: (SOURCE_FILE: %s)"):format(path, parent_file or "nil"))
+    vim.notify_once("Error while parsing SSH config files. Please check the logs using :RemoteLog")
+  end
+  local expanded_paths = vim.split(res.stdout, "%s+", { trimempty = true })
+  local complete_paths = {}
+  for _, found_path in ipairs(expanded_paths) do
+    ---@diagnostic disable-next-line: undefined-field
+    local normalized_path_or_err, err = core_utils.uv.fs_realpath(found_path)
+
+    -- Direct resolution did not work, we will now check if the path we have is a relative path
+    if err and parent_dir then
+      ---@diagnostic disable-next-line: undefined-field
+      normalized_path_or_err, err = core_utils.uv.fs_realpath(vim.fs.joinpath(parent_dir, found_path))
+    end
+
+    if err == nil then
+      table.insert(complete_paths, normalized_path_or_err)
+    else
+      -- Both relative and absolute resolution did not work, we ignore this and log an error
+      self.logger.fmt_error(
+        "Failed to resolve path: %s. Extra info: (SOURCE_FILE=%s)",
+        found_path,
+        parent_file or "nil"
+      )
+      vim.notify_once("Failed to resolve one/or more paths in your SSH config file(s). Please check :RemoteLog output")
+    end
+  end
+
+  return complete_paths
+end
+
 ---@param file_path string SSH config file path
+---@param parent_file string|nil File path for the file which called this parsing
 ---@return remote-nvim.ssh.SSHConfigParser parser Returns the parser back
-function SSHConfigParser:parse_config_file(file_path)
+function SSHConfigParser:parse_config_file(file_path, parent_file)
+  local expanded_paths = self:_expand_path(file_path, parent_file)
+  for _, path in ipairs(expanded_paths) do
+    self:_parse_config_file(path)
+  end
+  return self
+end
+
+function SSHConfigParser:_parse_config_file(file_path)
   file_path = vim.fn.expand(file_path)
 
   for line in io.lines(file_path) do

@@ -1,0 +1,4 @@
+Host peacock
+  User makamaka
+
+Include ../another_test/*

@@ -1,0 +1,9 @@
+Host panda
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_rsa
+
+Include adfafg/*
+
+Host tantrum
+  User panther
