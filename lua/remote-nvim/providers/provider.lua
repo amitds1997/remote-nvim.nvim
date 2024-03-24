@@ -12,6 +12,7 @@
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 ---@field offline_mode boolean? Should we operate in offline mode
+---@field remote_working_dir string? Working directory on the remote server
 
 ---@class remote-nvim.providers.Provider: remote-nvim.Object
 ---@field host string Host name
@@ -107,9 +108,6 @@ function Provider:init(opts)
   self._cleanup_run_number = 1
   self._neovim_launch_number = 1
 
-  -- Remote configuration parameters
-  self._remote_working_dir = nil
-
   ---@diagnostic disable-next-line: missing-fields
   self._host_config = {}
   self:_reset()
@@ -137,6 +135,7 @@ function Provider:_setup_workspace_variables()
       config_copy = nil,
       client_auto_start = nil,
       workspace_id = utils.generate_random_string(10),
+      remote_working_dir = nil,
     })
   else
     self.logger.debug("Found an existing configuration. Re-using the same configuration..")
@@ -205,6 +204,11 @@ function Provider:_setup_workspace_variables()
       utils.path_join(self._remote_is_windows, self._remote_workspace_id_path, path)
   end
   self._remote_neovim_config_path = utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim")
+
+-- Set remote working directory
+  if self._host_config.remote_working_dir ~= nil then
+    self._remote_working_dir = self._host_config.remote_working_dir
+  end
 
   self:_add_session_info()
 end
