@@ -1,10 +1,17 @@
+NVIM := $(shell command -v nvim 2> /dev/null)
+CUSTOM_NVIM :=
+
+ifdef CUSTOM_NVIM
+    NVIM := $(CUSTOM_NVIM)
+endif
+
 .PHONY: test
 test:
-	nvim --headless --noplugin -u tests/init.lua -c "lua require('plenary.test_harness').test_directory_command('tests/ {minimal_init = \"tests/init.lua\", sequential = true, timeout=20000}')"
+	$(NVIM) --headless --noplugin -u tests/init.lua -c "lua require('plenary.test_harness').test_directory_command('tests/ {minimal_init = \"tests/init.lua\", sequential = true, timeout=20000}')"
 
 .PHONY: test-file
 test-file:
-	nvim --headless --noplugin -u tests/init.lua -c "lua require('plenary.busted').run('$(FILE)')"
+	$(NVIM) --headless --noplugin -u tests/init.lua -c "lua require('plenary.busted').run('$(FILE)')"
 
 .PHONY: install-hooks
 install-hooks:

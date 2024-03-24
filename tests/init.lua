@@ -10,6 +10,7 @@ function M.load(plugin)
   local name = plugin:match(".*/(.*)")
   local package_root = M.root(".tests/site/pack/deps/start/")
   local uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
+  ---@diagnostic disable-next-line: undefined-field
   if not uv.fs_stat(package_root .. name) then
     print("Installing " .. plugin)
     vim.fn.mkdir(package_root, "p")

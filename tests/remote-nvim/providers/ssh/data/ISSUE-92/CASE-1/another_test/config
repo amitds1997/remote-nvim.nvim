@@ -1,0 +1,2 @@
+Host rambo
+  IdentityFile ~/.ssh/id_rsa
