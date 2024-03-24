@@ -121,16 +121,40 @@ end
 ---@return string[] paths_to_parse List of files that should be parsed
 function SSHConfigParser:_expand_path(path, parent_file)
   local parent_dir = parent_file and vim.fs.normalize(vim.fs.dirname(parent_file))
-  local cmd_opts = {
-    text = true,
-    cwd = parent_dir,
-  }
-  local res = vim.system({ "sh", "-c", ("echo %s"):format(path) }, cmd_opts):wait()
-  if res.code ~= 0 then
-    self.logger.error(("Expanding path %s failed. Extra info: (SOURCE_FILE: %s)"):format(path, parent_file or "nil"))
-    vim.notify_once("Error while parsing SSH config files. Please check the logs using :RemoteLog")
+  local cmd = { "sh", "-c", ("echo %s"):format(path) }
+
+  local res, cmd_output
+  if vim.fn.has("nvim-0.10") == 1 then
+    res = vim
+      .system(cmd, {
+        text = true,
+        cwd = parent_dir,
+      })
+      :wait()
+
+    if res.code ~= 0 then
+      self.logger.error(("Expanding path %s failed. Extra info: (SOURCE_FILE: %s)"):format(path, parent_file or "nil"))
+      vim.notify_once("Error while parsing SSH config files. Please check the logs using :RemoteLog")
+    else
+      ---@type string
+      cmd_output = res.stdout
+    end
+  else
+    local lines = {}
+    local job_id = vim.fn.jobstart(cmd, {
+      cwd = parent_dir,
+      on_stdout = function(_, data)
+        data = table.concat(data, ""):gsub("\r\n", "\n"):gsub("\n", "")
+        table.insert(lines, data)
+      end,
+      stdout_buffered = true,
+      stderr_buffered = true,
+    })
+    vim.fn.jobwait({ job_id })
+    cmd_output = table.concat(lines, " ")
   end
-  local expanded_paths = vim.split(res.stdout, "%s+", { trimempty = true })
+  local expanded_paths = vim.split(cmd_output, "%s+", { trimempty = true })
+
   local complete_paths = {}
   for _, found_path in ipairs(expanded_paths) do
     ---@diagnostic disable-next-line: undefined-field
@@ -138,8 +162,9 @@ function SSHConfigParser:_expand_path(path, parent_file)
 
     -- Direct resolution did not work, we will now check if the path we have is a relative path
     if err and parent_dir then
-      ---@diagnostic disable-next-line: undefined-field
-      normalized_path_or_err, err = core_utils.uv.fs_realpath(vim.fs.joinpath(parent_dir, found_path))
+      normalized_path_or_err, err =
+        ---@diagnostic disable-next-line: undefined-field
+        core_utils.uv.fs_realpath(core_utils.path_join(core_utils.is_windows, parent_dir, found_path))
     end
 
     if err == nil then
