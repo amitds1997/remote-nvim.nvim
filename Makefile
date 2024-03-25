@@ -21,6 +21,16 @@ install-hooks:
 check:
 	pre-commit run --all-files
 
+kill-running-ssh-server:
+	docker rm --force --ignore openssh-server
+
+.PHONY: launch-ssh-server
+launch-ssh-server: kill-running-ssh-server
+	docker run -d --name=openssh-server --hostname=openssh-server \
+	-e PUID=1000 -e PGID=1000 -e TZ=Etc/UTC -e SUDO_ACCESS=true \
+	-e PASSWORD_ACCESS=true -e USER_PASSWORD=password -e USER_NAME=test-user \
+	-p 2222:2222 --restart unless-stopped lscr.io/linuxserver/openssh-server:latest
+
 .PHONY: clean
 clean:
 	rm -rf .tests/

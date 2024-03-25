@@ -84,6 +84,12 @@ M.default_opts = {
         value_type = "static",
         value = "",
       },
+      { -- FreeBSD Default SSH Prompt style
+        match = "Password for",
+        type = "secret",
+        value_type = "static",
+        value = "",
+      },
       {
         match = "continue connecting (yes/no/[fingerprint])?",
         type = "plain",

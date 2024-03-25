@@ -11,6 +11,7 @@ describe("Provider", function()
   local provider
   local provider_host
   local remote_nvim_config_copy
+  assert:set_parameter("TableFormatLevel", 1)
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
@@ -65,7 +66,7 @@ describe("Provider", function()
   end)
 
   describe("should handle setting workspace variables", function()
-    local detect_remote_os_stub, get_remote_neovim_version_preference_stub
+    local detect_remote_os_and_arch_stub, get_remote_neovim_version_preference_stub
     local workspace_id = require("remote-nvim.utils").generate_random_string(10)
 
     before_each(function()
@@ -74,7 +75,7 @@ describe("Provider", function()
         conn_opts = { "-p", "3011" },
         progress_view = mock(require("remote-nvim.ui.progressview"), true),
       })
-      detect_remote_os_stub = stub(provider, "_get_remote_os")
+      detect_remote_os_and_arch_stub = stub(provider, "_get_remote_os_and_arch")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
 
       provider._config_provider:add_workspace_config(provider.unique_host_id, {
@@ -87,8 +88,10 @@ describe("Provider", function()
         workspace_id = workspace_id,
         neovim_version = "stable",
         os = "Linux",
+        arch = "x86_64",
+        neovim_install_method = "binary",
       })
-      detect_remote_os_stub.returns("Linux")
+      detect_remote_os_and_arch_stub.returns("Linux", "x86_64")
       get_remote_neovim_version_preference_stub.returns("stable")
       provider:_setup_workspace_variables()
     end)
@@ -104,6 +107,8 @@ describe("Provider", function()
       assert.are.same({
         provider = "local",
         host = provider.host,
+        arch = "x86_64",
+        neovim_install_method = "binary",
         connection_options = provider.conn_opts,
         remote_neovim_home = provider._remote_neovim_home,
         config_copy = nil,
@@ -331,6 +336,8 @@ describe("Provider", function()
         workspace_id = "ajdfkafd",
         neovim_version = "stable",
         os = "Linux",
+        arch = "x86_64",
+        neovim_install_method = "binary",
       })
       provider._local_path_to_remote_neovim_config = {}
     end)
@@ -402,6 +409,8 @@ describe("Provider", function()
         workspace_id = "ajdfkafd",
         neovim_version = "stable",
         os = "Linux",
+        arch = "x86_64",
+        neovim_install_method = "binary",
       })
       provider:_setup_workspace_variables()
     end)
@@ -544,6 +553,8 @@ describe("Provider", function()
           workspace_id = "akfdjakjfdk",
           neovim_version = "stable",
           os = "Linux",
+          arch = "x86_64",
+          neovim_install_method = "binary",
         })
         provider:_setup_workspace_variables()
       end)
@@ -576,7 +587,7 @@ describe("Provider", function()
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary",
           match.is_string()
         )
 
@@ -633,7 +644,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -o",
           match.is_string()
         )
       end)
@@ -657,7 +668,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -o",
           match.is_string()
         )
       end)
@@ -732,6 +743,8 @@ describe("Provider", function()
         workspace_id = "ajfdalfj",
         neovim_version = "stable",
         os = "Linux",
+        arch = "x86_64",
+        neovim_install_method = "binary",
       })
       provider:_setup_workspace_variables()
     end)
@@ -812,6 +825,8 @@ describe("Provider", function()
         workspace_id = "ajdfkafd",
         neovim_version = "stable",
         os = "Linux",
+        arch = "x86_64",
+        neovim_install_method = "binary",
       })
     end)
 
@@ -878,6 +893,8 @@ describe("Provider", function()
         workspace_id = "ajdfkafd",
         neovim_version = "stable",
         os = "Linux",
+        arch = "x86_64",
+        neovim_install_method = "binary",
       })
     end)
 

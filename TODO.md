@@ -9,3 +9,4 @@
 ## Backlog
 
 1. Use `plenary.async`
+2. Add CI runs for the complete workflow run in Ubuntu, MacOS Intel, MacOS M1

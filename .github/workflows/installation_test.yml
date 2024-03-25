@@ -26,5 +26,5 @@ jobs:
         shell: bash
         run: |-
           chmod +x ./scripts/neovim_install.sh ./scripts/neovim_download.sh
-          ./scripts/neovim_install.sh -v stable -d ~/.remote-nvim
+          ./scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary
           ~/.remote-nvim/nvim-downloads/stable/bin/nvim -v

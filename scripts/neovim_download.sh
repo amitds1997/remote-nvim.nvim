@@ -15,11 +15,12 @@ fi
 
 function display_help() {
 	cat <<EOM
-Usage: $0 -v <nvim-version> -d <download-path> -o <os-name>
+Usage: $0 -v <nvim-version> -d <download-path> -o <os-name> -t <download-type>
 Options:
   -v       Specify the desired Neovim version to download.
   -d       Specify directory inside which Neovim release should be downloaded.
   -o       OS whose binary is to be downloaded.
+  -t       What to download: 'binary' or 'source'
   -h       Display this help message and exit.
 EOM
 }
@@ -75,8 +76,20 @@ function download_neovim() {
 	echo "Download completed."
 }
 
+# Download Neovim source
+function download_neovim_source() {
+	local version="$1"
+	local download_dir="$2"
+	local download_url="https://github.com/neovim/neovim/archive/refs/tags/${version}.tar.gz"
+
+	echo "Downloading Neovim source..."
+	download "$download_url" "$download_dir/nvim-${version}-source.tar.gz"
+
+	echo "Source download completed."
+}
+
 # Parse command-line options
-while getopts "v:d:o:h" opt; do
+while getopts "v:d:o:t:h" opt; do
 	case $opt in
 	v)
 		nvim_version="$OPTARG"
@@ -86,6 +99,9 @@ while getopts "v:d:o:h" opt; do
 		;;
 	o)
 		os_name="$OPTARG"
+		;;
+	t)
+		download_type="$OPTARG"
 		;;
 	h)
 		display_help
@@ -104,7 +120,7 @@ while getopts "v:d:o:h" opt; do
 done
 
 # Check if the required options are provided
-if [[ -z $nvim_version || -z $os_name || -z $download_dir ]]; then
+if [[ -z $nvim_version || -z $download_dir || -t $download_type ]]; then
 	echo "Missing options. Use -h to see the usage."
 	exit 1
 fi
@@ -114,4 +130,13 @@ if [[ ! -d $download_dir ]]; then
 	exit 1
 fi
 
-download_neovim "$os_name" "$nvim_version" "$download_dir"
+if [[ $nvim_version != "stable" && $nvim_version != "nightly" && ! $nvim_version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+	echo "Invalid Neovim version: $nvim_version"
+	exit 1
+fi
+
+if [[ $download_type == "source" ]]; then
+	download_neovim_source "$nvim_version" "$download_dir"
+else
+	download_neovim "$os_name" "$nvim_version" "$download_dir"
+fi

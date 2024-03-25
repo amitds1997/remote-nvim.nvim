@@ -150,4 +150,22 @@ function M.get_offline_neovim_release_name(os, version)
   end
 end
 
+---@param kernel_name os_type Name of the kernel
+---@param arch string Arch platforms
+function M.is_binary_release_available(kernel_name, arch)
+  if kernel_name == "macOS" or kernel_name == "Windows" then
+    return true
+  end
+
+  local unsupported_archs = { "arm", "risc" }
+
+  -- Neovim currently does not provide binaries for ARM or RISC
+  return (
+    kernel_name == "Linux"
+    and vim.tbl_isempty(vim.tbl_filter(function(unsupported_arch)
+      return string.find(arch, unsupported_arch) ~= nil
+    end, unsupported_archs))
+  )
+end
+
 return M

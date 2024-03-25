@@ -45,7 +45,7 @@ repos:
       - id: yamllint
         args: [--strict]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 3.9.0
+    rev: v3.18.0
     hooks:
       - id: commitizen
   - repo: https://github.com/amitds1997/selene
