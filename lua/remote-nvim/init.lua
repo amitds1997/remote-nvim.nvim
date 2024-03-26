@@ -90,6 +90,21 @@ M.default_opts = {
         value_type = "static",
         value = "",
       },
+      { -- FreeBSD Default SSH Prompt style
+        match = "Password for",
+        type = "secret",
+        value_type = "static",
+        value = "",
+      },
+      {
+        -- Because of https://github.com/amitds1997/remote-nvim.nvim/issues/94
+        -- This could also be adjusted using case-insensitive search; but we would
+        -- not be doing that right now
+        match = "Password:",
+        type = "secret",
+        value_type = "static",
+        value = "",
+      },
     },
   },
   remote = {

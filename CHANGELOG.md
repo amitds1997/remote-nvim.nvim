@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.4](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.3...v0.2.4) (2024-03-24)
+
+
+### Features
+
+* **config:** add more default password prompt matchers ([#98](https://github.com/amitds1997/remote-nvim.nvim/issues/98)) ([cfc7bd6](https://github.com/amitds1997/remote-nvim.nvim/commit/cfc7bd63d7f36c5cbef11fac7cb9b8f388eac7ec))
+
+
+### Bug Fixes
+
+* **ssh:** Correctly handle path expansion for Include directive ([#96](https://github.com/amitds1997/remote-nvim.nvim/issues/96)) ([de2004d](https://github.com/amitds1997/remote-nvim.nvim/commit/de2004d8af5e714f7744ecb0c267bbd832f17ca7))
+
 ## [0.2.3](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.2...v0.2.3) (2024-02-14)
 
 

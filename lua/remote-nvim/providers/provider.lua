@@ -797,15 +797,23 @@ end
 ---Stop running Neovim instance (if any)
 function Provider:stop_neovim()
   if self:is_remote_server_running() then
-    vim.system(
-      { "nvim", "--server", ("localhost:%s"):format(self._local_free_port), "--remote-send", ":qall!<CR>" },
-      { text = true },
-      function(res)
+    local cmd = { "nvim", "--server", ("localhost:%s"):format(self._local_free_port), "--remote-send", ":qall!<CR>" }
+
+    if vim.fn.has("nvim-0.10") then
+      vim.system(cmd, { text = true }, function(res)
         if res.code == 0 then
           self:_reset()
         end
-      end
-    )
+      end)
+    else
+      vim.fn.jobstart(cmd, {
+        on_exit = function(_, exit_code)
+          if exit_code == 0 then
+            self:_reset()
+          end
+        end,
+      })
+    end
   end
 end
 
