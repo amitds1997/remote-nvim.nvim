@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.4...v0.2.5) (2024-04-10)
+
+
+### Bug Fixes
+
+* **ssh:** use `--disable-copyfile` only on macOS when compressing ([#101](https://github.com/amitds1997/remote-nvim.nvim/issues/101)) ([7472c45](https://github.com/amitds1997/remote-nvim.nvim/commit/7472c452dad2682ce3061e3e23e7d304905afe20))
+
 ## [0.2.4](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.3...v0.2.4) (2024-03-24)
 
 
