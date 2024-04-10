@@ -60,12 +60,13 @@ function SSHExecutor:upload(localSrcPath, remoteDestPath, job_opts)
       ("tar xvzf - -C %s && chown -R $(whoami) %s"):format(remoteDestPath, remoteDestPath),
       job_opts
     )
-    local command = ("tar czf - --no-xattrs --disable-copyfile %s --numeric-owner --no-acls --no-same-owner --no-same-permissions -C %s %s | %s"):format(
+    local tar_command = ("tar czf - --no-xattrs %s %s --numeric-owner --no-acls --no-same-owner --no-same-permissions -C %s %s"):format(
+      utils.os_name() == "macOS" and "--disable-copyfile" or "",
       table.concat(job_opts.compression.additional_opts or {}, " "),
       parent_dir,
-      table.concat(subdirs, " "),
-      ssh_command
+      table.concat(subdirs, " ")
     )
+    local command = ("%s | %s"):format(tar_command, ssh_command)
     return self:run_executor_job(command, job_opts)
   else
     local remotePath = ("%s:%s"):format(self.host, remoteDestPath)

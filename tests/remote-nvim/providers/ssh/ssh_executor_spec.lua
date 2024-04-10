@@ -57,7 +57,8 @@ describe("SSH Executor", function()
     end)
 
     describe("when compression is turned on", function()
-      it("in default scenario", function()
+      it("in default scenario on macOS", function()
+        stub(require("remote-nvim.utils"), "os_name").returns("macOS")
         executor:upload(
           "local-dir/first-path local-dir/second-path local-dir/third-path",
           "remote-path",
@@ -65,6 +66,20 @@ describe("SSH Executor", function()
         )
         local upload_command =
           "tar czf - --no-xattrs --disable-copyfile  --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path && chown -R $(whoami) remote-path'"
+        assert
+          .stub(executor_run_job_stub).was
+          .called_with(executor, upload_command, { compression = { enabled = true } })
+      end)
+
+      it("in default scenario on Linux", function()
+        stub(require("remote-nvim.utils"), "os_name").returns("Linux")
+        executor:upload(
+          "local-dir/first-path local-dir/second-path local-dir/third-path",
+          "remote-path",
+          { compression = { enabled = true } }
+        )
+        local upload_command =
+          "tar czf - --no-xattrs   --numeric-owner --no-acls --no-same-owner --no-same-permissions -C local-dir first-path second-path third-path | ssh remote-host 'tar xvzf - -C remote-path && chown -R $(whoami) remote-path'"
         assert
           .stub(executor_run_job_stub).was
           .called_with(executor, upload_command, { compression = { enabled = true } })
@@ -86,6 +101,7 @@ describe("SSH Executor", function()
       end)
 
       it("when additional compression arguments are passed", function()
+        stub(require("remote-nvim.utils"), "os_name").returns("macOS")
         executor:upload(
           "local-dir/first-path local-dir/second-path local-dir/third-path",
           "remote-path",
