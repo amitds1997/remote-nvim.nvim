@@ -78,13 +78,13 @@ M.default_opts = {
     scp_binary = "scp",
     ssh_config_file_paths = { "$HOME/.ssh/config" },
     ssh_prompts = {
-      {
+      { -- Handle default password style on Linux/macOS
         match = "password:",
         type = "secret",
         value_type = "static",
         value = "",
       },
-      {
+      { -- Handle unknown host upon SSH
         match = "continue connecting (yes/no/[fingerprint])?",
         type = "plain",
         value_type = "static",
@@ -101,6 +101,12 @@ M.default_opts = {
         -- This could also be adjusted using case-insensitive search; but we would
         -- not be doing that right now
         match = "Password:",
+        type = "secret",
+        value_type = "static",
+        value = "",
+      },
+      { -- Handle SSH-key with passphrases
+        match = "Enter passphrase",
         type = "secret",
         value_type = "static",
         value = "",
