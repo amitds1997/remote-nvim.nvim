@@ -1,3 +1,4 @@
+local event = require("nui.utils.autocmd").event
 local M = {}
 
 ---Generate a floating window, given the window options, running the provided command
@@ -24,9 +25,13 @@ function M.float_term(cmd, exit_cb, popup_options)
   popup:mount()
 
   -- If we leave the buffer, we close the pop-up
-  popup:on("BufLeave", function()
+  popup:on(event.BufLeave, function()
     popup:unmount()
   end, { once = true })
+
+  popup:on(event.VimResized, function()
+    popup:update_layout()
+  end)
 
   vim.fn.termopen(cmd, {
     on_exit = function(_, exit_code)

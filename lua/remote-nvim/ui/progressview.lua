@@ -1,3 +1,4 @@
+local event = require("nui.utils.autocmd").event
 local Deque = require("remote-nvim.structs.deque")
 local NuiLine = require("nui.line")
 local NuiTree = require("nui.tree")
@@ -96,6 +97,11 @@ function ProgressView:init()
     }
     ---@diagnostic disable-next-line:param-type-mismatch
     self.progress_view = Popup(self.progress_view_options)
+
+    self.progress_view:on(event.VimResized, function()
+      ---@diagnostic disable-next-line:param-type-mismatch
+      self.progress_view:update_layout()
+    end)
   end
   self.help_pane_bufnr = vim.api.nvim_create_buf(false, true)
   self.session_info_pane_bufnr = vim.api.nvim_create_buf(false, true)
