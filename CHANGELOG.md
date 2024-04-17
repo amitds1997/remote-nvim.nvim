@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.6...v0.2.7) (2024-04-17)
+
+
+### Bug Fixes
+
+* **ui:** resize popup window with nvim resize ([#108](https://github.com/amitds1997/remote-nvim.nvim/issues/108)) ([fd0f74a](https://github.com/amitds1997/remote-nvim.nvim/commit/fd0f74a8ce0ea479887b86fbd3f7957473dceecf))
+
 ## [0.2.6](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.5...v0.2.6) (2024-04-14)
 
 
