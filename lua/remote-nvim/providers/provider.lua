@@ -173,7 +173,7 @@ function Provider:_setup_workspace_variables()
   self._remote_neovim_install_method = self._host_config.neovim_install_method
 
   -- Gather remote neovim version, if not setup
-  if self._host_config.neovim_version == nil then
+  if self._host_config.neovim_version == nil and self._remote_neovim_install_method ~= "system" then
     self._host_config.neovim_version = self:_get_remote_neovim_version_preference()
     self._config_provider:update_workspace_config(self.unique_host_id, {
       neovim_version = self._host_config.neovim_version,
@@ -324,6 +324,7 @@ function Provider:_get_remote_os_and_arch()
         "Linux",
         "macOS",
         "Windows",
+        "some other OS (e.g. FreeBSD, NetBSD, etc)",
       }
       self._remote_os = self:get_selection(os_choices, {
         prompt = ("Choose remote OS (found OS '%s'): "):format(os),
@@ -331,6 +332,10 @@ function Provider:_get_remote_os_and_arch()
           return ("Remote host is running %s"):format(item)
         end,
       })
+
+      if self._remote_os == "some other OS (e.g. FreeBSD, NetBSD, etc)" then
+        self._remote_os = vim.fn.input("Please enter your OS name: ")
+      end
     end
   end
 
