@@ -3,7 +3,7 @@ default_install_hook_types: [pre-commit]
 default_stages: [pre-commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
       - id: check-json
       - id: check-toml
@@ -17,35 +17,35 @@ repos:
       - id: pretty-format-json
         args: [--autofix]
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.7.0-1
+    rev: v3.8.0-1
     hooks:
       - id: shfmt  # native (requires/installs Go to build)
   - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.9.0
+    rev: v0.10.0
     hooks:
       - id: shellcheck
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.36.0
+    rev: v0.39.0
     hooks:
       - id: markdownlint-fix
         exclude: CHANGELOG.md
       - id: markdownlint
         exclude: CHANGELOG.md
   - repo: https://github.com/JohnnyMorganz/StyLua
-    rev: v0.18.2
+    rev: v0.20.0
     hooks:
       - id: stylua
   - repo: https://github.com/lyz-code/yamlfix/
-    rev: 1.13.0
+    rev: 1.16.0
     hooks:
       - id: yamlfix
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.32.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
         args: [--strict]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 3.9.0
+    rev: v3.24.0
     hooks:
       - id: commitizen
   - repo: https://github.com/amitds1997/selene

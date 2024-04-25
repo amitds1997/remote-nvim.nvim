@@ -1,14 +1,18 @@
 ---@alias provider_type "ssh"|"devpod"|"local"
 ---@alias os_type "macOS"|"Windows"|"Linux"
+---@alias arch_type "x86_64"|"arm64"
+---@alias neovim_install_method "binary"|"source"|"system"
 
 ---@class remote-nvim.providers.WorkspaceConfig
 ---@field provider provider_type? Which provider is responsible for managing this workspace
 ---@field workspace_id string? Unique ID for workspace
 ---@field os os_type? OS running on the remote host
+---@field arch string? Arch of the remote host
 ---@field host string? Host name to whom the workspace belongs
 ---@field neovim_version string? Version of Neovim running on the remote
 ---@field connection_options string? Connection options needed to connect to the remote host
 ---@field remote_neovim_home string? Path on remote host where remote-neovim installs/configures things
+---@field neovim_install_method neovim_install_method? How was the remote Neovim installed in the workspace
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 ---@field offline_mode boolean? Should we operate in offline mode
@@ -20,7 +24,6 @@
 ---@field protected unique_host_id string Unique host identifier
 ---@field protected executor remote-nvim.providers.Executor Executor instance
 ---@field protected local_executor remote-nvim.providers.Executor Local executor instance
----@field protected notifier remote-nvim.providers.Notifier Notification handler
 ---@field protected progress_viewer remote-nvim.ui.ProgressView Progress viewer for progress
 ---@field private offline_mode boolean Operating in offline mode or not
 ---@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
@@ -35,6 +38,7 @@
 ---@field private _local_path_copy_dirs table<string, string[]> Local path(s) containing remote Neovim configuration
 ---@field private _remote_neovim_home string Directory where all remote neovim data would be stored on host
 ---@field private _remote_os string Remote host's OS
+---@field private _remote_arch string Remote host's arch
 ---@field private _remote_neovim_version string Neovim version on the remote host
 ---@field private _remote_is_windows boolean Flag indicating whether the remote system is windows
 ---@field private _remote_workspace_id string Workspace ID associated with remote neovim
@@ -46,6 +50,7 @@
 ---@field private _remote_xdg_state_path  string Get workspace specific XDG state path
 ---@field private _remote_xdg_cache_path  string Get workspace specific XDG cache path
 ---@field private _remote_neovim_config_path  string Get neovim configuration path on the remote host
+---@field private _remote_neovim_install_method neovim_install_method Get neovim installation method
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 ---@field private _remote_neovim_download_script_path  string Get Neovim download script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
@@ -144,13 +149,28 @@ function Provider:_setup_workspace_variables()
   self._host_config = self._config_provider:get_workspace_config(self.unique_host_id)
 
   -- Gather remote OS information
-  if self._host_config.os == nil then
-    self._host_config.os = self:_get_remote_os()
+  if self._host_config.os == nil or self._host_config.arch == nil then
+    self._host_config.os, self._host_config.arch = self:_get_remote_os_and_arch()
     self._config_provider:update_workspace_config(self.unique_host_id, {
       os = self._host_config.os,
+      arch = self._host_config.arch,
     })
   end
   self._remote_os = self._host_config.os
+  self._remote_arch = self._host_config.arch
+
+  -- Gather remote neovim install method
+  if self._host_config.neovim_install_method == nil then
+    if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
+      self._host_config.neovim_install_method = "binary"
+    else
+      self._host_config.neovim_install_method = self:_get_remote_neovim_install_method_preference()
+    end
+    self._config_provider:update_workspace_config(self.unique_host_id, {
+      neovim_install_method = self._host_config.neovim_install_method,
+    })
+  end
+  self._remote_neovim_install_method = self._host_config.neovim_install_method
 
   -- Gather remote neovim version, if not setup
   if self._host_config.neovim_version == nil then
@@ -159,9 +179,6 @@ function Provider:_setup_workspace_variables()
       neovim_version = self._host_config.neovim_version,
     })
   end
-
-  -- Set variables from the fetched configuration
-  self._remote_is_windows = self._remote_os == "Windows" and true or false
   self._remote_neovim_version = self._host_config.neovim_version
 
   -- Set remote neovim home path
@@ -171,10 +188,13 @@ function Provider:_setup_workspace_variables()
       remote_neovim_home = self._host_config.remote_neovim_home,
     })
   end
+  self._remote_neovim_home = self._host_config.remote_neovim_home
+
+  -- Set variables from the fetched configuration
+  self._remote_is_windows = self._remote_os == "Windows" and true or false
 
   -- Set up remaining workspace variables
   self._remote_workspace_id = self._host_config.workspace_id
-  self._remote_neovim_home = self._host_config.remote_neovim_home
   self._remote_workspaces_path = utils.path_join(self._remote_is_windows, self._remote_neovim_home, "workspaces")
   self._remote_scripts_path = utils.path_join(self._remote_is_windows, self._remote_neovim_home, "scripts")
   self._remote_neovim_install_script_path = utils.path_join(
@@ -286,12 +306,14 @@ end
 
 ---@private
 ---Get OS running on the remote host
----@return string remote_os OS running on remote host
-function Provider:_get_remote_os()
+---@return string,string remote_os_and_arch OS running on remote host
+function Provider:_get_remote_os_and_arch()
   if self._remote_os == nil then
-    self:run_command("uname", "Determining OS on remote machine")
+    self:run_command("uname -s -m", "Determining OS on remote machine")
     local cmd_out_lines = self.executor:job_stdout()
-    local os = cmd_out_lines[#cmd_out_lines]
+    local os_and_arch = vim.split(cmd_out_lines[#cmd_out_lines], " ", { trimempty = true, plain = true })
+    local os = os_and_arch[1]
+    self._remote_arch = os_and_arch[2]
 
     if os == "Linux" then
       self._remote_os = os
@@ -312,7 +334,7 @@ function Provider:_get_remote_os()
     end
   end
 
-  return self._remote_os
+  return self._remote_os, self._remote_arch
 end
 
 ---@private
@@ -351,6 +373,7 @@ function Provider:get_selection(choices, selection_opts)
       text = "No selection made.",
     }, section_node)
     self.progress_viewer:update_status("failed", false, section_node)
+    self._setup_running = false
     local co = coroutine.running()
     if co then
       return coroutine.yield(nil)
@@ -365,6 +388,38 @@ function Provider:get_selection(choices, selection_opts)
     self.progress_viewer:update_status("success", false, section_node)
     return choice
   end
+end
+
+---@private
+---Get user's preference for Neovim installation method
+---@return neovim_install_method install_method Installation method chosen
+function Provider:_get_remote_neovim_install_method_preference()
+  if self._remote_neovim_install_method == nil then
+    local choices = { "Build from source" }
+
+    self:run_command("nvim --version || true", "Checking if neovim installed globally on remote")
+    local cmd_out_lines = self.executor:job_stdout()
+    local nvim_version_string = table.concat(cmd_out_lines)
+    if nvim_version_string:find("NVIM v.*") then
+      table.insert(choices, "Symlink to system-wide Neovim")
+    end
+
+    local choice = self:get_selection(choices, {
+      prompt = (("Binary not available for your system (%s, %s). Choose Neovim install method"):format(
+        self._remote_os,
+        self._remote_arch
+      )),
+    })
+
+    if choice == "Build from source" then
+      return "source"
+    elseif choice == "Symlink to system-wide Neovim" then
+      self._host_config.neovim_version = "system"
+      return "system"
+    end
+  end
+
+  return self._remote_neovim_install_method
 end
 
 ---@private
@@ -521,22 +576,26 @@ function Provider:_setup_remote()
     end
 
     -- Set correct permissions and install Neovim
-    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && %s -v %s -d %s]]):format(
+    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && %s -v %s -d %s -m %s -a %s]]):format(
       self._remote_neovim_download_script_path,
       self._remote_neovim_install_script_path,
       self._remote_neovim_install_script_path,
       self._remote_neovim_version,
-      self._remote_neovim_home
+      self._remote_neovim_home,
+      self._remote_neovim_install_method,
+      self._remote_arch
     )
 
-    if self.offline_mode then
+    if self.offline_mode and self._remote_neovim_install_method ~= "system" then
       -- We need to ensure that we download Neovim version locally and then push it to the remote
       if not remote_nvim.config.offline_mode.no_github then
         self:run_command(
-          ("%s -o %s -v %s -d %s"):format(
+          ("%s -o %s -v %s -a %s -t %s -d %s"):format(
             utils.path_join(utils.is_windows, utils.get_plugin_root(), "scripts", "neovim_download.sh"),
             self._remote_os,
             self._remote_neovim_version,
+            self._remote_arch,
+            self._remote_neovim_install_method,
             remote_nvim.config.offline_mode.cache_dir
           ),
           "Downloading Neovim release locally",
@@ -549,14 +608,20 @@ function Provider:_setup_remote()
       local local_release_path = utils.path_join(
         utils.is_windows,
         remote_nvim.config.offline_mode.cache_dir,
-        provider_utils.get_offline_neovim_release_name(self._remote_os, self._remote_neovim_version)
+        provider_utils.get_offline_neovim_release_name(
+          self._remote_os,
+          self._remote_neovim_version,
+          self._remote_arch,
+          self._remote_neovim_install_method
+        )
       )
-      local local_release_checksum_path = ("%s.sha256sum"):format(local_release_path)
+      local local_upload_paths = { local_release_path }
+
+      if self._remote_neovim_install_method == "binary" then
+        table.insert(local_upload_paths, ("%s.sha256sum"):format(local_release_path))
+      end
       self:upload(
-        {
-          local_release_path,
-          local_release_checksum_path,
-        },
+        local_upload_paths,
         utils.path_join(self._remote_is_windows, self:_remote_neovim_binary_dir()),
         "Upload Neovim release from local to remote"
       )
@@ -885,6 +950,7 @@ function Provider:_handle_job_completion(desc, is_local_executor)
         debug.traceback(co, ("'%s' failed."):format(desc)),
         ("\n\nFAILED JOB OUTPUT (SO FAR)\n%s"):format(table.concat(executor:job_stdout(), "\n"))
       )
+      self._setup_running = false
       coroutine.yield(exit_code)
     else
       error(("'%s' failed"):format(desc))

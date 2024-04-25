@@ -26,6 +26,8 @@ you have an alternative though, I would be happy to integrate it into the plugin
 
 - **Offline mode** - If the remote does not have access to GitHub, Neovim release can be locally
   downloaded and then transferred to the remote. For more details, see [Offline mode](#-offline-mode).
+- **Building from source/Use globally installed Neovim** - If Neovim is not available for your OS/Arch, you can
+  build it from source and/or symlink to the globally available Neovim.
 
 ### Planned features
 
@@ -52,7 +54,7 @@ you have an alternative though, I would be happy to integrate it into the plugin
 
 | Support level                     | OS                                                                      |
 | --------------------------------- | ----------------------------------------------------------------------- |
-| ✅ **Supported**                   | Linux, MacOS                                                            |
+| ✅ **Supported**                   | Linux, MacOS, FreeBSD (using build from source and/or globally available Neovim)|
 | 🚧 **In progress**                 | FreeBSD ([#71](https://github.com/amitds1997/remote-nvim.nvim/pull/71)) |
 | 🟡 **Planned but not implemented** | Windows, WSL                                                            |
 
@@ -357,12 +359,14 @@ you have the correct path to the script. Adjust script path as per where the plu
 Alternatively, you can also clone the repo at a separate location and run this script from inside the cloned repo.
 
 ```bash
-./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type>
+./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type> -a <arch-type> -t <release-type>
 
 # <version> can be stable, nightly or any Neovim release provided like v0.9.4
 # <cache-dir> is the path in which the Neovim release and it's checksum should be downloaded. This should be same as the cache_dir plugin configuration value else it won't be
 # detected by the plugin. See configuration below.
 # <os-type> specifies which OS's binaries should be downloaded. Supported values are "Linux" and "macOS"
+# <arch-type> is the host's architecture. Can be `x86_64` or `arm64`
+# <release-type> is type of release to download. Can be `binary` or `source`
 ```
 
 To enable this,

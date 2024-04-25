@@ -1,4 +1,4 @@
-*remote-nvim.txt*       For Neovim >= 0.9.0      Last change: 2024 February 14
+*remote-nvim.txt*        For Neovim >= 0.9.0        Last change: 2024 April 25
 
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
@@ -53,6 +53,8 @@ IMPLEMENTED FEATURES ~
 
 - **Offline mode** - If the remote does not have access to GitHub, Neovim release can be locally
     downloaded and then transferred to the remote. For more details, see |remote-nvim-offline-mode|.
+- **Building from source/Use globally installed Neovim** - If Neovim is not available for your OS/Arch, you can
+    build it from source and/or symlink to the globally available Neovim.
 
 
 PLANNED FEATURES ~
@@ -80,7 +82,8 @@ OS SUPPORT ~
   -----------------------------------------------------------------------
   Support level          OS
   ---------------------- ------------------------------------------------
-  Supported              Linux, MacOS
+  Supported              Linux, MacOS, FreeBSD (using build from source
+                         and/or globally available Neovim)
 
   In progress            FreeBSD (71)
 
@@ -397,12 +400,14 @@ system. Alternatively, you can also clone the repo at a separate location and
 run this script from inside the cloned repo.
 
 >bash
-    ./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type>
+    ./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type> -a <arch-type> -t <release-type>
     
      <version> can be stable, nightly or any Neovim release provided like v0.9.4
      <cache-dir> is the path in which the Neovim release and it's checksum should be downloaded. This should be same as the cache_dir plugin configuration value else it won't be
      detected by the plugin. See configuration below.
      <os-type> specifies which OS's binaries should be downloaded. Supported values are "Linux" and "macOS"
+     <arch-type> is the host's architecture. Can be `x86_64` or `arm64`
+     <release-type> is type of release to download. Can be `binary` or `source`
 <
 
 To enable this,

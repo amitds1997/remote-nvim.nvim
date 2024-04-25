@@ -66,15 +66,66 @@ describe("Greater version finder should", function()
 end)
 
 describe("Offline revision names are correct", function()
+  it("for source release", function()
+    assert.equals(
+      "nvim-stable-source.tar.gz",
+      utils.get_offline_neovim_release_name("Linux", "stable", "x86_64", "source")
+    )
+    assert.equals(
+      "nvim-nightly-source.tar.gz",
+      utils.get_offline_neovim_release_name("Linux", "nightly", "x86_64", "source")
+    )
+    assert.equals(
+      "nvim-v0.9.5-source.tar.gz",
+      utils.get_offline_neovim_release_name("macOS", "v0.9.5", "x86_64", "source")
+    )
+  end)
+
   it("for macOS", function()
-    assert.equals("nvim-stable-macos.tar.gz", utils.get_offline_neovim_release_name("macOS", "stable"))
-    assert.equals("nvim-nightly-macos.tar.gz", utils.get_offline_neovim_release_name("macOS", "nightly"))
-    assert.equals("nvim-v0.9.5-macos.tar.gz", utils.get_offline_neovim_release_name("macOS", "v0.9.5"))
+    assert.equals(
+      "nvim-stable-macos.tar.gz",
+      utils.get_offline_neovim_release_name("macOS", "stable", "x86_64", "binary")
+    )
+    assert.equals(
+      "nvim-nightly-macos-x86_64.tar.gz",
+      utils.get_offline_neovim_release_name("macOS", "nightly", "x86_64", "binary")
+    )
+    assert.equals(
+      "nvim-v0.9.5-macos.tar.gz",
+      utils.get_offline_neovim_release_name("macOS", "v0.9.5", "x86_64", "binary")
+    )
+    assert.equals(
+      "nvim-v0.10.1-macos-arm64.tar.gz",
+      utils.get_offline_neovim_release_name("macOS", "v0.10.1", "arm64", "binary")
+    )
   end)
 
   it("for Linux", function()
-    assert.equals("nvim-stable-linux.appimage", utils.get_offline_neovim_release_name("Linux", "stable"))
-    assert.equals("nvim-nightly-linux.appimage", utils.get_offline_neovim_release_name("Linux", "nightly"))
-    assert.equals("nvim-v0.9.5-linux.appimage", utils.get_offline_neovim_release_name("Linux", "v0.9.5"))
+    assert.equals(
+      "nvim-stable-linux.appimage",
+      utils.get_offline_neovim_release_name("Linux", "stable", "x86_64", "binary")
+    )
+    assert.equals(
+      "nvim-nightly-linux.appimage",
+      utils.get_offline_neovim_release_name("Linux", "nightly", "x86_64", "binary")
+    )
+    assert.equals(
+      "nvim-v0.9.5-linux.appimage",
+      utils.get_offline_neovim_release_name("Linux", "v0.9.5", "x86_64", "binary")
+    )
+  end)
+end)
+
+describe("Binary release is available for", function()
+  it("macOS and Windows", function()
+    assert.is_true(utils.is_binary_release_available("macOS", "anything_goes"))
+    assert.is_true(utils.is_binary_release_available("Windows", "anything_goes"))
+  end)
+
+  it("Linux but not for RISC and ARM", function()
+    assert.is_true(utils.is_binary_release_available("Linux", "x86_64"))
+    assert.is_false(utils.is_binary_release_available("Linux", "arm64"))
+    assert.is_false(utils.is_binary_release_available("Linux", "armv7l"))
+    assert.is_false(utils.is_binary_release_available("Linux", "riscv64"))
   end)
 end)
