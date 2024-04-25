@@ -27,7 +27,9 @@ you have an alternative though, I would be happy to integrate it into the plugin
 - **Offline mode** - If the remote does not have access to GitHub, Neovim release can be locally
   downloaded and then transferred to the remote. For more details, see [Offline mode](#-offline-mode).
 - **Alternate install methods** - If Neovim is not available for your OS and/or arch, you can
-  build it from source or use Neovim installed globally on remote.
+  build it from source or use Neovim installed globally on remote. Make sure you have the pre-requisites mentioned
+  in [BUILD.md](https://github.com/neovim/neovim/blob/master/BUILD.md) already installed on remote so that the
+  build process does not break.
 
 ### Planned features
 

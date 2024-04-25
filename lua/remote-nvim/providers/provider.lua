@@ -395,7 +395,7 @@ end
 ---@return neovim_install_method install_method Installation method chosen
 function Provider:_get_remote_neovim_install_method_preference()
   if self._remote_neovim_install_method == nil then
-    local choices = { "Build from source" }
+    local choices = { "Build from source (Make sure you have the necessary packages installed)" }
 
     self:run_command("nvim --version || true", "Checking if neovim installed globally on remote")
     local cmd_out_lines = self.executor:job_stdout()
@@ -411,7 +411,7 @@ function Provider:_get_remote_neovim_install_method_preference()
       )),
     })
 
-    if choice == "Build from source" then
+    if choice == "Build from source (Make sure you have the necessary packages installed)" then
       return "source"
     elseif choice == "Symlink to system-wide Neovim" then
       self._host_config.neovim_version = "system"
