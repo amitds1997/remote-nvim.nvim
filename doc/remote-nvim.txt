@@ -53,8 +53,8 @@ IMPLEMENTED FEATURES ~
 
 - **Offline mode** - If the remote does not have access to GitHub, Neovim release can be locally
     downloaded and then transferred to the remote. For more details, see |remote-nvim-offline-mode|.
-- **Building from source/Use globally installed Neovim** - If Neovim is not available for your OS/Arch, you can
-    build it from source and/or symlink to the globally available Neovim.
+- **Alternate install methods** - If Neovim is not available for your OS and/or arch, you can
+    build it from source or use Neovim installed globally on remote.
 
 
 PLANNED FEATURES ~
@@ -80,15 +80,15 @@ REQUIREMENTS                                        *remote-nvim-requirements*
 OS SUPPORT ~
 
   -----------------------------------------------------------------------
-  Support level          OS
-  ---------------------- ------------------------------------------------
-  Supported              Linux, MacOS, FreeBSD (using build from source
-                         and/or globally available Neovim)
+  Support level    OS
+  ---------------- ------------------------------------------------------
+  Supported        Linux, MacOS
 
-  In progress            FreeBSD (71)
+  Also supported   FreeBSD (either build from source or use already
+                   available Neovim on remote)
 
-  Planned but not        Windows, WSL
-  implemented            
+  Not supported    Windows, WSL
+  yet              
   -----------------------------------------------------------------------
 
 LOCAL MACHINE  ~
