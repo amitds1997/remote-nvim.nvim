@@ -99,6 +99,29 @@ function M.find_free_port()
   return tostring(result["port"])
 end
 
+local function is_later_neovim_version(version1, version2)
+  local pattern = "v(%d+)%.(%d+)%.(%d+)"
+
+  local major1, minor1, patch1 = version1:match(pattern)
+  local major2, minor2, patch2 = version2:match(pattern)
+
+  major1, minor1, patch1 = tonumber(major1), tonumber(minor1), tonumber(patch1)
+  major2, minor2, patch2 = tonumber(major2), tonumber(minor2), tonumber(patch2)
+
+  assert(patch1 ~= nil, ("Invalid version passed '%s'"):format(version1))
+  assert(patch2 ~= nil, ("Invalid version passed '%s'"):format(version2))
+
+  if major1 == major2 then
+    if minor1 == minor2 then
+      return patch1 > patch2
+    else
+      return minor1 > minor2
+    end
+  else
+    return major1 > major2
+  end
+end
+
 function M.is_greater_neovim_version(version1, version2)
   -- Order would be as follows
   -- 1. Stable
@@ -115,39 +138,49 @@ function M.is_greater_neovim_version(version1, version2)
   elseif specialVersions[version2] then
     return version2 ~= "stable"
   else
-    local pattern = "v(%d+)%.(%d+)%.(%d+)"
-
-    local major1, minor1, patch1 = version1:match(pattern)
-    local major2, minor2, patch2 = version2:match(pattern)
-
-    major1, minor1, patch1 = tonumber(major1), tonumber(minor1), tonumber(patch1)
-    major2, minor2, patch2 = tonumber(major2), tonumber(minor2), tonumber(patch2)
-
-    assert(patch1 ~= nil, ("Invalid version passed '%s'"):format(version1))
-    assert(patch2 ~= nil, ("Invalid version passed '%s'"):format(version2))
-
-    if major1 == major2 then
-      if minor1 == minor2 then
-        return patch1 > patch2
-      else
-        return minor1 > minor2
-      end
-    else
-      return major1 > major2
-    end
+    return is_later_neovim_version(version1, version2)
   end
 end
 
 ---@param os os_type OS name
 ---@param version string Release version
-function M.get_offline_neovim_release_name(os, version)
+---@param arch arch_type Release version
+---@param release_type neovim_install_method Release type
+function M.get_offline_neovim_release_name(os, version, arch, release_type)
+  if release_type == "source" then
+    return ("nvim-%s-source.tar.gz"):format(version)
+  elseif release_type == "system" then
+    error("There are no system type neovim releases")
+  end
+
   if os == "Linux" then
     return ("nvim-%s-linux.appimage"):format(version)
   elseif os == "macOS" then
+    if (version == "nightly") or (version ~= "stable" and is_later_neovim_version(version, "v0.9.5")) then
+      return ("nvim-%s-macos-%s.tar.gz"):format(version, arch)
+    end
     return ("nvim-%s-macos.tar.gz"):format(version)
   else
     error(("Unsupported OS: %s"):format(os))
   end
+end
+
+---@param kernel_name os_type Name of the kernel
+---@param arch string Arch platforms
+function M.is_binary_release_available(kernel_name, arch)
+  if kernel_name == "macOS" or kernel_name == "Windows" then
+    return true
+  end
+
+  local unsupported_archs = { "arm", "risc" }
+
+  -- Neovim currently does not provide binaries for ARM or RISC
+  return (
+    kernel_name == "Linux"
+    and vim.tbl_isempty(vim.tbl_filter(function(unsupported_arch)
+      return string.find(arch, unsupported_arch) ~= nil
+    end, unsupported_archs))
+  )
 end
 
 return M

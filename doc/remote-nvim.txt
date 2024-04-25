@@ -1,4 +1,4 @@
-*remote-nvim.txt*       For Neovim >= 0.9.0      Last change: 2024 February 14
+*remote-nvim.txt*        For Neovim >= 0.9.0        Last change: 2024 April 25
 
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
@@ -31,12 +31,12 @@ FEATURES                                                *remote-nvim-features*
   Remote mode         Current support
   ------------------- ---------------------------------------------------
   SSH (using          Fully supported
-  password)           
+  password)
 
   SSH(using SSH key)  Fully supported
 
   SSH(using           Fully supported
-  ssh_config file)    
+  ssh_config file)
 
   Dockerimage         In progress (66)
 
@@ -85,7 +85,7 @@ OS SUPPORT ~
   In progress            FreeBSD (71)
 
   Planned but not        Windows, WSL
-  implemented            
+  implemented
   -----------------------------------------------------------------------
 
 LOCAL MACHINE  ~
@@ -145,7 +145,7 @@ changing the value.
         ssh_binary = "ssh", -- Binary to use for running SSH command
         scp_binary = "scp", -- Binary to use for running SSH copy commands
         ssh_config_file_paths = { "$HOME/.ssh/config" }, -- Which files should be considered to contain the ssh host configurations. NOTE: `Include` is respected in the provided files.
-    
+
         -- These are useful for password-based SSH authentication.
         -- It provides parsing pattern for the plugin to detect that an input is requested.
         -- Each element contains the following attributes:
@@ -169,7 +169,7 @@ changing the value.
           },
         },
       },
-    
+
       -- Path to the script that would be copied to the remote and called to ensure that neovim gets installed.
       -- Default path is to the plugin's own ./scripts/neovim_install.sh file.
       neovim_install_script_path = utils.path_join(
@@ -178,15 +178,15 @@ changing the value.
         "scripts",
         "neovim_install.sh"
       ),
-    
+
       -- Modify the UI for the plugin's progress viewer.
       -- type can be "split" or "popup". All options from https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup and https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/split are supported.
       -- Note that some options like "border" are only available for "popup".
       progress_view = {
         type = "popup",
       },
-    
-    
+
+
       -- Offline mode configuration. For more details, see the "Offline mode" section below.
       offline_mode = {
         -- Should offline mode be enabled?
@@ -196,7 +196,7 @@ changing the value.
         -- What path should be looked at to find locally available releases
         cache_dir = utils.path_join(utils.is_windows, vim.fn.stdpath("cache"), constants.PLUGIN_NAME, "version_cache"),
       },
-    
+
       -- Remote configuration
       remote = {
         -- List of directories that should be copied over
@@ -237,7 +237,7 @@ changing the value.
           },
         },
       },
-    
+
       -- You can supply your own callback that should be called to create the local client. This is the default implementation.
       -- Two arguments are passed to the callback:
       -- port: Local port at which the remote server is available
@@ -250,7 +250,7 @@ changing the value.
           end
         end)
       end,
-    
+
       -- Plugin log related configuration [PREFER NOT TO CHANGE THIS]
       log = {
         -- Where is the log file
@@ -397,12 +397,14 @@ system. Alternatively, you can also clone the repo at a separate location and
 run this script from inside the cloned repo.
 
 >bash
-    ./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type>
-    
+    ./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type> -a <arch-type> -t <release-type>
+
      <version> can be stable, nightly or any Neovim release provided like v0.9.4
      <cache-dir> is the path in which the Neovim release and it's checksum should be downloaded. This should be same as the cache_dir plugin configuration value else it won't be
      detected by the plugin. See configuration below.
      <os-type> specifies which OS's binaries should be downloaded. Supported values are "Linux" and "macOS"
+     <arch-type> is the host's architecture. Can be `x86_64` or `arm64`
+     <release-type> is type of release to download. Can be `binary` or `source`
 <
 
 To enable this,
