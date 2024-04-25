@@ -324,6 +324,7 @@ function Provider:_get_remote_os_and_arch()
         "Linux",
         "macOS",
         "Windows",
+        "Something else (e.g. FreeBSD, NetBSD, etc)",
       }
       self._remote_os = self:get_selection(os_choices, {
         prompt = ("Choose remote OS (found OS '%s'): "):format(os),
@@ -331,6 +332,9 @@ function Provider:_get_remote_os_and_arch()
           return ("Remote host is running %s"):format(item)
         end,
       })
+      if self._remote_os == "Something else (e.g. FreeBSD, NetBSD, etc)" then
+        self._remote_os = vim.fn.input("Please enter your OS name")
+      end
     end
   end
 
