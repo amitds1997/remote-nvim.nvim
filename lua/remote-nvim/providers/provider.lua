@@ -173,7 +173,7 @@ function Provider:_setup_workspace_variables()
   self._remote_neovim_install_method = self._host_config.neovim_install_method
 
   -- Gather remote neovim version, if not setup
-  if self._host_config.neovim_version == nil then
+  if self._host_config.neovim_version == nil and self._remote_neovim_install_method ~= "system" then
     self._host_config.neovim_version = self:_get_remote_neovim_version_preference()
     self._config_provider:update_workspace_config(self.unique_host_id, {
       neovim_version = self._host_config.neovim_version,
