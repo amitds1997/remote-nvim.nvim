@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.7...v0.3.0) (2024-04-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **install:** Support source and system installed Neovim ([#93](https://github.com/amitds1997/remote-nvim.nvim/issues/93))
+
+### Features
+
+* **install:** Support source and system installed Neovim ([#93](https://github.com/amitds1997/remote-nvim.nvim/issues/93)) ([c4455b5](https://github.com/amitds1997/remote-nvim.nvim/commit/c4455b50ab722e85e4663d89e27dbe0c28844b5f))
+* support all other OSes through alternate install methods ([#113](https://github.com/amitds1997/remote-nvim.nvim/issues/113)) ([14c202c](https://github.com/amitds1997/remote-nvim.nvim/commit/14c202ca8cd7541b486d4e30a9bcdebbb2cdbef8))
+
 ## [0.2.7](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.6...v0.2.7) (2024-04-17)
 
 
