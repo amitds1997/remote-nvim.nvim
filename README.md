@@ -26,8 +26,8 @@ you have an alternative though, I would be happy to integrate it into the plugin
 
 - **Offline mode** - If the remote does not have access to GitHub, Neovim release can be locally
   downloaded and then transferred to the remote. For more details, see [Offline mode](#-offline-mode).
-- **Building from source/Use globally installed Neovim** - If Neovim is not available for your OS/Arch, you can
-  build it from source and/or symlink to the globally available Neovim.
+- **Alternate install methods** - If Neovim is not available for your OS and/or arch, you can
+  build it from source or use Neovim installed globally on remote.
 
 ### Planned features
 
@@ -52,11 +52,11 @@ you have an alternative though, I would be happy to integrate it into the plugin
 
 ### OS support
 
-| Support level                     | OS                                                                      |
-| --------------------------------- | ----------------------------------------------------------------------- |
-| ✅ **Supported**                   | Linux, MacOS, FreeBSD (using build from source and/or globally available Neovim)|
-| 🚧 **In progress**                 | FreeBSD ([#71](https://github.com/amitds1997/remote-nvim.nvim/pull/71)) |
-| 🟡 **Planned but not implemented** | Windows, WSL                                                            |
+| Support level           | OS                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| ✅ **Supported**         | Linux, MacOS                                                                 |
+| ✅ **Also supported**    | FreeBSD (either build from source or use already available Neovim on remote) |
+| 🟡 **Not supported yet** | Windows, WSL                                                                 |
 
 ### Local machine 💻
 
@@ -230,7 +230,7 @@ Below is the default configuration. Please read the associated comments before c
 
 </details>
 
-> [!NOTE]
+> \[!NOTE\]
 > Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
 > parts of the plugin might be broken.
 
