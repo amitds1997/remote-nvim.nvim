@@ -250,9 +250,4 @@ end, {
   end,
 })
 
-vim.api.nvim_create_user_command("RemoteSessionInfo", require("remote-nvim.views.info").RemoteInfo, {
-  desc = "Get information about all running session(s) DEPRECATED",
-  nargs = 0,
-})
-
 return M
