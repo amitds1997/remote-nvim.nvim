@@ -6,6 +6,17 @@ M.uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 M.path_separator = M.is_windows and "\\" or "/"
 
+function M.get_plugin_version()
+  local commit_id = "N/A"
+  if
+    vim.fn.executable("git") == 1
+    and #vim.fs.find(".git", { path = M.get_plugin_root(), type = "directory", limit = 1 }) == 1
+  then
+    commit_id = vim.split(vim.fn.system("git rev-parse HEAD"), "\n")[1]
+  end
+  return ("%s (%s)"):format(constants.PLUGIN_VERSION, commit_id)
+end
+
 ---Get logger
 ---@return plenary.logger logger Logger instance
 function M.get_logger()
@@ -220,6 +231,31 @@ function M.find_common_parent(paths)
   end
 
   return parent_dir, sub_dirs
+end
+
+---Substitute substring in one string with another
+---@param str string String in which substituion should happen
+---@param sub_str string String to be substituted
+---@param repl string? Replacement string
+---@return string res_str String to return
+function M.plain_substitute(str, sub_str, repl)
+  local start_idx, end_idx = str:find(sub_str, nil, true)
+  if start_idx == nil then
+    return str
+  end
+
+  local res_str = ""
+  repl = repl or ""
+  if start_idx and start_idx > 1 then
+    res_str = res_str .. str:sub(1, start_idx - 1)
+  end
+
+  res_str = res_str .. repl
+  if end_idx and end_idx < #str then
+    res_str = res_str .. str:sub(end_idx + 1)
+  end
+
+  return res_str
 end
 
 return M

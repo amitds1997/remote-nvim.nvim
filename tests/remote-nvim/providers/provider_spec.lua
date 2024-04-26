@@ -11,15 +11,17 @@ describe("Provider", function()
   local provider
   local provider_host
   local remote_nvim_config_copy
+  local progress_viewer
   assert:set_parameter("TableFormatLevel", 1)
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
+    progress_viewer = mock(require("remote-nvim.ui.progressview"), true)
     remote_nvim_config_copy = vim.deepcopy(remote_nvim.config)
 
     provider = Provider({
       host = provider_host,
-      progress_view = mock(require("remote-nvim.ui.progressview"), true),
+      progress_view = progress_viewer,
     })
     stub(vim, "notify")
   end)
@@ -33,6 +35,7 @@ describe("Provider", function()
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011", "-t", "-x" },
+        progress_view = progress_viewer,
       })
       assert.equals("-p 3011 -t -x", provider.conn_opts)
     end)
@@ -41,6 +44,7 @@ describe("Provider", function()
       provider = Provider({
         host = provider_host,
         conn_opts = {},
+        progress_view = progress_viewer,
       })
       assert.equals("", provider.conn_opts)
     end)
@@ -49,10 +53,11 @@ describe("Provider", function()
   it("should handle missing connection options correctly", function()
     provider = Provider({
       host = provider_host,
+      progress_view = progress_viewer,
     })
     assert.equals("", provider.conn_opts)
 
-    provider = Provider({ host = provider_host, conn_opts = nil })
+    provider = Provider({ host = provider_host, conn_opts = nil, progress_view = progress_viewer })
     assert.equals("", provider.conn_opts)
   end)
 
@@ -61,6 +66,7 @@ describe("Provider", function()
     provider = Provider({
       host = provider_host,
       unique_host_id = unique_host_id,
+      progress_view = progress_viewer,
     })
     assert.equals(unique_host_id, provider.unique_host_id)
   end)
@@ -73,7 +79,7 @@ describe("Provider", function()
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011" },
-        progress_view = mock(require("remote-nvim.ui.progressview"), true),
+        progress_view = progress_viewer,
       })
       detect_remote_os_and_arch_stub = stub(provider, "_get_remote_os_and_arch")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
