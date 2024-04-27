@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.0...v0.3.1) (2024-04-27)
+
+
+### Bug Fixes
+
+* **ci:** Fix file to update with the correct release ([4a4251d](https://github.com/amitds1997/remote-nvim.nvim/commit/4a4251d6d6051a9eb41bf6eecf5dc06cf50263ce))
+
 ## [0.3.0](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.2.7...v0.3.0) (2024-04-25)
 
 
