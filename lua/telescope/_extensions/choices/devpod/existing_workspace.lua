@@ -1,3 +1,4 @@
+local nio = require("nio")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
@@ -26,7 +27,7 @@ local function show_workspace_list(workspace_list)
         :get_or_initialize_session({
           provider_type = "devpod",
           host = choice.id,
-          unique_host_id = vim.tbl_values(choice.source)[1],
+          unique_host_id = choice.id,
           devpod_opts = {},
         })
         :launch_neovim()
@@ -35,9 +36,13 @@ local function show_workspace_list(workspace_list)
 end
 
 local function devpod_existing_workspace_action()
-  local devpod_workspace_cmd = ("%s list --output json"):format(remote_nvim.config.devpod.binary)
+  local devpod_existing_workspace_list = nio.process.run({
+    cmd = remote_nvim.config.devpod.binary,
+    args = { "list", "--output", "json" },
+  })
 
-  local json_output = vim.json.decode(vim.fn.system(devpod_workspace_cmd))
+  local json_output =
+    vim.json.decode(devpod_existing_workspace_list and devpod_existing_workspace_list.stdout.read() or "{}")
   show_workspace_list(json_output)
 end
 

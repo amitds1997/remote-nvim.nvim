@@ -1,3 +1,4 @@
+local nio = require("nio")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
@@ -24,17 +25,13 @@ local function show_container_list(container_list)
       end
 
       local source = ("container:%s"):format(choice.ID)
-      local name, working_dir = unpack(
-        vim.split(
-          vim.fn.system(
-            ("%s inspect --type container %s -f '{{ .Name }} {{ .Config.WorkingDir }}'"):format(
-              remote_nvim.config.devpod.docker_binary,
-              choice.ID
-            )
-          ),
-          "%s+"
-        )
-      )
+      local container_info = nio.process.run({
+        cmd = remote_nvim.config.devpod.docker_binary,
+        args = { "inspect", "--type", "container", choice.ID, "-f", "'{{ .Name }} {{ .Config.WorkingDir }}'" },
+      })
+
+      local name, working_dir =
+        unpack(vim.split(container_info and container_info.stdout.read() or "", "%s+", { trimempty = true }))
       name = name:gsub("^/", "")
 
       remote_nvim.session_provider
@@ -54,14 +51,18 @@ local function show_container_list(container_list)
 end
 
 local function docker_container_action()
-  local docker_cmd_ls = { remote_nvim.config.devpod.docker_binary, "container", "ls" }
+  local docker_cmd_ls = { "container", "ls" }
   if remote_nvim.config.devpod.container_list == "all" then
     table.insert(docker_cmd_ls, "--all")
   end
-  local docker_cmd = ("%s --format json"):format(table.concat(docker_cmd_ls, " "))
+  table.insert(docker_cmd_ls, "--format")
+  table.insert(docker_cmd_ls, "json")
 
-  local docker_container_output = vim.split(vim.fn.system(docker_cmd), "\n", { trimempty = true })
-  show_container_list(docker_container_output)
+  local container_list = nio.process.run({
+    cmd = remote_nvim.config.devpod.docker_binary,
+    args = docker_cmd_ls,
+  })
+  show_container_list(vim.split(container_list and container_list.stdout.read() or "", "\n", { trimempty = true }))
 end
 
 return {

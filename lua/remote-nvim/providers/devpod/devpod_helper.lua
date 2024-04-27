@@ -1,3 +1,4 @@
+local nio = require("nio")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 local devpod_binary = remote_nvim.config.devpod.binary
@@ -19,10 +20,17 @@ function M.get_devpod_provider(opts)
   opts.devpod_opts = opts.devpod_opts or {}
 
   if opts.devpod_opts.provider then
+    local provider_list = nio.process.run({
+      cmd = devpod_binary,
+      args = { "provider", "list", "--output", "json" },
+    })
+    local provider_output = vim.json.decode(provider_list and provider_list.stdout.read() or "{}")
     -- If the provider does not exist, let's create it
-    local provider_output = vim.json.decode(vim.fn.system(("%s provider list --output json"):format(devpod_binary)))
     if not vim.tbl_contains(vim.tbl_keys(provider_output), opts.devpod_opts.provider) then
-      vim.fn.system(("%s provider add %s"):format(devpod_binary, opts.devpod_opts.provider))
+      nio.process.run({
+        cmd = devpod_binary,
+        args = { "provider", "add", opts.devpod_opts.provider },
+      })
     end
 
     table.insert(opts.conn_opts, ("--provider=%s"):format(opts.devpod_opts.provider))

@@ -7,6 +7,9 @@
 3. Add CONTRIBUTING.md
 4. Fix when user clicks out of the box when selecting if to launch local client and then it is stuck
    with saying "Neovim server is already running". Check if this also occurs during earlier choices.
+5. Fix remote Neovim not respecting when it is blocked by a sync operation, use `vim.fn.jobstop`. To
+   reproduce this, run with your configuration where it initially tries to install the package
+   manager. Package manager installation is a blocking call, so any commands sent after would not work
 
 ## Backlog
 
@@ -25,20 +28,23 @@
 
 ### To do
 
+- Better picker preview description for all devpod selectors (E.g.: This workspace was created from
+  branch 'abc' in remote repo: `xyz`)
+- Update README
+  - Add new demos
+  - Add new dependency information
+  - Add steps to set things up
 - Add tests for
   - Plain substitute function
   - Entire devpod codebase
 - Add auto-detection of devcontainer directory if present and popping up devcontainer question
 - Implement cleanup functions for devpod based operations
+
+### In progress
+
 - Docker image
   - Stop container as we close up Neovim
   - When running `:RemoteStop`, ask users if they want to also close the container
   - Should we also clean the configuration then(??)
   - For this should we launch the container and then re-set the unique host ID to the container (???)
   - In initial selector, allow selecting from existing images or type your own
-- Better picker preview description for all devpod selectors (E.g.: This workspace was created from
-  branch 'abc' in remote repo: `xyz`)
-
-### In progress
-
-- Make vim.fn.system calls async
