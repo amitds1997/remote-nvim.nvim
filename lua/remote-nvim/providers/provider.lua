@@ -289,7 +289,7 @@ function Provider:_reset()
   self._provider_stopped_neovim = false
 end
 
----@private
+---@protected
 ---@title string Title for the run
 function Provider:start_progress_view_run(title)
   self.progress_viewer:start_run(title)
@@ -869,24 +869,27 @@ function Provider:launch_neovim()
 end
 
 ---Stop running Neovim instance (if any)
-function Provider:stop_neovim()
+---@param cb function? Callback to invoke on stopping Neovim instance
+function Provider:stop_neovim(cb)
   if self:is_remote_server_running() then
     vim.fn.jobstop(self._remote_server_process_id)
     self._provider_stopped_neovim = true
+    if cb ~= nil then
+      cb()
+    end
   end
 end
 
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
+    self:start_progress_view_run(("Remote cleanup (Run no. %s)"):format(self._cleanup_run_number))
+    self._cleanup_run_number = self._cleanup_run_number + 1
     self:_cleanup_remote_host()
   end, ("Cleaning up '%s' host"):format(self.host))
 end
 
----@protected
 function Provider:_cleanup_remote_host()
-  self:start_progress_view_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
-  self._cleanup_run_number = self._cleanup_run_number + 1
   self:_setup_workspace_variables()
   local deletion_choices = {
     "Delete neovim workspace (Choose if multiple people use the same user account)",
@@ -965,7 +968,6 @@ function Provider:_handle_job_completion(desc, node, is_local_executor)
   return exit_code
 end
 
----@protected
 ---Run command over executor
 ---@param command string
 ---@param desc string Description of the command running

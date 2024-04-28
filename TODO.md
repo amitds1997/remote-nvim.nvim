@@ -18,12 +18,6 @@
 
 ## Devcontainer TO DO List
 
-### Done
-
-- Handle scenario when (upload paths are checked for existence)
-  - User neovim configuration path does not exist
-  - SSH configuration path does not exist
-
 ### To do
 
 - Better picker preview description for all devpod selectors (E.g.: This workspace was created from
@@ -36,14 +30,7 @@
   - Plain substitute function
   - Entire devpod codebase
 - Add auto-detection of devcontainer directory if present and popping up devcontainer question
-- Implement cleanup functions for devpod based operations
 
 ### In progress
 
-- Docker image
-  - On RemoteStop or VimExit
-    - Kill container
-    - Remove workspace configuration
-- For any devpod operation
-  - On RemoteStop or VimExit
-    - Stop devpod workspace
+- For any devpod operation, on VimLeave, stop devpod workspace

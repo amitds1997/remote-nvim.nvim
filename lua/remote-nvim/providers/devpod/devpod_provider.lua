@@ -61,16 +61,24 @@ function DevpodProvider:init(opts)
 end
 
 function DevpodProvider:clean_up_remote_host()
-  local cb = function()
-    self:_run_code_in_coroutine(function()
+  self:_run_code_in_coroutine(function()
+    self:start_progress_view_run(("Remote cleanup (Run no. %s)"):format(self._neovim_launch_number))
+    self._neovim_launch_number = self._neovim_launch_number + 1
+
+    self:_launch_devpod_workspace()
+    DevpodProvider.super._cleanup_remote_host(self)
+
+    local choice = self:get_selection({ "Yes", "No" }, {
+      prompt = "Do you also want to delete the devpod workspace?",
+    })
+
+    if choice == "Yes" then
       self.local_provider:run_command(
         ("%s delete %s %s"):format(self.binary, table.concat(self._default_opts, " "), self.unique_host_id),
         "Delete devpod workspace"
       )
-    end, "Deleting devpod workspace")
-  end
-
-  DevpodProvider.super.clean_up_remote_host(self, cb)
+    end
+  end, "Cleaning up devpod workspace")
 end
 
 function DevpodProvider:stop_neovim()
@@ -86,23 +94,28 @@ function DevpodProvider:stop_neovim()
   DevpodProvider.super.stop_neovim(self, cb)
 end
 
+function DevpodProvider:_launch_devpod_workspace()
+  if not self:is_remote_server_running() then
+    local launch_opts = vim.deepcopy(self.launch_opts)
+    launch_opts = vim.list_extend(launch_opts, { self.source, ("--id %s"):format(self.unique_host_id) })
+    local devpod_up_opts = table.concat(launch_opts, " ")
+    -- Remove `-F <ssh-config-path>` from devpod launch opts since that is SSH syntax not devpod
+    devpod_up_opts = utils.plain_substitute(devpod_up_opts, table.concat(self.ssh_conn_opts, " "), "")
+
+    self.local_provider:run_command(
+      ("%s up %s"):format(self.binary, devpod_up_opts),
+      "Setting up devcontainer workspace"
+    )
+  end
+end
+
 function DevpodProvider:launch_neovim()
   if not self:is_remote_server_running() then
     self:_run_code_in_coroutine(function()
       self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
       self._neovim_launch_number = self._neovim_launch_number + 1
 
-      local launch_opts = vim.deepcopy(self.launch_opts)
-      launch_opts = vim.list_extend(launch_opts, { self.source, ("--id %s"):format(self.unique_host_id) })
-      local devpod_up_opts = table.concat(launch_opts, " ")
-      -- Remove `-F <ssh-config-path>` from devpod launch opts since that is SSH syntax not devpod
-      devpod_up_opts = utils.plain_substitute(devpod_up_opts, table.concat(self.ssh_conn_opts, " "), "")
-
-      self.local_provider:run_command(
-        ("%s up %s"):format(self.binary, devpod_up_opts),
-        "Setting up devcontainer workspace"
-      )
-      ---@diagnostic disable-next-line: invisible
+      self:_launch_devpod_workspace()
       self:_launch_neovim(false)
     end, "Launching devpod workspace")
   else
