@@ -28,6 +28,7 @@
 ---@field private offline_mode boolean Operating in offline mode or not
 ---@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
 ---@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
+---@field private _provider_stopped_neovim boolean If neovim was stopped by the provider
 ---@field private logger plenary.logger Logger instance
 ---@field private _setup_running boolean Is the setup running?
 ---@field private _neovim_launch_number number Active run number
@@ -285,6 +286,7 @@ function Provider:_reset()
   self._setup_running = false
   self._remote_server_process_id = nil
   self._local_free_port = nil
+  self._provider_stopped_neovim = false
 end
 
 ---@private
@@ -710,10 +712,10 @@ function Provider:_launch_remote_neovim_server()
         port_forward_opts,
         function(node)
           return function(exit_code)
-            self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
-            if exit_code == 0 then
-              self:hide_progress_view_window()
-            else
+            local success_code = (exit_code == 0 or self._provider_stopped_neovim)
+            vim.print(success_code)
+            self.progress_viewer:update_status(success_code and "success" or "failed", true, node)
+            if not success_code then
               self:show_progress_view_window()
             end
             self:_reset()
@@ -869,25 +871,8 @@ end
 ---Stop running Neovim instance (if any)
 function Provider:stop_neovim()
   if self:is_remote_server_running() then
-    local cmd = { "nvim", "--server", ("localhost:%s"):format(self._local_free_port), "--remote-send", ":qall!<CR>" }
-
-    local exit_cb = function(exit_code)
-      if exit_code == 0 then
-        self:_reset()
-      end
-    end
-
-    if vim.fn.has("nvim-0.10") then
-      vim.system(cmd, { text = true }, function(res)
-        exit_cb(res.code)
-      end)
-    else
-      vim.fn.jobstart(cmd, {
-        on_exit = function(_, exit_code)
-          exit_cb(exit_code)
-        end,
-      })
-    end
+    vim.fn.jobstop(self._remote_server_process_id)
+    self._provider_stopped_neovim = true
   end
 end
 
@@ -951,14 +936,15 @@ end
 ---@private
 ---Handle job completion
 ---@param desc string Description of the job
+---@param node NuiTree.Node Node to update
 ---@param is_local_executor boolean? Is the command executing on the local executor
 ---@return integer exit_code Exit code of the job being handled
-function Provider:_handle_job_completion(desc, is_local_executor)
+function Provider:_handle_job_completion(desc, node, is_local_executor)
   is_local_executor = is_local_executor or false
   local executor = is_local_executor and self.local_executor or self.executor
   local exit_code = executor:last_job_status()
   if exit_code ~= 0 then
-    self.progress_viewer:update_status("failed", true)
+    self.progress_viewer:update_status("failed", true, node)
     if self._setup_running then
       self._setup_running = false
     end
@@ -974,7 +960,7 @@ function Provider:_handle_job_completion(desc, is_local_executor)
       error(("'%s' failed"):format(desc))
     end
   else
-    self.progress_viewer:update_status("success")
+    self.progress_viewer:update_status("success", nil, node)
   end
   return exit_code
 end
@@ -1008,7 +994,9 @@ function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_execu
     stdout_cb = self:_get_stdout_fn_for_node(section_node),
   })
   self.logger.fmt_debug("[%s][%s] Running %s completed", self.provider_type, self.unique_host_id, command)
-  self:_handle_job_completion(desc)
+  if exit_cb == nil then
+    self:_handle_job_completion(desc, section_node)
+  end
 end
 
 ---@private
@@ -1064,7 +1052,7 @@ function Provider:upload(local_paths, remote_path, desc, compression_opts)
     stdout_cb = self:_get_stdout_fn_for_node(section_node),
     compression = compression_opts or {},
   })
-  self:_handle_job_completion(desc)
+  self:_handle_job_completion(desc, section_node)
 end
 
 return Provider
