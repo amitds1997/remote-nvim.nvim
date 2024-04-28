@@ -230,6 +230,7 @@ describe("Provider", function()
 
       provider._remote_neovim_version = nil
       provider._remote_os = "Linux"
+      provider._remote_neovim_install_method = "binary"
     end)
 
     it("when in offline mode but GitHub access is turned off", function()
@@ -239,7 +240,9 @@ describe("Provider", function()
 
       provider:_get_remote_neovim_version_preference()
 
-      assert.stub(offline_neovim_version_fetch_stub).was.called_with(provider._remote_os)
+      assert
+        .stub(offline_neovim_version_fetch_stub).was
+        .called_with(provider._remote_os, provider._remote_neovim_install_method)
       assert.stub(online_neovim_version_fetch_stub).was.not_called()
     end)
 
