@@ -11,9 +11,8 @@
 
 ## Backlog
 
-1. Use `plenary.async`
-2. Add CI runs for the complete workflow run in Ubuntu, MacOS Intel, MacOS M1
-3. Create single form for everything
+1. Add CI runs for the complete workflow run in Ubuntu, MacOS Intel, MacOS M1
+2. Create single form for everything
    - Provide option to pass `--recreate` for devpod based solutions
 
 ## Devcontainer TO DO List

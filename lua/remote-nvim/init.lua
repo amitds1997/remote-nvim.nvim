@@ -201,6 +201,12 @@ M.default_opts = {
   },
 }
 
+-- Check if the necessary packages are installed
+local success, _ = pcall(require, "nio")
+if not success then
+  error("remote-nvim.nvim requires nvim-nio to be installed. Install from https://github.com/nvim-neotest/nvim-nio")
+end
+
 ---Setup for the plugin
 ---@param opts remote-nvim.config.PluginConfig User provided plugin configuration
 ---@return nil

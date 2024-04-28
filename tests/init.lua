@@ -37,6 +37,7 @@ function M.setup()
   M.load("MunifTanjim/nui.nvim")
   M.load("nvim-lua/plenary.nvim")
   M.load("nvim-telescope/telescope.nvim")
+  M.load("nvim-neotest/nvim-nio")
 
   require("remote-nvim").setup({
     log = {
