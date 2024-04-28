@@ -29,8 +29,7 @@
 - Add tests for
   - Plain substitute function
   - Entire devpod codebase
-- Add auto-detection of devcontainer directory if present and popping up devcontainer question
 
 ### In progress
 
-- For any devpod operation, on VimLeave, stop devpod workspace
+- Add auto-detection of devcontainer directory if present and popping up devcontainer question

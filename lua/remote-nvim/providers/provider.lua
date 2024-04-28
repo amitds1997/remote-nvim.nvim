@@ -713,11 +713,15 @@ function Provider:_launch_remote_neovim_server()
         function(node)
           return function(exit_code)
             local success_code = (exit_code == 0 or self._provider_stopped_neovim)
-            vim.print(success_code)
             self.progress_viewer:update_status(success_code and "success" or "failed", true, node)
             if not success_code then
               self:show_progress_view_window()
             end
+
+            if not self._provider_stopped_neovim then
+              self:stop_neovim()
+            end
+
             self:_reset()
           end
         end
@@ -874,9 +878,10 @@ function Provider:stop_neovim(cb)
   if self:is_remote_server_running() then
     vim.fn.jobstop(self._remote_server_process_id)
     self._provider_stopped_neovim = true
-    if cb ~= nil then
-      cb()
-    end
+  end
+
+  if cb ~= nil then
+    cb()
   end
 end
 

@@ -94,6 +94,12 @@ function DevpodProvider:stop_neovim()
   DevpodProvider.super.stop_neovim(self, cb)
 end
 
+function DevpodProvider:_stop_devpod_workspace()
+  if self:is_remote_server_running() then
+    vim.fn.system(("%s stop %s %s"):format(self.binary, table.concat(self._default_opts, " "), self.unique_host_id))
+  end
+end
+
 function DevpodProvider:_launch_devpod_workspace()
   if not self:is_remote_server_running() then
     local launch_opts = vim.deepcopy(self.launch_opts)
@@ -116,6 +122,12 @@ function DevpodProvider:launch_neovim()
       self._neovim_launch_number = self._neovim_launch_number + 1
 
       self:_launch_devpod_workspace()
+      vim.api.nvim_create_autocmd({ "VimLeavePre" }, {
+        callback = function()
+          self:_stop_devpod_workspace()
+        end,
+      })
+
       self:_launch_neovim(false)
     end, "Launching devpod workspace")
   else
