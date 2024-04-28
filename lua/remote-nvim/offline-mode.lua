@@ -14,7 +14,8 @@ local function get_or_create_path()
 end
 
 ---@param os os_type Name of the OS
-function O.get_available_neovim_version_files(os)
+---@param release_type neovim_install_method Release type to fetch
+function O.get_available_neovim_version_files(os, release_type)
   local version_path = get_or_create_path()
   local os_lower = string.lower(os)
 
@@ -24,7 +25,11 @@ function O.get_available_neovim_version_files(os)
     respect_gitignore = false,
     depth = 1,
     search_pattern = function(name)
-      return string.find(name, os_lower, nil, true) ~= nil and not vim.endswith(name, ".sha256sum")
+      if release_type == "source" then
+        return string.find(name, "-source", nil, true) ~= nil
+      elseif release_type == "binary" then
+        return string.find(name, os_lower, nil, true) ~= nil and not vim.endswith(name, ".sha256sum")
+      end
     end,
     silent = true,
   })
@@ -35,7 +40,10 @@ function O.get_available_neovim_version_files(os)
       or string.match(version_file, "nvim%-(stable).*")
       or string.match(version_file, "nvim%-(nightly)-.*")
 
-    if res ~= nil and require("plenary.path"):new({ ("%s.sha256sum"):format(version_file) }):exists() then
+    if
+      res ~= nil
+      and (require("plenary.path"):new({ ("%s.sha256sum"):format(version_file) }):exists() or release_type == "source")
+    then
       available_version_map[res] = version_file
     end
   end

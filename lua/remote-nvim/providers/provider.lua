@@ -435,7 +435,11 @@ function Provider:_get_remote_neovim_version_preference()
     local version_map, possible_choices
     if self.offline_mode and remote_nvim.config.offline_mode.no_github then
       assert(self._remote_os ~= nil, "OS should not be nil")
-      version_map = require("remote-nvim.offline-mode").get_available_neovim_version_files(self._remote_os)
+      assert(self._remote_neovim_install_method, "Install method should not be nil")
+      version_map = require("remote-nvim.offline-mode").get_available_neovim_version_files(
+        self._remote_os,
+        self._remote_neovim_install_method
+      )
       possible_choices = vim.tbl_keys(version_map)
       assert(
         #possible_choices > 0,
