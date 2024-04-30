@@ -85,4 +85,24 @@ function M.get_devcontainer_root()
   return nil
 end
 
+---@param devc_root string Path to devcontainer directory containing path
+function M.launch_devcontainer(devc_root)
+  local unique_host_id = devc_root:sub(-48)
+  local sep_idx = unique_host_id:find(require("remote-nvim.utils").path_separator, nil, true)
+  if sep_idx then
+    unique_host_id = unique_host_id:sub(sep_idx + 1)
+  end
+
+  remote_nvim.session_provider
+    :get_or_initialize_session({
+      host = devc_root,
+      provider_type = "devpod",
+      devpod_opts = {
+        provider = "docker",
+      },
+      unique_host_id = unique_host_id,
+    })
+    :launch_neovim()
+end
+
 return M

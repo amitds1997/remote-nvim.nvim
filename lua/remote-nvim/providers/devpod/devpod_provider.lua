@@ -6,6 +6,7 @@ local SSHProvider = require("remote-nvim.providers.ssh.ssh_provider")
 ---@field binary string Devpod binary name
 ---@field _up_default_opts string[] Default arguments for bringing up the workspace
 ---@field local_provider remote-nvim.providers.Provider
+---@field private _devpod_workspace_active boolean Is devpod workspace active
 local DevpodProvider = SSHProvider:subclass("DevpodProvider")
 local utils = require("remote-nvim.utils")
 
@@ -89,19 +90,21 @@ function DevpodProvider:stop_neovim()
         "Stopping devpod workspace"
       )
     end, "Stopping devpod workspace")
+    self._devpod_workspace_active = false
   end
 
   DevpodProvider.super.stop_neovim(self, cb)
 end
 
 function DevpodProvider:_stop_devpod_workspace()
-  if self:is_remote_server_running() then
+  if self._devpod_workspace_active then
     vim.fn.system(("%s stop %s %s"):format(self.binary, table.concat(self._default_opts, " "), self.unique_host_id))
+    self._devpod_workspace_active = false
   end
 end
 
 function DevpodProvider:_launch_devpod_workspace()
-  if not self:is_remote_server_running() then
+  if not self._devpod_workspace_active then
     local launch_opts = vim.deepcopy(self.launch_opts)
     launch_opts = vim.list_extend(launch_opts, { self.source, ("--id %s"):format(self.unique_host_id) })
     local devpod_up_opts = table.concat(launch_opts, " ")
@@ -112,6 +115,7 @@ function DevpodProvider:_launch_devpod_workspace()
       ("%s up %s"):format(self.binary, devpod_up_opts),
       "Setting up devcontainer workspace"
     )
+    self._devpod_workspace_active = true
   end
 end
 
