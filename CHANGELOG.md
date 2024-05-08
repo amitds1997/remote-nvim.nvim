@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.2...v0.3.3) (2024-05-08)
+
+
+### Features
+
+* **provider:** Always allow remote Neovim installation as an option (if available) ([#119](https://github.com/amitds1997/remote-nvim.nvim/issues/119)) ([2044ac4](https://github.com/amitds1997/remote-nvim.nvim/commit/2044ac4bdc9786255ef6cad2c6dde01a6b31b944))
+
 ## [0.3.2](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.1...v0.3.2) (2024-04-28)
 
 

@@ -3,7 +3,7 @@
 ---@alias plenary.logger table Plenary logger instance
 
 return {
-  PLUGIN_VERSION = "0.3.2", -- x-release-please-version
+  PLUGIN_VERSION = "0.3.3", -- x-release-please-version
   PLUGIN_NAME = "remote-nvim.nvim",
   MIN_NEOVIM_VERSION = "v0.9.0",
 }
