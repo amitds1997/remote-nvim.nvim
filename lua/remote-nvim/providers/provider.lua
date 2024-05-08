@@ -169,6 +169,7 @@ function Provider:_setup_workspace_variables()
       self._host_config.neovim_install_method = "source"
       prompt_title = "Binary release not available. Choose Neovim version to install"
     end
+    self._remote_neovim_install_method = self._host_config.neovim_install_method
     self._host_config.neovim_version = self:_get_remote_neovim_version_preference(prompt_title)
 
     -- Set installation method to "system" if not found
