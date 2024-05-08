@@ -834,20 +834,16 @@ end
 
 ---@protected
 function Provider:_launch_neovim()
+  self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
   if not self:is_remote_server_running() then
-    self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
     self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
     self._neovim_launch_number = self._neovim_launch_number + 1
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
-    self:_launch_local_neovim_client()
-    self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
-  else
-    self:_launch_local_neovim_client()
-    self:show_progress_view_window()
-    self.progress_viewer:switch_to_pane("session_info", true)
   end
+  self:_launch_local_neovim_client()
+  self.logger.fmt_debug(("[%s][%s] Completed remote neovim launch"):format(self.provider_type, self.unique_host_id))
 end
 
 ---Launch Neovim
