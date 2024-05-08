@@ -159,27 +159,25 @@ function Provider:_setup_workspace_variables()
   self._remote_os = self._host_config.os
   self._remote_arch = self._host_config.arch
 
-  -- Gather remote neovim install method
-  if self._host_config.neovim_install_method == nil then
-    if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
-      self._host_config.neovim_install_method = "binary"
-    else
-      self._host_config.neovim_install_method = self:_get_remote_neovim_install_method_preference()
+  if self._host_config.neovim_version == nil then
+    self._host_config.neovim_install_method = provider_utils.is_binary_release_available(
+      self._host_config.os,
+      self._host_config.arch
+    ) and "binary" or "source"
+    self._host_config.neovim_version = self:_get_remote_neovim_version_preference()
+
+    -- Set installation method to "system" if not found
+    if self._host_config.neovim_version == "system" then
+      self._host_config.neovim_install_method = "system"
     end
+
     self._config_provider:update_workspace_config(self.unique_host_id, {
       neovim_install_method = self._host_config.neovim_install_method,
-    })
-  end
-  self._remote_neovim_install_method = self._host_config.neovim_install_method
-
-  -- Gather remote neovim version, if not setup
-  if self._host_config.neovim_version == nil and self._remote_neovim_install_method ~= "system" then
-    self._host_config.neovim_version = self:_get_remote_neovim_version_preference()
-    self._config_provider:update_workspace_config(self.unique_host_id, {
       neovim_version = self._host_config.neovim_version,
     })
   end
   self._remote_neovim_version = self._host_config.neovim_version
+  self._remote_neovim_install_method = self._host_config.neovim_install_method
 
   -- Set remote neovim home path
   if self._host_config.remote_neovim_home == nil then
@@ -396,43 +394,18 @@ function Provider:get_selection(choices, selection_opts)
 end
 
 ---@private
----Get user's preference for Neovim installation method
----@return neovim_install_method install_method Installation method chosen
-function Provider:_get_remote_neovim_install_method_preference()
-  if self._remote_neovim_install_method == nil then
-    local choices = { "Build from source (Make sure you have the necessary packages installed)" }
-
-    self:run_command("nvim --version || true", "Checking if neovim installed globally on remote")
-    local cmd_out_lines = self.executor:job_stdout()
-    local nvim_version_string = table.concat(cmd_out_lines)
-    if nvim_version_string:find("NVIM v.*") then
-      table.insert(choices, "Symlink to system-wide Neovim")
-    end
-
-    local choice = self:get_selection(choices, {
-      prompt = (("Binary not available for your system (%s, %s). Choose Neovim install method"):format(
-        self._remote_os,
-        self._remote_arch
-      )),
-    })
-
-    if choice == "Build from source (Make sure you have the necessary packages installed)" then
-      return "source"
-    elseif choice == "Symlink to system-wide Neovim" then
-      self._host_config.neovim_version = "system"
-      return "system"
-    end
-  end
-
-  return self._remote_neovim_install_method
-end
-
----@private
 ---Get neovim version to be run on the remote host
 ---@return string neovim_version Version running on the remote host
 function Provider:_get_remote_neovim_version_preference()
   if self._remote_neovim_version == nil then
-    local version_map, possible_choices
+    ---@type string[]
+    local possible_choices = {}
+    local version_map = {}
+
+    -- Check if system-wide Neovim is available, if yes, add it as an option
+    self:run_command("nvim --version || true", "Checking if Neovim is installed system-wide on remote")
+    local nvim_remote_check_output_lines = self.executor:job_stdout()
+
     if self.offline_mode and remote_nvim.config.offline_mode.no_github then
       assert(self._remote_os ~= nil, "OS should not be nil")
       assert(self._remote_neovim_install_method, "Install method should not be nil")
@@ -440,15 +413,13 @@ function Provider:_get_remote_neovim_version_preference()
         self._remote_os,
         self._remote_neovim_install_method
       )
-      possible_choices = vim.tbl_keys(version_map)
+      possible_choices = vim.list_extend(possible_choices, vim.tbl_keys(version_map))
       assert(
         #possible_choices > 0,
         "There are no locally available Neovim versions. Disable GitHub check in offline mode or disable offline mode completely."
       )
     else
       local valid_neovim_versions = provider_utils.get_valid_neovim_versions()
-      version_map = {}
-      possible_choices = {}
       for _, version in ipairs(valid_neovim_versions) do
         version_map[version.tag] = version.commit
 
@@ -466,6 +437,17 @@ function Provider:_get_remote_neovim_version_preference()
     end, possible_choices)
     table.sort(possible_choices, provider_utils.is_greater_neovim_version)
 
+    -- We add this now, because we do not want to mess with the sorting
+    -- TODO: Sorting should only sort, we should add stable and nightly manually.
+    local system_neovim_version
+    for _, output_str in ipairs(nvim_remote_check_output_lines) do
+      if output_str:find("NVIM v.*") then
+        table.insert(possible_choices, "system")
+        system_neovim_version = output_str
+        break
+      end
+    end
+
     self._remote_neovim_version = self:get_selection(possible_choices, {
       prompt = "Which Neovim version should be installed on remote?",
       format_item = function(version)
@@ -477,6 +459,10 @@ function Provider:_get_remote_neovim_version_preference()
 
         if (version == client_version) or (vim.endswith(client_version, "dev") and version == "nightly") then
           choice_str = choice_str .. "(locally installed)"
+        end
+
+        if version == "system" then
+          choice_str = ("Use existing Neovim installed on remote (%s)"):format(system_neovim_version)
         end
 
         return choice_str
@@ -996,15 +982,16 @@ function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_execu
   executor:run_command(command, {
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
-    stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
+    stdout_cb = self:_get_stdout_fn_for_node(section_node),
   })
+  self.logger.fmt_debug("[%s][%s] Running %s completed", self.provider_type, self.unique_host_id, command)
   self:_handle_job_completion(desc)
 end
 
 ---@private
 ---Add stdout information to progress viewer
 ---@param node NuiTree.Node Section node on which the output nodes would be attached
-function Provider:_add_stdout_to_progress_view_window(node)
+function Provider:_get_stdout_fn_for_node(node)
   return function(stdout_chunk)
     if stdout_chunk and stdout_chunk ~= "" then
       for _, chunk in ipairs(vim.split(stdout_chunk, "\n", { plain = true, trimempty = true })) do
@@ -1051,7 +1038,7 @@ function Provider:upload(local_paths, remote_path, desc, compression_opts)
     type = "command_node",
   })
   self.executor:upload(local_path, remote_path, {
-    stdout_cb = self:_add_stdout_to_progress_view_window(section_node),
+    stdout_cb = self:_get_stdout_fn_for_node(section_node),
     compression = compression_opts or {},
   })
   self:_handle_job_completion(desc)

@@ -144,11 +144,12 @@ function install_neovim() {
 	if [[ ! $force_installation && -d $nvim_version_dir && $($nvim_binary -v 2>/dev/null | head -c1 | wc -c) -ne 0 ]]; then
 		echo "Neovim ${nvim_version} is already installed. Skipping installation."
 	else
-		if [[ -d $nvim_version_dir && $($nvim_binary -v 2>/dev/null | head -c1 | wc -c) -eq 0 ]]; then
+		mkdir -p "$nvim_version_dir"
+
+		if [[ -f $nvim_binary && $($nvim_binary -v 2>/dev/null | head -c1 | wc -c) -eq 0 ]]; then
 			echo "Neovim installation is corrupted. Would re-install..."
 		fi
 
-		mkdir -p "$nvim_version_dir"
 		local os
 		os=$(uname)
 
