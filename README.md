@@ -232,7 +232,7 @@ Below is the default configuration. Please read the associated comments before c
 
 </details>
 
-> \[!NOTE\]
+> [!NOTE]
 > Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
 > parts of the plugin might be broken.
 
@@ -319,6 +319,28 @@ tab](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes).
 | `:RemoteLog`       | Open the plugin log file. This is most useful when debugging. `:RemoteInfo` should surface all information needed. If not, open an issue.                   |
 
 For demos about the commands, see the [demos](#-demos) section.
+
+## Integration with statusline
+
+The plugin sets the variable `vim.g.remote_neovim_host` to `true` on the remote Neovim instance. This can be used to add
+useful information regarding the remote system to your statusline.
+
+Here's an example about adding a component in [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) to show the
+remote hostname when connected to a remote instance.
+
+```lua
+lualine_b = {
+    ..., -- other components
+    {
+        function()
+        return vim.g.remote_neovim_host and ("Remote: %s"):format(vim.uv.os_gethostname()) or ""
+        end,
+        padding = { right = 1, left = 1 },
+        separator = { left = "", right = "" },
+    },
+    ..., -- other componenents
+}
+```
 
 ## 📴 Offline mode
 
