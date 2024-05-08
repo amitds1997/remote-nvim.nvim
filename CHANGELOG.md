@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.3...v0.3.4) (2024-05-08)
+
+
+### Bug Fixes
+
+* **provider:** set install method correctly ([c0ddaa4](https://github.com/amitds1997/remote-nvim.nvim/commit/c0ddaa46fe8ace17e9a5428d6c15d51e1f6cdb1d))
+
 ## [0.3.3](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.2...v0.3.3) (2024-05-08)
 
 
