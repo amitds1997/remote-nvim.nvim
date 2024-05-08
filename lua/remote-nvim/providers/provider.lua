@@ -748,7 +748,9 @@ end
 ---@private
 ---Wait until the server is ready
 function Provider:_wait_for_server_to_be_ready()
-  local cmd = ("nvim --server localhost:%s --remote-send ':echo<CR>'"):format(self._local_free_port)
+  local cmd = ("nvim --server localhost:%s --remote-send ':lua vim.g.remote_neovim_host=true<CR>'"):format(
+    self._local_free_port
+  )
   local timeout = 20000 -- Wait for max 20 seconds for server to get ready
 
   local timer = utils.uv.new_timer()
