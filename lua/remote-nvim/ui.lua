@@ -11,7 +11,7 @@ function M.float_term(cmd, exit_cb, popup_options)
     focusable = true,
     relative = "editor",
     border = {
-      style = "rounded",
+      style = vim.fn.has("gui_running") == 0 and "rounded" or "none",
     },
     position = "50%",
     size = {
@@ -22,16 +22,18 @@ function M.float_term(cmd, exit_cb, popup_options)
   }, popup_options or {})
 
   local popup = require("nui.popup")(popup_options)
-  popup:mount()
 
   -- If we leave the buffer, we close the pop-up
   popup:on(event.BufLeave, function()
     popup:unmount()
   end, { once = true })
 
+  -- Update layout if the overall Neovim gets resized
   popup:on(event.VimResized, function()
     popup:update_layout()
   end)
+
+  popup:mount()
 
   vim.fn.termopen(cmd, {
     on_exit = function(_, exit_code)
