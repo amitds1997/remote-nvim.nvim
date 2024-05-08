@@ -160,11 +160,16 @@ function Provider:_setup_workspace_variables()
   self._remote_arch = self._host_config.arch
 
   if self._host_config.neovim_version == nil then
-    self._host_config.neovim_install_method = provider_utils.is_binary_release_available(
-      self._host_config.os,
-      self._host_config.arch
-    ) and "binary" or "source"
-    self._host_config.neovim_version = self:_get_remote_neovim_version_preference()
+    local prompt_title
+
+    if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
+      self._host_config.neovim_install_method = "binary"
+      prompt_title = "Choose Neovim version to install"
+    else
+      self._host_config.neovim_install_method = "source"
+      prompt_title = "Binary release not available. Choose Neovim version to install"
+    end
+    self._host_config.neovim_version = self:_get_remote_neovim_version_preference(prompt_title)
 
     -- Set installation method to "system" if not found
     if self._host_config.neovim_version == "system" then
@@ -395,8 +400,9 @@ end
 
 ---@private
 ---Get neovim version to be run on the remote host
+---@param prompt_title string Title string for the prompt
 ---@return string neovim_version Version running on the remote host
-function Provider:_get_remote_neovim_version_preference()
+function Provider:_get_remote_neovim_version_preference(prompt_title)
   if self._remote_neovim_version == nil then
     ---@type string[]
     local possible_choices = {}
@@ -449,7 +455,7 @@ function Provider:_get_remote_neovim_version_preference()
     end
 
     self._remote_neovim_version = self:get_selection(possible_choices, {
-      prompt = "Which Neovim version should be installed on remote?",
+      prompt = prompt_title,
       format_item = function(version)
         local choice_str = (version ~= "nightly" and ("Neovim %s "):format(version)) or "Nightly version "
 
