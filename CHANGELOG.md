@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.5](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.4...v0.3.5) (2024-05-08)
+
+
+### Features
+
+* **remote:** add flag to indicate if the server is launched by remote-neovim ([#125](https://github.com/amitds1997/remote-nvim.nvim/issues/125)) ([62cad51](https://github.com/amitds1997/remote-nvim.nvim/commit/62cad51db7e1bf75162980ca39cbaf740c0410d3))
+
+
+### Bug Fixes
+
+* **gui:** do not show borders with GUI Neovim ([658a89a](https://github.com/amitds1997/remote-nvim.nvim/commit/658a89a81fa68e95bfdc05214f688d454d9708a2))
+* **ui:** Gracefully handle scenario where we reconnect to remote server ([1db2ff4](https://github.com/amitds1997/remote-nvim.nvim/commit/1db2ff4a27b28f93c068f84570fbe4a071250e55))
+
 ## [0.3.4](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.3...v0.3.4) (2024-05-08)
 
 
