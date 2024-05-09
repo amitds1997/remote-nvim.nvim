@@ -1,7 +1,7 @@
-local nio = require("nio")
+local DevpodProvider = require("remote-nvim.providers.devpod.devpod_provider")
+local utils = require("remote-nvim.utils")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
-local devpod_binary = remote_nvim.config.devpod.binary
 
 local M = {}
 
@@ -14,27 +14,10 @@ local M = {}
 ---@param opts remote-nvim.providers.ProviderOpts Options to pass to the DevpodProvider
 ---@return remote-nvim.providers.devpod.DevpodProvider
 function M.get_devpod_provider(opts)
-  local DevpodProvider = require("remote-nvim.providers.devpod.devpod_provider")
   opts = opts or {}
   opts.conn_opts = opts.conn_opts or {}
   opts.devpod_opts = opts.devpod_opts or {}
-
-  if opts.devpod_opts.provider then
-    local provider_list = nio.process.run({
-      cmd = devpod_binary,
-      args = { "provider", "list", "--output", "json" },
-    })
-    local provider_output = vim.json.decode(provider_list and provider_list.stdout.read() or "{}")
-    -- If the provider does not exist, let's create it
-    if not vim.tbl_contains(vim.tbl_keys(provider_output), opts.devpod_opts.provider) then
-      nio.process.run({
-        cmd = devpod_binary,
-        args = { "provider", "add", opts.devpod_opts.provider },
-      })
-    end
-
-    table.insert(opts.conn_opts, ("--provider=%s"):format(opts.devpod_opts.provider))
-  end
+  opts.devpod_opts.source = opts.devpod_opts.source or opts.host
 
   if opts.unique_host_id then
     local id = string.lower(opts.unique_host_id)
@@ -49,14 +32,15 @@ function M.get_devpod_provider(opts)
     table.insert(opts.conn_opts, "--gpg-agent-forwarding")
   end
 
-  opts.devpod_opts.source = opts.devpod_opts.source or opts.host
+  if opts.devpod_opts.provider then
+    table.insert(opts.conn_opts, ("--provider=%s"):format(opts.devpod_opts.provider))
+  end
 
   return DevpodProvider(opts)
 end
 
 ---@return string|nil
 function M.get_devcontainer_root()
-  local utils = require("remote-nvim.utils")
   local search_style = remote_nvim.config.devpod.search_style
   local Path = require("plenary.path"):new(".")
   local possible_files = { { ".devcontainer.json" }, { ".devcontainer", "devcontainer.json" } }
@@ -88,7 +72,7 @@ end
 ---@param devc_root string Path to devcontainer directory containing path
 function M.launch_devcontainer(devc_root)
   local unique_host_id = devc_root:sub(-48)
-  local sep_idx = unique_host_id:find(require("remote-nvim.utils").path_separator, nil, true)
+  local sep_idx = unique_host_id:find(utils.path_separator, nil, true)
   if sep_idx then
     unique_host_id = unique_host_id:sub(sep_idx + 1)
   end

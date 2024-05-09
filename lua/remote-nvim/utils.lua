@@ -1,6 +1,8 @@
 local M = {}
 local constants = require("remote-nvim.constants")
 M.uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
+---@type plenary.logger
+M.logger = nil
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
@@ -22,17 +24,18 @@ end
 function M.get_logger()
   local remote_nvim = require("remote-nvim")
 
-  return require("plenary.log").new({
-    plugin = constants.PLUGIN_NAME,
-    level = remote_nvim.config.log.level,
-    use_console = false,
-    outfile = remote_nvim.config.log.filepath,
-    fmt_msg = function(_, mode_name, src_path, src_line, msg)
-      local nameupper = mode_name:upper()
-      local lineinfo = vim.fn.fnamemodify(src_path, ":.") .. ":" .. src_line
-      return string.format("%-6s%s %s: %s\n", nameupper, os.date(), lineinfo, msg)
-    end,
-  })
+  return M.logger ~= nil and M.logger
+    or require("plenary.log").new({
+      plugin = constants.PLUGIN_NAME,
+      level = remote_nvim.config.log.level,
+      use_console = false,
+      outfile = remote_nvim.config.log.filepath,
+      fmt_msg = function(_, mode_name, src_path, src_line, msg)
+        local nameupper = mode_name:upper()
+        local lineinfo = vim.fn.fnamemodify(src_path, ":.") .. ":" .. src_line
+        return string.format("%-6s%s %s: %s\n", nameupper, os.date(), lineinfo, msg)
+      end,
+    })
 end
 
 ---Find if provided binary exists or not
@@ -256,6 +259,30 @@ function M.plain_substitute(str, sub_str, repl)
   end
 
   return res_str
+end
+
+---Run cmd async
+---@param cmd string Command to run
+---@param args string[] Arguments to pass to the command
+---@param cb function<string[]>? Callback function
+---@return Job cmd_job Job executing the command async
+function M.run_cmd(cmd, args, cb)
+  local job = require("plenary.job"):new({
+    command = cmd,
+    args = args,
+    enabled_recording = true,
+    on_exit = function(self, code)
+      if code ~= 0 then
+        error(table.concat(self:stderr_result(), "\n"))
+      end
+      if cb ~= nil then
+        cb(self:result())
+      end
+    end,
+  })
+
+  job:start()
+  return job
 end
 
 return M

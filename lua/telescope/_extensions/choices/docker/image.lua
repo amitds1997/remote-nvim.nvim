@@ -12,7 +12,7 @@ local function image_action(_)
       host = image,
       provider_type = "devpod",
       unique_host_id = ps(image, ":", "-"),
-      devpod = {
+      devpod_opts = {
         provider = "docker",
       },
     })

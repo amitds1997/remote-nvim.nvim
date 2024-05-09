@@ -28,6 +28,7 @@ function DevpodProvider:init(opts)
   self.ssh_config_path = remote_nvim.config.devpod.ssh_config_path
   self.ssh_conn_opts = { "-F", self.ssh_config_path }
   self._remote_working_dir = opts.devpod_opts.working_dir
+  self._devpod_provider = opts.devpod_opts.provider
 
   DevpodProvider.super.init(self, {
     host = self.host,
@@ -66,7 +67,6 @@ function DevpodProvider:clean_up_remote_host()
     self:start_progress_view_run(("Remote cleanup (Run no. %s)"):format(self._neovim_launch_number))
     self._neovim_launch_number = self._neovim_launch_number + 1
 
-    self:_launch_devpod_workspace()
     DevpodProvider.super._cleanup_remote_host(self)
 
     local choice = self:get_selection({ "Yes", "No" }, {
@@ -84,13 +84,15 @@ end
 
 function DevpodProvider:stop_neovim()
   local cb = function()
-    self:_run_code_in_coroutine(function()
-      self.local_provider:run_command(
-        ("%s stop %s %s"):format(self.binary, table.concat(self._default_opts, " "), self.unique_host_id),
-        "Stopping devpod workspace"
-      )
-    end, "Stopping devpod workspace")
-    self._devpod_workspace_active = false
+    if self._devpod_workspace_active then
+      self:_run_code_in_coroutine(function()
+        self.local_provider:run_command(
+          ("%s stop %s %s"):format(self.binary, table.concat(self._default_opts, " "), self.unique_host_id),
+          "Stopping devpod workspace"
+        )
+      end, "Stopping devpod workspace")
+      self._devpod_workspace_active = false
+    end
   end
 
   DevpodProvider.super.stop_neovim(self, cb)
@@ -111,11 +113,31 @@ function DevpodProvider:_launch_devpod_workspace()
     -- Remove `-F <ssh-config-path>` from devpod launch opts since that is SSH syntax not devpod
     devpod_up_opts = utils.plain_substitute(devpod_up_opts, table.concat(self.ssh_conn_opts, " "), "")
 
+    self:_handle_provider_setup()
     self.local_provider:run_command(
       ("%s up %s"):format(self.binary, devpod_up_opts),
       "Setting up devcontainer workspace"
     )
     self._devpod_workspace_active = true
+  end
+end
+
+function DevpodProvider:_handle_provider_setup()
+  if self._devpod_provider then
+    self.local_provider:run_command(
+      ("%s provider list --output json"):format(remote_nvim.config.devpod.binary),
+      ("Checking if the %s provider is present"):format(self._devpod_provider)
+    )
+    local stdout = self.local_provider.executor:job_stdout()
+    local provider_list_output = vim.json.decode(vim.tbl_isempty(stdout) and "{}" or table.concat(stdout, "\n"))
+
+    -- If the provider does not exist, let's create it
+    if not vim.tbl_contains(vim.tbl_keys(provider_list_output), self._devpod_provider) then
+      self.local_provider:run_command(
+        ("%s provider add %s"):format(remote_nvim.config.devpod.binary, self._devpod_provider),
+        ("Adding %s provider to DevPod"):format(self._devpod_provider)
+      )
+    end
   end
 end
 
