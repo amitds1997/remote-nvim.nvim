@@ -28,7 +28,3 @@
 - Add tests for
   - Plain substitute function
   - Entire devpod codebase
-
-### In progress
-
-- Add auto-detection of devcontainer directory if present and popping up devcontainer question
