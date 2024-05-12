@@ -17,6 +17,10 @@ local function repo_action(_)
       unique_host_id = ("%s-remote"):format(uri_components[#uri_components]),
       devpod_opts = {
         provider = "docker",
+        source_opts = {
+          type = "repo",
+          id = git_uri,
+        },
       },
     })
     :launch_neovim()

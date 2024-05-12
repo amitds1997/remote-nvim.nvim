@@ -5,10 +5,16 @@ local remote_nvim = require("remote-nvim")
 
 local M = {}
 
+---@class remote-nvim.providers.DevpodSourceOpts
+---@field name string? Name of the source
+---@field id string Source specific ID
+---@field type "container"|"devcontainer"|"repo"|"branch"|"pr"|"commit"|"existing"|"container"|"image" Type of devpod source
+
 ---@class remote-nvim.providers.devpod.DevpodOpts
 ---@field source string? What is the source for the current workspace
 ---@field working_dir string? Working directory to set when launching the client
 ---@field provider string? Name of the devpod provider
+---@field source_opts remote-nvim.providers.DevpodSourceOpts Any type-specific details might be stored in this
 
 ---Get correctly initialized devpod provider instance
 ---@param opts remote-nvim.providers.ProviderOpts Options to pass to the DevpodProvider
@@ -83,6 +89,10 @@ function M.launch_devcontainer(devc_root)
       provider_type = "devpod",
       devpod_opts = {
         provider = "docker",
+        source_opts = {
+          type = "devcontainer",
+          id = devc_root,
+        },
       },
       unique_host_id = unique_host_id,
     })

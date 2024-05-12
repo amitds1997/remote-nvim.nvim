@@ -16,6 +16,7 @@
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 ---@field offline_mode boolean? Should we operate in offline mode
+---@field devpod_source_opts remote-nvim.providers.DevpodSourceOpts? Devpod related source options
 
 ---@class remote-nvim.providers.Provider: remote-nvim.Object
 ---@field host string Host name
@@ -26,8 +27,8 @@
 ---@field protected local_executor remote-nvim.providers.Executor Local executor instance
 ---@field protected progress_viewer remote-nvim.ui.ProgressView Progress viewer for progress
 ---@field private offline_mode boolean Operating in offline mode or not
----@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
----@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
+---@field protected _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
+---@field protected _config_provider remote-nvim.ConfigProvider Host workspace configuration
 ---@field private _provider_stopped_neovim boolean If neovim was stopped by the provider
 ---@field private logger plenary.logger Logger instance
 ---@field private _setup_running boolean Is the setup running?
@@ -132,7 +133,7 @@ function Provider:_cleanup_conn_options(conn_opts)
   return conn_opts
 end
 
----@private
+---@protected
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(self._config_provider:get_workspace_config(self.unique_host_id)) then

@@ -14,6 +14,10 @@ local function image_action(_)
       unique_host_id = ps(image, ":", "-"),
       devpod_opts = {
         provider = "docker",
+        source_opts = {
+          type = "image",
+          id = image,
+        },
       },
     })
     :launch_neovim()

@@ -10,7 +10,7 @@ local utils = require("remote-nvim.utils")
 
 ---@alias prompt_type "plain"|"secret"
 ---@alias prompt_value_type "static"|"dynamic"
----@alias devcontainer_cfg_search_style "current_dir_only"|"recurse_up"|"none"
+---@alias devcontainer_cfg_search_style "current_dir_only"|"recurse_up"
 ---@alias container_list_opts "running_only"|"all"
 
 ---@class remote-nvim.config.PluginConfig.DevpodConfig

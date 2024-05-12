@@ -27,7 +27,13 @@ local function show_workspace_list(workspace_list)
           provider_type = "devpod",
           host = choice.id,
           unique_host_id = choice.id,
-          devpod_opts = {},
+          devpod_opts = {
+            devpod_type = "existing",
+            source_opts = {
+              type = "existing",
+              id = choice.id,
+            },
+          },
         })
         :launch_neovim()
     end)

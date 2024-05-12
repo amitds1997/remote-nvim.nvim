@@ -22,6 +22,11 @@ local function branch_action(_)
       unique_host_id = ("%s-%s"):format(uri_components[#uri_components], branch),
       devpod_opts = {
         provider = "docker",
+        source_opts = {
+          type = "branch",
+          id = branch,
+          name = git_uri,
+        },
       },
     })
     :launch_neovim()

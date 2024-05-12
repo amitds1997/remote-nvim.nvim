@@ -45,6 +45,11 @@ local function show_container_list(container_list)
               devpod_opts = {
                 provider = "docker",
                 working_dir = container_info.working_dir,
+                source_opts = {
+                  type = "container",
+                  name = name,
+                  id = choice.ID,
+                },
               },
             })
             :launch_neovim()

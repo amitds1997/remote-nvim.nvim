@@ -22,6 +22,11 @@ local function commit_action(_)
       unique_host_id = ("%s-%s"):format(uri_components[#uri_components], commit),
       devpod_opts = {
         provider = "docker",
+        source_opts = {
+          type = "commit",
+          id = commit,
+          name = git_uri,
+        },
       },
     })
     :launch_neovim()

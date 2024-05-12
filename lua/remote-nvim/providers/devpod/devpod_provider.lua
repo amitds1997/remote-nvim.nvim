@@ -29,6 +29,7 @@ function DevpodProvider:init(opts)
   self.ssh_conn_opts = { "-F", self.ssh_config_path }
   self._remote_working_dir = opts.devpod_opts.working_dir
   self._devpod_provider = opts.devpod_opts.provider
+  self._devpod_source_opts = opts.devpod_opts.source_opts
 
   DevpodProvider.super.init(self, {
     host = self.host,
@@ -39,6 +40,7 @@ function DevpodProvider:init(opts)
     devpod_opts = {
       source = self.source,
       working_dir = self._remote_working_dir,
+      source_opts = opts.devpod_opts.source_opts,
     },
   })
 
@@ -60,6 +62,16 @@ function DevpodProvider:init(opts)
     provider_type = "local",
     progress_view = opts.progress_view,
   })
+end
+
+function DevpodProvider:_setup_workspace_variables()
+  DevpodProvider.super._setup_workspace_variables(self)
+  if self._host_config.devpod_source_opts == nil then
+    self._host_config.devpod_source_opts = self._devpod_source_opts
+    self._config_provider:update_workspace_config(self.unique_host_id, {
+      devpod_source_opts = self._devpod_source_opts,
+    })
+  end
 end
 
 function DevpodProvider:clean_up_remote_host()

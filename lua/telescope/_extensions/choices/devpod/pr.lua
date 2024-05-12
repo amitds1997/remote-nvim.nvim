@@ -22,6 +22,11 @@ local function pr_action(_)
       unique_host_id = ("%s-pr-%s"):format(uri_components[#uri_components], pr_number),
       devpod_opts = {
         provider = "docker",
+        source_opts = {
+          type = "pr",
+          id = pr_number,
+          name = git_uri,
+        },
       },
     })
     :launch_neovim()

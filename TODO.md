@@ -19,12 +19,5 @@
 
 ### To do
 
-- Better picker preview description for all devpod selectors (E.g.: This workspace was created from
-  branch 'abc' in remote repo: `xyz`)
+- Add tests
 - Update README
-  - Add new demos
-  - Add new dependency information
-  - Add steps to set things up
-- Add tests for
-  - Plain substitute function
-  - Entire devpod codebase
