@@ -42,3 +42,21 @@ describe("Common parent is correctly determined", function()
     end)
   end)
 end)
+
+describe("Plain string substitution works", function()
+  it("when an empty string is passed", function()
+    assert.equals("", utils.plain_substitute("", "a", "b"))
+  end)
+
+  it("on a non-empty string", function()
+    assert.equals("bakagamai", utils.plain_substitute("akagamai", "aka", "baka"))
+  end)
+
+  it("when replacement substring has special characters", function()
+    assert.equals("b*k/gamai", utils.plain_substitute("akagamai", "aka", "b*k/"))
+  end)
+
+  it("when there are multiple substrings to replace", function()
+    assert.equals("baka/baka", utils.plain_substitute("aka/aka", "aka", "baka", 2))
+  end)
+end)
