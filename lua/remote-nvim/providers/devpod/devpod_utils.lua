@@ -1,25 +1,12 @@
-local DevpodProvider = require("remote-nvim.providers.devpod.devpod_provider")
 local utils = require("remote-nvim.utils")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
 local M = {}
 
----@class remote-nvim.providers.DevpodSourceOpts
----@field name string? Name of the source
----@field id string Source specific ID
----@field type "container"|"devcontainer"|"repo"|"branch"|"pr"|"commit"|"existing"|"container"|"image" Type of devpod source
-
----@class remote-nvim.providers.devpod.DevpodOpts
----@field source string? What is the source for the current workspace
----@field working_dir string? Working directory to set when launching the client
----@field provider string? Name of the devpod provider
----@field source_opts remote-nvim.providers.DevpodSourceOpts Any type-specific details might be stored in this
-
----Get correctly initialized devpod provider instance
+---Get correctly initialized devpod provider options
 ---@param opts remote-nvim.providers.ProviderOpts Options to pass to the DevpodProvider
----@return remote-nvim.providers.devpod.DevpodProvider
-function M.get_devpod_provider(opts)
+function M.get_devpod_provider_opts(opts)
   opts = opts or {}
   opts.conn_opts = opts.conn_opts or {}
   opts.devpod_opts = opts.devpod_opts or {}
@@ -42,7 +29,7 @@ function M.get_devpod_provider(opts)
     table.insert(opts.conn_opts, ("--provider=%s"):format(opts.devpod_opts.provider))
   end
 
-  return DevpodProvider(opts)
+  return opts
 end
 
 ---@return string|nil
@@ -76,27 +63,18 @@ function M.get_devcontainer_root()
 end
 
 ---@param devc_root string Path to devcontainer directory containing path
-function M.launch_devcontainer(devc_root)
+function M.get_devcontainer_unique_host(devc_root)
+  if devc_root:sub(-1) == "/" then
+    devc_root = devc_root:sub(1, -2)
+  end
+
   local unique_host_id = devc_root:sub(-48)
   local sep_idx = unique_host_id:find(utils.path_separator, nil, true)
   if sep_idx then
     unique_host_id = unique_host_id:sub(sep_idx + 1)
   end
 
-  remote_nvim.session_provider
-    :get_or_initialize_session({
-      host = devc_root,
-      provider_type = "devpod",
-      devpod_opts = {
-        provider = "docker",
-        source_opts = {
-          type = "devcontainer",
-          id = devc_root,
-        },
-      },
-      unique_host_id = unique_host_id,
-    })
-    :launch_neovim()
+  return unique_host_id
 end
 
 return M

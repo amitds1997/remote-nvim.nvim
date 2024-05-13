@@ -1,3 +1,5 @@
+local devpod_utils = require("remote-nvim.providers.devpod.devpod_utils")
+
 ---@class remote-nvim.providers.SessionProvider: remote-nvim.Object
 ---@field private sessions table<string, remote-nvim.providers.Provider> Map of host and associated session
 ---@field private remote_workspaces_config remote-nvim.ConfigProvider
@@ -23,7 +25,7 @@ function SessionProvider:get_or_initialize_session(opts)
   if opts.provider_type == "ssh" then
     provider = require("remote-nvim.providers.ssh.ssh_provider")(opts)
   elseif opts.provider_type == "devpod" then
-    provider = require("remote-nvim.providers.devpod.devpod_helper").get_devpod_provider(opts)
+    provider = require("remote-nvim.providers.devpod.devpod_provider")(devpod_utils.get_devpod_provider_opts(opts))
   else
     error("Unknown provider type")
   end

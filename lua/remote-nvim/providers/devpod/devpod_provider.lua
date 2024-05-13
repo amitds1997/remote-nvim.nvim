@@ -1,6 +1,17 @@
 local Provider = require("remote-nvim.providers.provider")
 local SSHProvider = require("remote-nvim.providers.ssh.ssh_provider")
 
+---@class remote-nvim.providers.DevpodSourceOpts
+---@field name string? Name of the source
+---@field id string Source specific ID
+---@field type "container"|"devcontainer"|"repo"|"branch"|"pr"|"commit"|"existing"|"container"|"image" Type of devpod source
+
+---@class remote-nvim.providers.devpod.DevpodOpts
+---@field source string? What is the source for the current workspace
+---@field working_dir string? Working directory to set when launching the client
+---@field provider string? Name of the devpod provider
+---@field source_opts remote-nvim.providers.DevpodSourceOpts Any type-specific details might be stored in this
+
 ---@class remote-nvim.providers.devpod.DevpodProvider: remote-nvim.providers.ssh.SSHProvider
 ---@field super remote-nvim.providers.ssh.SSHProvider
 ---@field binary string Devpod binary name

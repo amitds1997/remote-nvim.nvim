@@ -30,7 +30,7 @@ end
 
 return function()
   local choices = gen_choices()
-  if not require("remote-nvim.providers.devpod.devpod_helper").get_devcontainer_root() then
+  if not require("remote-nvim.providers.devpod.devpod_utils").get_devcontainer_root() then
     choices = vim.tbl_filter(function(entry)
       return entry.value ~= "devpod-launch-devcontainer"
     end, choices)
