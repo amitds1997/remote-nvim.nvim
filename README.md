@@ -18,11 +18,9 @@ to Neovim (just like VSCode).
 | SSH (using password)          | _Fully supported_ ✅ |
 | SSH (using SSH key)           | _Fully supported_ ✅ |
 | SSH (using `ssh_config` file) | _Fully supported_ ✅ |
-| Docker image [^1]                  | _Fully supported_ ✅ |
-| Docker container [^1]              | _Fully supported_ ✅ |
-| Devcontainer [^1]                  | _Fully supported_ ✅ |
-
-[^1]: _Ensure you have devpod >= 0.5.0 installed for this to work_
+| Docker image [^1]             | _Fully supported_ ✅ |
+| Docker container [^1]         | _Fully supported_ ✅ |
+| Devcontainer [^1]             | _Fully supported_ ✅ |
 
 See [Demos](#-demos) for how to work with your particular use case.
 
@@ -54,12 +52,10 @@ features.
 
 ### OS support
 
-| Support level           | OS                                |
-| ----------------------- | --------------------------------- |
+| Support level           | OS                         |
+| ----------------------- | -------------------------- |
 | ✅ **Supported**         | Linux, MacOS, FreeBSD [^2] |
-| 🟡 **Not supported yet** | Windows, WSL                      |
-
-[^2]: _Supports building from source or using already installed Neovim on remote host_
+| 🟡 **Not supported yet** | Windows, WSL               |
 
 ### Local machine 💻
 
@@ -118,6 +114,21 @@ Please read the associated comments before changing the value.
 
 ```lua
  {
+  -- Configuration for devpod connections
+  devpod = {
+    binary = "devpod", -- Binary to use for devpod
+    docker_binary = "docker", -- Binary to use for docker-related commands
+    ---@diagnostic disable-next-line:param-type-mismatch
+    ssh_config_path = utils.path_join(utils.is_windows, vim.fn.stdpath("data"), constants.PLUGIN_NAME, "ssh_config"), -- Path where devpod SSH configurations should be stored
+    search_style = "current_dir_only", -- How should devcontainers be searched
+    -- For dotfiles, see https://devpod.sh/docs/developing-in-workspaces/dotfiles-in-a-workspace for more information
+    dotfiles = {
+        path = nil, -- Path to your dotfiles which should be copied into devcontainers
+        install_script = nil -- Install script that should be called to install your dotfiles
+    },
+    gpg_agent_forwarding = false, -- Should GPG agent be forwarded over the network
+    container_list = "running_only", -- How should docker list containers ("running_only" or "all")
+  },
   -- Configuration for SSH connections
   ssh_config = {
     ssh_binary = "ssh", -- Binary to use for running SSH command
@@ -145,6 +156,7 @@ Please read the associated comments before changing the value.
         value_type = "static",
         value = "",
       },
+      -- There are other values here which can be checked in lua/remote-nvim/init.lua
     },
   },
 
@@ -489,3 +501,7 @@ uploading by setting `compression.enabled` to `true` for those particular upload
 **_A big thank you to the amazing Neovim community for Neovim and the plugins! ❤️_**
 
 ## 📓 Footnotes
+
+[^1]: _Ensure you have devpod >= 0.5.0 installed for this to work_
+
+[^2]: _Supports building from source or using already installed Neovim on remote host_

@@ -95,9 +95,21 @@ describe("Devpod provider options are correctly generated", function()
     end)
 
     it("for dotfiles", function()
-      remote_nvim.config.devpod.dotfiles = "https://github.com/amitds1997/dotfiles"
+      remote_nvim.config.devpod.dotfiles = {
+        path = "https://github.com/amitds1997/dotfiles",
+      }
       assert.are.same({
         conn_opts = { "--dotfiles=https://github.com/amitds1997/dotfiles" },
+        devpod_opts = {},
+      }, utils.get_devpod_provider_opts({}))
+
+      remote_nvim.config.devpod.dotfiles = {
+        path = "https://github.com/amitds1997/dotfiles",
+        install_script = "install.sh",
+      }
+
+      assert.are.same({
+        conn_opts = { "--dotfiles=https://github.com/amitds1997/dotfiles", "--dotfiles-script=install.sh" },
         devpod_opts = {},
       }, utils.get_devpod_provider_opts({}))
     end)

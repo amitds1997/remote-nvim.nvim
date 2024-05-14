@@ -17,8 +17,14 @@ function M.get_devpod_provider_opts(opts)
     opts.unique_host_id = id:gsub("[^a-z0-9]+", "-"):sub(1, 48)
   end
 
-  if remote_nvim.config.devpod.dotfiles then
-    table.insert(opts.conn_opts, ("--dotfiles=%s"):format(remote_nvim.config.devpod.dotfiles))
+  if remote_nvim.config.devpod.dotfiles ~= nil then
+    if remote_nvim.config.devpod.dotfiles.path ~= nil then
+      table.insert(opts.conn_opts, ("--dotfiles=%s"):format(remote_nvim.config.devpod.dotfiles.path))
+
+      if remote_nvim.config.devpod.dotfiles.install_script ~= nil then
+        table.insert(opts.conn_opts, ("--dotfiles-script=%s"):format(remote_nvim.config.devpod.dotfiles.install_script))
+      end
+    end
   end
 
   if remote_nvim.config.devpod.gpg_agent_forwarding then

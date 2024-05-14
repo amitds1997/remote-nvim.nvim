@@ -13,12 +13,16 @@ local utils = require("remote-nvim.utils")
 ---@alias devcontainer_cfg_search_style "current_dir_only"|"recurse_up"
 ---@alias container_list_opts "running_only"|"all"
 
+---@class remote-nvim.config.PluginConfig.DevpodConfig.DotfilesConfig
+---@field path string? Path to your dotfiles which should be copied into devcontainers
+---@field install_script string? Install script that should be called to install your dotfiles
+
 ---@class remote-nvim.config.PluginConfig.DevpodConfig
 ---@field binary string Name of binary on runtime path for dev container
 ---@field docker_binary string Name of the binary to use for docker containers
 ---@field ssh_config_path string Configuration path where devpod SSH configurations would be stored
 ---@field search_style devcontainer_cfg_search_style Where to search for devcontainer configuration
----@field dotfiles string? Path/URI to dotfiles to use in the container
+---@field dotfiles remote-nvim.config.PluginConfig.DevpodConfig.DotfilesConfig? Path/URI to dotfiles to use in the container
 ---@field gpg_agent_forwarding boolean Should forward the local GPG Agent into workspace
 ---@field container_list container_list_opts Show only running or all containers in container list
 
@@ -91,7 +95,10 @@ M.default_opts = {
     ---@diagnostic disable-next-line:param-type-mismatch
     ssh_config_path = utils.path_join(utils.is_windows, vim.fn.stdpath("data"), constants.PLUGIN_NAME, "ssh_config"),
     search_style = "current_dir_only",
-    dotfiles = nil,
+    dotfiles = {
+      path = nil,
+      install_script = nil,
+    },
     gpg_agent_forwarding = false,
     container_list = "running_only",
   },
