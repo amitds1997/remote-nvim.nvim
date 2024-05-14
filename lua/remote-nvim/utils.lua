@@ -40,14 +40,13 @@ end
 
 ---Find if provided binary exists or not
 ---@param binary string|string[] Name of the binary to search on the runtime path
----@return string binary Returns back the binary; error if not found
+---@return boolean exists Does the binary exist on the path
 function M.find_binary(binary)
-  if type(binary) == "string" and vim.fn.executable(binary) == 1 then
-    return binary
-  elseif type(binary) == "table" and vim.fn.executable(binary[1]) then
-    return binary[1]
+  binary = type(binary) == "string" and { binary } or binary
+  if vim.fn.executable(binary[1]) == 1 then
+    return true
   end
-  error("Binary " .. binary .. " not found.")
+  return false
 end
 
 ---Generate a random string of given length
