@@ -15,6 +15,9 @@ function M.get_devpod_provider_opts(opts)
   if opts.unique_host_id then
     local id = string.lower(opts.unique_host_id)
     opts.unique_host_id = id:gsub("[^a-z0-9]+", "-"):sub(1, 48)
+    if opts.unique_host_id:sub(-1) == "-" then
+      opts.unique_host_id = opts.unique_host_id:sub(1, -2)
+    end
   end
 
   if remote_nvim.config.devpod.dotfiles ~= nil then

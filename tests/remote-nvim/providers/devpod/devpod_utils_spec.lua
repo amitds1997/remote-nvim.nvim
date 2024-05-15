@@ -66,7 +66,7 @@ describe("Devpod provider options are correctly generated", function()
     assert.are.same(
       {
         conn_opts = {},
-        unique_host_id = "panda-panda-panda-panda-panda-panda-panda-panda-",
+        unique_host_id = "panda-panda-panda-panda-panda-panda-panda-panda",
         devpod_opts = {},
       },
       utils.get_devpod_provider_opts({
