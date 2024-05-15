@@ -59,4 +59,8 @@ describe("Plain string substitution works", function()
   it("when there are multiple substrings to replace", function()
     assert.equals("baka/baka", utils.plain_substitute("aka/aka", "aka", "baka", 2))
   end)
+
+  it("when there are special characters in the string", function()
+    assert.equals("tap^$()%.[]*+-?tap", utils.plain_substitute("aka^$()%.[]*+-?aka", "aka", "tap", 2))
+  end)
 end)

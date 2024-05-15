@@ -243,7 +243,7 @@ end
 ---@return string res_str String to return
 function M.plain_substitute(str, sub_str, repl, times)
   local strMagic = "([%^%$%(%)%%%.%[%]%*%+%-%?])"
-  local replaced_str = string.gsub(str:gsub(strMagic, "%%%1"), sub_str:gsub(strMagic, "%%%1"), repl, times or 1)
+  local replaced_str = str:gsub((sub_str or ""):gsub(strMagic, "%%%1"), repl, times or 1)
   return replaced_str
 end
 
