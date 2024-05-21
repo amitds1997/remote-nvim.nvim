@@ -165,8 +165,8 @@ function DevpodProvider:_handle_provider_setup()
 end
 
 function DevpodProvider:launch_neovim()
-  if not self:is_remote_server_running() then
-    self:_run_code_in_coroutine(function()
+  self:_run_code_in_coroutine(function()
+    if not self:is_remote_server_running() then
       self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
       self._neovim_launch_number = self._neovim_launch_number + 1
 
@@ -176,12 +176,9 @@ function DevpodProvider:launch_neovim()
           self:_stop_devpod_workspace()
         end,
       })
-
-      self:_launch_neovim(false)
-    end, "Launching devpod workspace")
-  else
-    vim.notify("Neovim server is already running. Not starting a new one")
-  end
+    end
+    self:_launch_neovim(false)
+  end, "Launching devpod workspace")
 end
 
 return DevpodProvider
