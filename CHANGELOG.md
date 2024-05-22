@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.6](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.5...v0.3.6) (2024-05-22)
+
+
+### Features
+
+* **devcontainer+docker:** Add devcontainer and docker support ([#66](https://github.com/amitds1997/remote-nvim.nvim/issues/66)) ([7e8b322](https://github.com/amitds1997/remote-nvim.nvim/commit/7e8b322fdd14bffd0e7b6032dbdd5e43057668b8))
+
+
+### Bug Fixes
+
+* **devpod:** check devpod/docker executable is available ([f63fae1](https://github.com/amitds1997/remote-nvim.nvim/commit/f63fae11d905fc20b36427030e2b7dcca55be84e))
+
 ## [0.3.5](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.4...v0.3.5) (2024-05-08)
 
 
