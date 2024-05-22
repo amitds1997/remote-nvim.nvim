@@ -64,7 +64,8 @@ features.
 - Binaries
   - `curl`
   - `tar` (optional; if you use compressed uploads)
-  - `devpod` >= 0.5.0 (optional; if you want to use devcontainer)
+  - [`devpod`](https://devpod.sh/docs/getting-started/install#optional-install-devpod-cli) >= 0.5.0 (optional;
+  if you want to use devcontainer)
 - Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub
 
 Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub is not needed when using
@@ -259,7 +260,11 @@ Please read the associated comments before changing the value.
 
 > [!TIP]
 >
-> By default, this plugin launches your remote neovim client in a popup window. This _mostly_ works fine. For a better experience though, it is recommended that you add a custom callback to launch your Neovim client [in a separate tab/window for your terminal](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes) or [GUI app](https://github.com/amitds1997/remote-nvim.nvim/issues/118#issuecomment-2100529883).
+> By default, this plugin launches your remote neovim client in a popup window.
+> This _mostly_ works fine. For a better experience though, it is recommended
+> that you add a custom callback to launch your Neovim client [in a separate
+> tab/window for your terminal](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes)
+> or [GUI app](https://github.com/amitds1997/remote-nvim.nvim/issues/118#issuecomment-2100529883).
 
 <details>
 <summary><b>How to connect to saved host using SSH config file</b></summary>
@@ -280,55 +285,63 @@ password](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0
 <details>
 <summary><b>Launch current `.devcontainer` based project in a devcontainer</b></summary>
 
-[Launch a local .devcontainer project in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/1a274a93-f1ab-4369-90e6-bbe0efcd71c9)
+[Launch a local .devcontainer project in a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/1a274a93-f1ab-4369-90e6-bbe0efcd71c9)
 
 </details>
 
 <details>
 <summary><b>Launch a docker image as a devcontainer</b></summary>
 
-[Launch docker image as a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/98352663-a145-4948-93f7-70d5403c7ef4)
+[Launch docker image as a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/98352663-a145-4948-93f7-70d5403c7ef4)
 
 </details>
 
 <details>
 <summary><b>Attach to a running docker container</b></summary>
 
-[Attach to a running docker container](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/4fda15fa-e2ca-45b1-811b-c87472278835)
+[Attach to a running docker
+container](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/4fda15fa-e2ca-45b1-811b-c87472278835)
 
 </details>
 
 <details>
 <summary><b>Launch a remote repo as a devcontainer</b></summary>
 
-[Launch git repo in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/5d4b294e-7269-4bbb-a168-cd9dcdb6686e)
+[Launch git repo in a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/5d4b294e-7269-4bbb-a168-cd9dcdb6686e)
 
 </details>
 
 <details>
 <summary><b>Launch any git branch in a devcontainer</b></summary>
 
-[Launch git branch in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ba6c0db9-f3c0-403a-b62d-b1e5ac7762ef)
+[Launch git branch in a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ba6c0db9-f3c0-403a-b62d-b1e5ac7762ef)
 
 </details>
 
 <details>
 <summary><b>Launch any git commit in a devcontainer</b></summary>
 
-[Launch git commit in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/926b076b-45ec-4603-bd27-13dc270c7e51)
+[Launch git commit in a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/926b076b-45ec-4603-bd27-13dc270c7e51)
 
 </details>
 <details>
 <summary><b>Launch PR in a devcontainer</b></summary>
 
-[Launch any git repo-based PR in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/29aaa26b-697b-4ee1-962d-75cc70299ae5)
+[Launch any git repo-based PR in a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/29aaa26b-697b-4ee1-962d-75cc70299ae5)
 
 </details>
 
 <details>
 <summary><b>Connect to any existing devpod workspace</b></summary>
 
-[Launch any existing devpod workspace inside a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a43f932e-264a-4819-ab54-83348a82a5b1)
+[Launch any existing devpod workspace inside a
+devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a43f932e-264a-4819-ab54-83348a82a5b1)
 
 </details>
 
@@ -558,6 +571,6 @@ uploading by setting `compression.enabled` to `true` for those particular upload
 
 ## 📓 Footnotes
 
-[^1]: _Ensure you have devpod >= 0.5.0 installed for this to work_
+[^1]: _Ensure you have [devpod](https://devpod.sh/docs/getting-started/install#optional-install-devpod-cli) >= 0.5.0 installed for this to work_
 
 [^2]: _Supports building from source or using already installed Neovim on remote host_
