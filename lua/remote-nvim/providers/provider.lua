@@ -16,6 +16,7 @@
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 ---@field offline_mode boolean? Should we operate in offline mode
+---@field devpod_source_opts remote-nvim.providers.DevpodSourceOpts? Devpod related source options
 
 ---@class remote-nvim.providers.Provider: remote-nvim.Object
 ---@field host string Host name
@@ -26,8 +27,9 @@
 ---@field protected local_executor remote-nvim.providers.Executor Local executor instance
 ---@field protected progress_viewer remote-nvim.ui.ProgressView Progress viewer for progress
 ---@field private offline_mode boolean Operating in offline mode or not
----@field private _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
----@field private _config_provider remote-nvim.ConfigProvider Host workspace configuration
+---@field protected _host_config remote-nvim.providers.WorkspaceConfig Host workspace configuration
+---@field protected _config_provider remote-nvim.ConfigProvider Host workspace configuration
+---@field private _provider_stopped_neovim boolean If neovim was stopped by the provider
 ---@field private logger plenary.logger Logger instance
 ---@field private _setup_running boolean Is the setup running?
 ---@field private _neovim_launch_number number Active run number
@@ -90,11 +92,13 @@ end
 ---@field progress_view remote-nvim.ui.ProgressView?
 ---@field unique_host_id string? Unique host ID
 ---@field provider_type provider_type Provider type
+---@field devpod_opts remote-nvim.providers.devpod.DevpodOpts? Devpod options
 
 ---Create new provider instance
 ---@param opts remote-nvim.providers.ProviderOpts Provider options
 function Provider:init(opts)
   assert(opts.host ~= nil, "Host must be provided")
+  assert(opts.progress_view ~= nil, "Progress viewer cannot be nil")
   self.host = opts.host
 
   opts.conn_opts = opts.conn_opts or {}
@@ -113,7 +117,8 @@ function Provider:init(opts)
   self._neovim_launch_number = 1
 
   -- Remote configuration parameters
-  self._remote_working_dir = nil
+  opts.devpod_opts = opts.devpod_opts or {}
+  self._remote_working_dir = opts.devpod_opts.working_dir
 
   ---@diagnostic disable-next-line: missing-fields
   self._host_config = {}
@@ -128,7 +133,7 @@ function Provider:_cleanup_conn_options(conn_opts)
   return conn_opts
 end
 
----@private
+---@protected
 ---Setup workspace variables
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(self._config_provider:get_workspace_config(self.unique_host_id)) then
@@ -260,7 +265,9 @@ function Provider:_add_session_info()
     })
   end
 
-  add_config_info("Plugin log path ", remote_nvim.config.log.filepath)
+  add_config_info("Log path         ", remote_nvim.config.log.filepath)
+  add_config_info("Host ID          ", self.unique_host_id)
+  add_config_info("Version (Commit) ", utils.get_plugin_version())
 
   add_local_info("OS             ", utils.os_name())
   add_local_info("Neovim version ", utils.neovim_version())
@@ -280,9 +287,10 @@ function Provider:_reset()
   self._setup_running = false
   self._remote_server_process_id = nil
   self._local_free_port = nil
+  self._provider_stopped_neovim = false
 end
 
----@private
+---@protected
 ---@title string Title for the run
 function Provider:start_progress_view_run(title)
   self.progress_viewer:start_run(title)
@@ -705,12 +713,16 @@ function Provider:_launch_remote_neovim_server()
         port_forward_opts,
         function(node)
           return function(exit_code)
-            self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
-            if exit_code == 0 then
-              self:hide_progress_view_window()
-            else
+            local success_code = (exit_code == 0 or self._provider_stopped_neovim)
+            self.progress_viewer:update_status(success_code and "success" or "failed", true, node)
+            if not success_code then
               self:show_progress_view_window()
             end
+
+            if not self._provider_stopped_neovim then
+              self:stop_neovim()
+            end
+
             self:_reset()
           end
         end
@@ -835,11 +847,17 @@ function Provider:_launch_local_neovim_client()
 end
 
 ---@protected
-function Provider:_launch_neovim()
+---@param start_run boolean? Should a new run be started
+function Provider:_launch_neovim(start_run)
+  if start_run == nil then
+    start_run = true
+  end
   self.logger.fmt_debug(("[%s][%s] Starting remote neovim launch"):format(self.provider_type, self.unique_host_id))
   if not self:is_remote_server_running() then
-    self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
-    self._neovim_launch_number = self._neovim_launch_number + 1
+    if start_run then
+      self:start_progress_view_run(("Launch Neovim (Run no. %s)"):format(self._neovim_launch_number))
+      self._neovim_launch_number = self._neovim_launch_number + 1
+    end
     self:_setup_workspace_variables()
     self:_setup_remote()
     self:_launch_remote_neovim_server()
@@ -856,91 +874,86 @@ function Provider:launch_neovim()
 end
 
 ---Stop running Neovim instance (if any)
-function Provider:stop_neovim()
+---@param cb function? Callback to invoke on stopping Neovim instance
+function Provider:stop_neovim(cb)
   if self:is_remote_server_running() then
-    local cmd = { "nvim", "--server", ("localhost:%s"):format(self._local_free_port), "--remote-send", ":qall!<CR>" }
+    vim.fn.jobstop(self._remote_server_process_id)
+    self._provider_stopped_neovim = true
+  end
 
-    if vim.fn.has("nvim-0.10") then
-      vim.system(cmd, { text = true }, function(res)
-        if res.code == 0 then
-          self:_reset()
-        end
-      end)
-    else
-      vim.fn.jobstart(cmd, {
-        on_exit = function(_, exit_code)
-          if exit_code == 0 then
-            self:_reset()
-          end
-        end,
-      })
-    end
+  if cb ~= nil then
+    cb()
   end
 end
 
 ---Cleanup remote host
 function Provider:clean_up_remote_host()
   self:_run_code_in_coroutine(function()
-    self:start_progress_view_run(("Remote cleanup (Run number %s)"):format(self._cleanup_run_number))
+    self:start_progress_view_run(("Remote cleanup (Run no. %s)"):format(self._cleanup_run_number))
     self._cleanup_run_number = self._cleanup_run_number + 1
-    self:_setup_workspace_variables()
-    local deletion_choices = {
-      "Delete neovim workspace (Choose if multiple people use the same user account)",
-      "Delete remote neovim from remote host (Nuke it!)",
-    }
-
-    local cleanup_choice = self:get_selection(deletion_choices, {
-      prompt = "Choose what should be cleaned up?",
-    })
-
-    -- Stop neovim first to avoid interference from running plugins and services
-    self:stop_neovim()
-
-    local exit_cb = function(node)
-      return function(exit_code)
-        self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
-        if exit_code == 0 then
-          self:hide_progress_view_window()
-        else
-          self:show_progress_view_window()
-        end
-        self:_reset()
-      end
-    end
-
-    if cleanup_choice == deletion_choices[1] then
-      self:run_command(
-        ("rm -rf %s"):format(self._remote_workspace_id_path),
-        ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path),
-        nil,
-        exit_cb
-      )
-    elseif cleanup_choice == deletion_choices[2] then
-      self:run_command(
-        ("rm -rf %s"):format(self._remote_neovim_home),
-        "Delete remote neovim created directories from remote machine",
-        nil,
-        exit_cb
-      )
-    end
-    vim.notify(("Cleanup on remote host '%s' completed"):format(self.host), vim.log.levels.INFO)
-
-    self._config_provider:remove_workspace_config(self.unique_host_id)
-    self:hide_progress_view_window()
+    self:_cleanup_remote_host()
   end, ("Cleaning up '%s' host"):format(self.host))
+end
+
+function Provider:_cleanup_remote_host()
+  self:_setup_workspace_variables()
+  local deletion_choices = {
+    "Delete neovim workspace (Choose if multiple people use the same user account)",
+    "Delete remote neovim from remote host (Nuke it!)",
+  }
+
+  local cleanup_choice = self:get_selection(deletion_choices, {
+    prompt = "Choose what should be cleaned up?",
+  })
+
+  -- Stop neovim first to avoid interference from running plugins and services
+  self:stop_neovim()
+
+  local exit_cb = function(node)
+    return function(exit_code)
+      self.progress_viewer:update_status(exit_code == 0 and "success" or "failed", true, node)
+      if exit_code == 0 then
+        self:hide_progress_view_window()
+      else
+        self:show_progress_view_window()
+      end
+      self:_reset()
+    end
+  end
+
+  if cleanup_choice == deletion_choices[1] then
+    self:run_command(
+      ("rm -rf %s"):format(self._remote_workspace_id_path),
+      ("Deleting workspace %s from remote machine"):format(self._remote_workspace_id_path),
+      nil,
+      exit_cb
+    )
+  elseif cleanup_choice == deletion_choices[2] then
+    self:run_command(
+      ("rm -rf %s"):format(self._remote_neovim_home),
+      "Delete remote neovim created directories from remote machine",
+      nil,
+      exit_cb
+    )
+  end
+  vim.notify(("Cleanup on remote host '%s' completed"):format(self.host), vim.log.levels.INFO)
+
+  self._config_provider:remove_workspace_config(self.unique_host_id)
+  self:hide_progress_view_window()
 end
 
 ---@private
 ---Handle job completion
 ---@param desc string Description of the job
+---@param node NuiTree.Node Node to update
 ---@param is_local_executor boolean? Is the command executing on the local executor
 ---@return integer exit_code Exit code of the job being handled
-function Provider:_handle_job_completion(desc, is_local_executor)
+function Provider:_handle_job_completion(desc, node, is_local_executor)
   is_local_executor = is_local_executor or false
   local executor = is_local_executor and self.local_executor or self.executor
   local exit_code = executor:last_job_status()
   if exit_code ~= 0 then
-    self.progress_viewer:update_status("failed", true)
+    self.progress_viewer:update_status("failed", true, node)
     if self._setup_running then
       self._setup_running = false
     end
@@ -956,12 +969,11 @@ function Provider:_handle_job_completion(desc, is_local_executor)
       error(("'%s' failed"):format(desc))
     end
   else
-    self.progress_viewer:update_status("success")
+    self.progress_viewer:update_status("success", nil, node)
   end
   return exit_code
 end
 
----@protected
 ---Run command over executor
 ---@param command string
 ---@param desc string Description of the command running
@@ -990,7 +1002,9 @@ function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_execu
     stdout_cb = self:_get_stdout_fn_for_node(section_node),
   })
   self.logger.fmt_debug("[%s][%s] Running %s completed", self.provider_type, self.unique_host_id, command)
-  self:_handle_job_completion(desc)
+  if exit_cb == nil then
+    self:_handle_job_completion(desc, section_node)
+  end
 end
 
 ---@private
@@ -1046,7 +1060,7 @@ function Provider:upload(local_paths, remote_path, desc, compression_opts)
     stdout_cb = self:_get_stdout_fn_for_node(section_node),
     compression = compression_opts or {},
   })
-  self:_handle_job_completion(desc)
+  self:_handle_job_completion(desc, section_node)
 end
 
 return Provider

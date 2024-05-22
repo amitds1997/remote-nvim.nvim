@@ -1,39 +1,52 @@
 local M = {}
 local constants = require("remote-nvim.constants")
 M.uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop
+---@type plenary.logger
+M.logger = nil
 
 ---Is the current system a Windows system or not
 M.is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1
 M.path_separator = M.is_windows and "\\" or "/"
+
+function M.get_plugin_version()
+  local commit_id = "N/A"
+  if
+    vim.fn.executable("git") == 1
+    and #vim.fs.find(".git", { path = M.get_plugin_root(), type = "directory", limit = 1 }) == 1
+  then
+    commit_id = vim.split(vim.fn.system("git rev-parse HEAD"), "\n")[1]
+  end
+  return ("%s (%s)"):format(constants.PLUGIN_VERSION, commit_id)
+end
 
 ---Get logger
 ---@return plenary.logger logger Logger instance
 function M.get_logger()
   local remote_nvim = require("remote-nvim")
 
-  return require("plenary.log").new({
-    plugin = constants.PLUGIN_NAME,
-    level = remote_nvim.config.log.level,
-    use_console = false,
-    outfile = remote_nvim.config.log.filepath,
-    fmt_msg = function(_, mode_name, src_path, src_line, msg)
-      local nameupper = mode_name:upper()
-      local lineinfo = vim.fn.fnamemodify(src_path, ":.") .. ":" .. src_line
-      return string.format("%-6s%s %s: %s\n", nameupper, os.date(), lineinfo, msg)
-    end,
-  })
+  return M.logger ~= nil and M.logger
+    or require("plenary.log").new({
+      plugin = constants.PLUGIN_NAME,
+      level = remote_nvim.config.log.level,
+      use_console = false,
+      outfile = remote_nvim.config.log.filepath,
+      fmt_msg = function(_, mode_name, src_path, src_line, msg)
+        local nameupper = mode_name:upper()
+        local lineinfo = vim.fn.fnamemodify(src_path, ":.") .. ":" .. src_line
+        return string.format("%-6s%s %s: %s\n", nameupper, os.date(), lineinfo, msg)
+      end,
+    })
 end
 
 ---Find if provided binary exists or not
 ---@param binary string|string[] Name of the binary to search on the runtime path
----@return string binary Returns back the binary; error if not found
+---@return boolean exists Does the binary exist on the path
 function M.find_binary(binary)
-  if type(binary) == "string" and vim.fn.executable(binary) == 1 then
-    return binary
-  elseif type(binary) == "table" and vim.fn.executable(binary[1]) then
-    return binary[1]
+  binary = type(binary) == "string" and { binary } or binary
+  if vim.fn.executable(binary[1]) == 1 then
+    return true
   end
-  error("Binary " .. binary .. " not found.")
+  return false
 end
 
 ---Generate a random string of given length
@@ -220,6 +233,42 @@ function M.find_common_parent(paths)
   end
 
   return parent_dir, sub_dirs
+end
+
+---Substitute substring in one string with another
+---@param str string String in which substituion should happen
+---@param sub_str string String to be substituted
+---@param repl string Replacement string
+---@param times number? How many times must the repetitions be applied
+---@return string res_str String to return
+function M.plain_substitute(str, sub_str, repl, times)
+  local strMagic = "([%^%$%(%)%%%.%[%]%*%+%-%?])"
+  local replaced_str = str:gsub((sub_str or ""):gsub(strMagic, "%%%1"), repl, times or 1)
+  return replaced_str
+end
+
+---Run cmd async
+---@param cmd string Command to run
+---@param args string[] Arguments to pass to the command
+---@param cb function<string[]>? Callback function
+---@return Job cmd_job Job executing the command async
+function M.run_cmd(cmd, args, cb)
+  local job = require("plenary.job"):new({
+    command = cmd,
+    args = args,
+    enabled_recording = true,
+    on_exit = function(self, code)
+      if code ~= 0 then
+        error(table.concat(self:stderr_result(), "\n"))
+      end
+      if cb ~= nil then
+        cb(self:result())
+      end
+    end,
+  })
+
+  job:start()
+  return job
 end
 
 return M

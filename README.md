@@ -4,19 +4,25 @@ Adds support for [remote development](https://code.visualstudio.com/docs/remote/
 and [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers)
 to Neovim (just like VSCode).
 
-_**This plugin has not yet reached maturity. So, breaking changes are expected. Any such change would be
-communicated through [this GitHub discussion](https://github.com/amitds1997/remote-nvim.nvim/discussions/78).**_
+> [!WARNING]
+> This plugin has not yet reached maturity. So, breaking changes are expected. Any such change would be
+> communicated through [this GitHub discussion](https://github.com/amitds1997/remote-nvim.nvim/discussions/78).
+>
+> The author appreciates if you can drop by and suggest any changes you would like to see in the plugin
+> to improve it further.
 
 ## ✨ Features
 
-| Remote mode                   | Current support                                                               |
-| ----------------------------- | ----------------------------------------------------------------------------- |
-| SSH (using password)          | _Fully supported_ ✅                                                           |
-| SSH (using SSH key)           | _Fully supported_ ✅                                                           |
-| SSH (using `ssh_config` file) | _Fully supported_ ✅                                                           |
-| Docker image                  | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
-| Docker container              | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
-| Devcontainer                  | _In progress_ ([#66](https://github.com/amitds1997/remote-nvim.nvim/pull/66)) |
+| Remote mode                   | Current support     |
+| ----------------------------- | ------------------- |
+| SSH (using password)          | _Fully supported_ ✅ |
+| SSH (using SSH key)           | _Fully supported_ ✅ |
+| SSH (using `ssh_config` file) | _Fully supported_ ✅ |
+| Docker image [^1]             | _Fully supported_ ✅ |
+| Docker container [^1]         | _Fully supported_ ✅ |
+| Devcontainer [^1]             | _Fully supported_ ✅ |
+
+See [Demos](#-demos) for how to work with your particular use case.
 
 [Remote Tunnels](https://code.visualstudio.com/docs/remote/tunnels)
 is a Microsoft-specific features and will not be supported. If
@@ -31,16 +37,7 @@ you have an alternative though, I would be happy to integrate it into the plugin
   in [BUILD.md](https://github.com/neovim/neovim/blob/master/BUILD.md) already installed on remote so that the
   build process does not break.
 
-### Planned features
-
-- **Dynamic port forwarding** - I already have a clear path to implementing this,
-  but waiting for complete support for devcontainers to be present and then
-  integrate this. For tracking, see [#77](https://github.com/amitds1997/remote-nvim.nvim/issues/77).
-  For more feature details, see [similar implementation in
-  VSCode](https://code.visualstudio.com/docs/devcontainers/containers#_temporarily-forwarding-a-port).
-
-<details>
-<summary><b>✨ Other noice features</b></summary>
+#### ✨ Other noice features
 
 - Automatically install and launch Neovim
 - No changes to your remote environment
@@ -48,38 +45,43 @@ you have an alternative though, I would be happy to integrate it into the plugin
 - Saves your past sessions automatically so you can easily reconnect
 - Easily cleanup the remote machine once you are done with a single command
 
-</details>
+See [#126](https://github.com/amitds1997/remote-nvim.nvim/issues/126) for the list of planned but not yet implemented
+features.
 
 ## 📜 Requirements
 
 ### OS support
 
-| Support level           | OS                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| ✅ **Supported**         | Linux, MacOS                                                                 |
-| ✅ **Also supported**    | FreeBSD (either build from source or use already available Neovim on remote) |
-| 🟡 **Not supported yet** | Windows, WSL                                                                 |
+| Support level           | OS                         |
+| ----------------------- | -------------------------- |
+| ✅ **Supported**         | Linux, MacOS, FreeBSD [^2] |
+| 🟡 **Not supported yet** | Windows, WSL               |
 
 ### Local machine 💻
 
 - OpenSSH client
 - Neovim >= 0.9.0 (as `nvim`)
-- Binaries: `tar` (if you use compressed uploads)
-
-Following are also needed unless you are working with [Offline mode (No GitHub)](#offline-on-remote-and-local-machine):
-
-- Binaries: `curl`
+- Binaries
+  - `curl`
+  - `tar` (optional; if you use compressed uploads)
+  - `devpod` >= 0.5.0 (optional; if you want to use devcontainer)
 - Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub
+
+Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub is not needed when using
+[Offline mode (No GitHub)](#offline-on-remote-and-local-machine) but it comes with
+it's own trade offs.
 
 ### Remote machine ☁️
 
 - OpenSSH-compliant SSH server
 - `bash` shell must be available
-
-Following are also needed unless you are working with [Offline mode](#-offline-mode):
-
-- Binaries: `curl` or `wget`
 - Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub
+- Binaries
+  - `bash`
+  - `curl` or `wget`
+
+Connectivity to [neovim repo](https://github.com/neovim/neovim) on GitHub is not needed when using
+[Offline mode](#-offline-mode).
 
 ## 📥 Installation
 
@@ -100,13 +102,33 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 If you use any other plugin manager, ensure that you call `require("remote-nvim").setup()`.
 
-<details>
-<summary><b>⚙️ Advanced configuration</b></summary>
+> [!NOTE]
+>
+> Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
+> parts of the plugin might be broken.
 
-Below is the default configuration. Please read the associated comments before changing the value.
+## ⚙️ Advanced configuration
+
+Below is the default configuration. Set only things that you wish to change in your `setup()` call.
+Please read the associated comments before changing the value.
 
 ```lua
  {
+  -- Configuration for devpod connections
+  devpod = {
+    binary = "devpod", -- Binary to use for devpod
+    docker_binary = "docker", -- Binary to use for docker-related commands
+    ---@diagnostic disable-next-line:param-type-mismatch
+    ssh_config_path = utils.path_join(utils.is_windows, vim.fn.stdpath("data"), constants.PLUGIN_NAME, "ssh_config"), -- Path where devpod SSH configurations should be stored
+    search_style = "current_dir_only", -- How should devcontainers be searched
+    -- For dotfiles, see https://devpod.sh/docs/developing-in-workspaces/dotfiles-in-a-workspace for more information
+    dotfiles = {
+        path = nil, -- Path to your dotfiles which should be copied into devcontainers
+        install_script = nil -- Install script that should be called to install your dotfiles
+    },
+    gpg_agent_forwarding = false, -- Should GPG agent be forwarded over the network
+    container_list = "running_only", -- How should docker list containers ("running_only" or "all")
+  },
   -- Configuration for SSH connections
   ssh_config = {
     ssh_binary = "ssh", -- Binary to use for running SSH command
@@ -134,6 +156,7 @@ Below is the default configuration. Please read the associated comments before c
         value_type = "static",
         value = "",
       },
+      -- There are other values here which can be checked in lua/remote-nvim/init.lua
     },
   },
 
@@ -232,11 +255,11 @@ Below is the default configuration. Please read the associated comments before c
 
 </details>
 
-> [!NOTE]
-> Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
-> parts of the plugin might be broken.
-
 ## 🎥 Demos
+
+> [!TIP]
+>
+> By default, this plugin launches your remote neovim client in a popup window. This _mostly_ works fine. For a better experience though, it is recommended that you add a custom callback to launch your Neovim client [in a separate tab/window for your terminal](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes) or [GUI app](https://github.com/amitds1997/remote-nvim.nvim/issues/118#issuecomment-2100529883).
 
 <details>
 <summary><b>How to connect to saved host using SSH config file</b></summary>
@@ -251,6 +274,61 @@ config file](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/6cd2
 
 [Remote with
 password](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/be9bfc0c-6a7c-4304-a68d-3b75256afea6)
+
+</details>
+
+<details>
+<summary><b>Launch current `.devcontainer` based project in a devcontainer</b></summary>
+
+[Launch a local .devcontainer project in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/1a274a93-f1ab-4369-90e6-bbe0efcd71c9)
+
+</details>
+
+<details>
+<summary><b>Launch a docker image as a devcontainer</b></summary>
+
+[Launch docker image as a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/98352663-a145-4948-93f7-70d5403c7ef4)
+
+</details>
+
+<details>
+<summary><b>Attach to a running docker container</b></summary>
+
+[Attach to a running docker container](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/4fda15fa-e2ca-45b1-811b-c87472278835)
+
+</details>
+
+<details>
+<summary><b>Launch a remote repo as a devcontainer</b></summary>
+
+[Launch git repo in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/5d4b294e-7269-4bbb-a168-cd9dcdb6686e)
+
+</details>
+
+<details>
+<summary><b>Launch any git branch in a devcontainer</b></summary>
+
+[Launch git branch in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/ba6c0db9-f3c0-403a-b62d-b1e5ac7762ef)
+
+</details>
+
+<details>
+<summary><b>Launch any git commit in a devcontainer</b></summary>
+
+[Launch git commit in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/926b076b-45ec-4603-bd27-13dc270c7e51)
+
+</details>
+<details>
+<summary><b>Launch PR in a devcontainer</b></summary>
+
+[Launch any git repo-based PR in a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/29aaa26b-697b-4ee1-962d-75cc70299ae5)
+
+</details>
+
+<details>
+<summary><b>Connect to any existing devpod workspace</b></summary>
+
+[Launch any existing devpod workspace inside a devcontainer](https://github.com/amitds1997/remote-nvim.nvim/assets/29333147/a43f932e-264a-4819-ab54-83348a82a5b1)
 
 </details>
 
@@ -304,9 +382,6 @@ remote-nvim.nvim")
 
 </details>
 
-All these demos use a custom callback that I use to launch Neovim [in a separate Wezterm
-tab](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes).
-
 ## 🤖 Available commands
 
 | Command            | What does it do?                                                                                                                                            |
@@ -320,7 +395,7 @@ tab](https://github.com/amitds1997/remote-nvim.nvim/wiki/Configuration-recipes).
 
 For demos about the commands, see the [demos](#-demos) section.
 
-## Integration with statusline
+## 🥨 Integration with statusline
 
 The plugin sets the variable `vim.g.remote_neovim_host` to `true` on the remote Neovim instance. This can be used to add
 useful information regarding the remote system to your statusline.
@@ -480,3 +555,9 @@ uploading by setting `compression.enabled` to `true` for those particular upload
 ## 🌟 Credits
 
 **_A big thank you to the amazing Neovim community for Neovim and the plugins! ❤️_**
+
+## 📓 Footnotes
+
+[^1]: _Ensure you have devpod >= 0.5.0 installed for this to work_
+
+[^2]: _Supports building from source or using already installed Neovim on remote host_

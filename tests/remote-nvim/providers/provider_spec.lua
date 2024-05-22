@@ -11,15 +11,17 @@ describe("Provider", function()
   local provider
   local provider_host
   local remote_nvim_config_copy
+  local progress_viewer
   assert:set_parameter("TableFormatLevel", 1)
 
   before_each(function()
     provider_host = require("remote-nvim.utils").generate_random_string(6)
+    progress_viewer = mock(require("remote-nvim.ui.progressview"), true)
     remote_nvim_config_copy = vim.deepcopy(remote_nvim.config)
 
     provider = Provider({
       host = provider_host,
-      progress_view = mock(require("remote-nvim.ui.progressview"), true),
+      progress_view = progress_viewer,
     })
     stub(vim, "notify")
   end)
@@ -33,6 +35,7 @@ describe("Provider", function()
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011", "-t", "-x" },
+        progress_view = progress_viewer,
       })
       assert.equals("-p 3011 -t -x", provider.conn_opts)
     end)
@@ -41,6 +44,7 @@ describe("Provider", function()
       provider = Provider({
         host = provider_host,
         conn_opts = {},
+        progress_view = progress_viewer,
       })
       assert.equals("", provider.conn_opts)
     end)
@@ -49,10 +53,11 @@ describe("Provider", function()
   it("should handle missing connection options correctly", function()
     provider = Provider({
       host = provider_host,
+      progress_view = progress_viewer,
     })
     assert.equals("", provider.conn_opts)
 
-    provider = Provider({ host = provider_host, conn_opts = nil })
+    provider = Provider({ host = provider_host, conn_opts = nil, progress_view = progress_viewer })
     assert.equals("", provider.conn_opts)
   end)
 
@@ -61,6 +66,7 @@ describe("Provider", function()
     provider = Provider({
       host = provider_host,
       unique_host_id = unique_host_id,
+      progress_view = progress_viewer,
     })
     assert.equals(unique_host_id, provider.unique_host_id)
   end)
@@ -73,7 +79,7 @@ describe("Provider", function()
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011" },
-        progress_view = mock(require("remote-nvim.ui.progressview"), true),
+        progress_view = progress_viewer,
       })
       detect_remote_os_and_arch_stub = stub(provider, "_get_remote_os_and_arch")
       get_remote_neovim_version_preference_stub = stub(provider, "_get_remote_neovim_version_preference")
@@ -238,7 +244,7 @@ describe("Provider", function()
       remote_nvim.config.offline_mode.no_github = true
       offline_neovim_version_fetch_stub.returns({ ["stable"] = "/root/neovim/binary/neovim-stable-linux.appimage" })
 
-      provider:_get_remote_neovim_version_preference()
+      provider:_get_remote_neovim_version_preference("")
 
       assert
         .stub(offline_neovim_version_fetch_stub).was
@@ -253,7 +259,7 @@ describe("Provider", function()
         { tag = "v0.9.5", commit = "8744ee8783a8597f9fce4a573ae05aca2f412120" },
       })
 
-      provider:_get_remote_neovim_version_preference()
+      provider:_get_remote_neovim_version_preference("")
 
       assert.stub(offline_neovim_version_fetch_stub).was.not_called()
       assert.stub(online_neovim_version_fetch_stub).was.called()
@@ -266,7 +272,7 @@ describe("Provider", function()
       online_neovim_version_fetch_stub.returns({
         { tag = "stable", commit = "8744ee8783a8597f9fce4a573ae05aca2f412120" },
       })
-      provider:_get_remote_neovim_version_preference()
+      provider:_get_remote_neovim_version_preference("")
 
       assert.stub(offline_neovim_version_fetch_stub).was.not_called()
       assert.stub(online_neovim_version_fetch_stub).was.called()
@@ -287,17 +293,57 @@ describe("Provider", function()
 
     it("when they succeed", function()
       executor_job_status_stub.returns(0)
-      assert.equals(0, provider:_handle_job_completion(desc))
+      assert.equals(
+        0,
+        provider:_handle_job_completion(
+          desc,
+          progress_viewer:add_progress_node({
+            text = "",
+            type = "stdout_node",
+          })
+        )
+      )
     end)
 
     it("when they fail", function()
       executor_job_status_stub.returns(255)
 
       local co = coroutine.create(function()
-        provider:_handle_job_completion(desc)
+        provider:_handle_job_completion(
+          desc,
+          progress_viewer:add_progress_node({
+            text = "",
+            type = "stdout_node",
+          })
+        )
       end)
       local _, ret_or_err = coroutine.resume(co)
       assert.equals(255, ret_or_err)
+    end)
+  end)
+
+  describe("should correctly handle starting remote neovim", function()
+    local is_remote_server_running_stub
+    before_each(function()
+      is_remote_server_running_stub = stub(provider, "is_remote_server_running")
+      is_remote_server_running_stub.returns(false)
+
+      stub(provider, "_setup_workspace_variables")
+      stub(provider, "_setup_remote")
+      stub(provider, "_launch_remote_neovim_server")
+      stub(provider, "_launch_local_neovim_client")
+    end)
+
+    it("when it is a start run", function()
+      local before_launch_number = provider._neovim_launch_number
+      provider:_launch_neovim()
+      assert.equals(before_launch_number + 1, provider._neovim_launch_number)
+    end)
+
+    it("when it is not a start run", function()
+      local before_launch_number = provider._neovim_launch_number
+      provider:_launch_neovim(false)
+      assert.equals(before_launch_number, provider._neovim_launch_number)
     end)
   end)
 
@@ -471,15 +517,13 @@ describe("Provider", function()
   end)
 
   it("should stop running remote server if needed", function()
-    local system_stub = stub(vim, "system")
+    local job_stop_stub = stub(vim.fn, "jobstop")
     provider._setup_running = true
     provider._remote_server_process_id = 2100
-    provider._local_free_port = "52212"
 
     provider:stop_neovim()
-    assert
-      .stub(system_stub).was
-      .called_with({ "nvim", "--server", "localhost:52212", "--remote-send", ":qall!<CR>" }, { text = true }, match.is_function())
+    assert.stub(job_stop_stub).was.called_with(provider._remote_server_process_id)
+    assert.is_true(provider._provider_stopped_neovim)
   end)
 
   describe("should determine correctly if remote server is running", function()
