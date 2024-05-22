@@ -101,6 +101,9 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 }
 ```
 
+_Ensure you have [devpod](https://devpod.sh/docs/getting-started/install#optional-install-devpod-cli) >= 0.5.0
+installed for any devcontainer-related features to work_
+
 If you use any other plugin manager, ensure that you call `require("remote-nvim").setup()`.
 
 > [!NOTE]
