@@ -30,6 +30,10 @@ function DevpodProvider:init(opts)
   assert(opts.host ~= nil, "Host cannot be nil")
   assert(opts.devpod_opts ~= nil, "Devpod options should not be nil")
   assert(opts.devpod_opts.source ~= nil, "Source should not be nil")
+  assert(
+    vim.fn.executable(remote_nvim.config.devpod.binary) == 1,
+    ("Devpod binary '%s' not found"):format(remote_nvim.config.devpod.binary)
+  )
 
   self.unique_host_id = opts.unique_host_id
   self.host = ("%s.devpod"):format(self.unique_host_id)

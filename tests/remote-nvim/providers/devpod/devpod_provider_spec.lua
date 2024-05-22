@@ -6,9 +6,11 @@ local stub = require("luassert.stub")
 
 -- _launch_devpod_workspace
 describe("Provider", function()
-  local progress_viewer
+  local progress_viewer, executable_stub
   before_each(function()
     progress_viewer = mock(require("remote-nvim.ui.progressview"), true)
+    executable_stub = stub(vim.fn, "executable")
+    executable_stub.returns(1)
   end)
 
   describe("should initialize correctly", function()
