@@ -3,9 +3,9 @@ name: Installation CI
 on:  # yamllint disable-line rule:truthy
   push:
     branches: [main]
-    paths: [scripts/neovim_install.sh]
+    paths: [scripts/]
   pull_request:
-    paths: [scripts/neovim_install.sh]
+    paths: [scripts/]
   schedule:
     - cron: 23 11 * * *
 concurrency:
