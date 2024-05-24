@@ -26,6 +26,40 @@ Options:
 EOM
 }
 
+# Compare neovim versions
+function compare_versions() {
+
+	local version1=${1#v}
+	local version2=${2#v}
+
+	# Split version numbers into arrays
+	IFS='.' read -r -a ver1 <<<"$version1"
+	IFS='.' read -r -a ver2 <<<"$version2"
+
+	# Compare each part of the version numbers
+	for ((i = 0; i < ${#ver1[@]}; i++)); do
+		if [[ -z ${ver2[i]} ]]; then
+			# If version2 has fewer parts and the current part of version1 is greater than zero
+			if ((ver1[i] > 0)); then
+				return 1
+			fi
+		elif ((ver1[i] > ver2[i])); then
+			return 1
+		elif ((ver1[i] < ver2[i])); then
+			return 2
+		fi
+	done
+
+	# If version2 has more parts and they are greater than zero
+	for ((i = ${#ver1[@]}; i < ${#ver2[@]}; i++)); do
+		if ((ver2[i] > 0)); then
+			return 2
+		fi
+	done
+
+	return 0
+}
+
 # Download using wget/curl whatever is available
 function download() {
 	local url="$1"
@@ -52,7 +86,13 @@ function download_neovim() {
 	elif [ "$os" == "Darwin" ]; then
 		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos.tar.gz"
 		download_path="$download_dir/nvim-$version-macos.tar.gz"
-		if [ "$version" == "nightly" ]; then
+
+		set +e # Prevent termination based on compare_version's return
+		compare_versions "$version" v0.9.5
+		local result=$?
+		set -e # Re-enable termination based on return values
+
+		if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
 			download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos-${arch_type}.tar.gz"
 			download_path="$download_dir/nvim-$version-macos-$arch_type.tar.gz"
 		fi
