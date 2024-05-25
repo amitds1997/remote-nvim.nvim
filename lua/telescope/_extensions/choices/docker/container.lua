@@ -19,11 +19,15 @@ local function show_container_list(container_list)
     vim.ui.select(items, {
       prompt = "Docker containers",
       format_item = function(container_info)
+        -- Docker and podman use different output syntax
+        -- For docker, ID contains the id and Names is a string
+        -- For podman, Id contains the id and Names is an array of strings
+        local container_id = container_info.Id or container_info.ID
         local container_name = container_info.Names
         if type(container_info.Names) == "table" then
           container_name = container_info.Names[1]
         end
-        return container_name .. " (" .. string.sub(container_info.Id, 1, 16) .. ")"
+        return container_name .. " (" .. string.sub(container_id, 1, 16) .. ")"
       end,
     }, function(choice)
       if not choice then
