@@ -5,6 +5,7 @@ local remote_nvim = require("remote-nvim")
 local conf = require("telescope.config").values
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
+local devpod_utils = require("remote-nvim.providers.devpod.devpod_utils")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
 
@@ -155,6 +156,7 @@ local function remote_nvim_existing_workspace_action(opts)
               provider_type = workspace_data.provider,
               unique_host_id = host_identifier,
               conn_opts = { workspace_data.connection_options },
+              devpod_opts = devpod_utils.get_workspace_devpod_opts(workspace_data),
             })
             :launch_neovim()
         end)

@@ -9,26 +9,33 @@ local function show_container_list(container_list)
 
   local items = {}
   for _, line in ipairs(container_list) do
-    table.insert(items, vim.json.decode(line))
+    local container_info = vim.json.decode(line)
+    if not vim.tbl_isempty(container_info) then
+      table.insert(items, container_info)
+    end
   end
 
   vim.schedule(function()
     vim.ui.select(items, {
       prompt = "Docker containers",
       format_item = function(container_info)
-        return container_info.Names .. "(" .. container_info.ID .. ")"
+        local container_name = container_info.Names
+        if type(container_info.Names) == "table" then
+          container_name = container_info.Names[1]
+        end
+        return container_name .. " (" .. string.sub(container_info.Id, 1, 16) .. ")"
       end,
     }, function(choice)
       if not choice then
         return
       end
 
-      local source = ("container:%s"):format(choice.ID)
+      local source = ("container:%s"):format(choice.Id)
       require("remote-nvim.utils").run_cmd(remote_nvim.config.devpod.docker_binary, {
         "inspect",
         "--type",
         "container",
-        choice.ID,
+        choice.Id,
         "-f",
         '{"name": "{{ .Name }}", "working_dir": "{{ .Config.WorkingDir }}"}',
       }, function(stdout)
@@ -41,14 +48,14 @@ local function show_container_list(container_list)
               host = name,
               conn_opts = { "--source", source },
               provider_type = "devpod",
-              unique_host_id = choice.ID,
+              unique_host_id = choice.Id,
               devpod_opts = {
                 provider = "docker",
                 working_dir = container_info.working_dir,
                 source_opts = {
                   type = "container",
                   name = name,
-                  id = choice.ID,
+                  id = choice.Id,
                 },
               },
             })
@@ -65,11 +72,19 @@ local function docker_container_action()
     table.insert(docker_cmd_ls, "--all")
   end
   table.insert(docker_cmd_ls, "--format")
-  table.insert(docker_cmd_ls, "json")
+  table.insert(docker_cmd_ls, "{{ json . }}")
 
   require("remote-nvim.utils").run_cmd(remote_nvim.config.devpod.docker_binary, docker_cmd_ls, function(container_lst)
     if vim.tbl_isempty(container_lst) then
-      vim.notify("No running containers discovered.")
+      vim.schedule(function()
+        vim.notify(
+          ("Did not find any %sdocker containers"):format(
+            remote_nvim.config.devpod.container_list == "all" and "" or "running "
+          ),
+          vim.log.levels.WARN
+        )
+      end)
+      return
     end
     show_container_list(container_lst)
   end)

@@ -1,3 +1,4 @@
+local devpod_utils = require("remote-nvim.providers.devpod.devpod_utils")
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
 
@@ -20,6 +21,7 @@ function M.RemoteStart(opts)
           provider_type = workspace_config.provider,
           conn_opts = { workspace_config.connection_options },
           unique_host_id = host_identifier,
+          devpod_opts = devpod_utils.get_workspace_devpod_opts(workspace_config),
         })
         :launch_neovim()
     end
@@ -69,6 +71,7 @@ function M.RemoteCleanup(opts)
           provider_type = workspace_config.provider,
           conn_opts = { workspace_config.connection_options },
           unique_host_id = host_id,
+          devpod_opts = devpod_utils.get_workspace_devpod_opts(workspace_config),
         })
         :clean_up_remote_host()
     end

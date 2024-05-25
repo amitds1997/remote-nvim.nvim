@@ -4,6 +4,16 @@ local remote_nvim = require("remote-nvim")
 
 local M = {}
 
+---@param workspace_data remote-nvim.providers.WorkspaceConfig
+---@return remote-nvim.providers.devpod.DevpodOpts?  devpod_opts
+function M.get_workspace_devpod_opts(workspace_data)
+  local devpod_opts = {}
+  if workspace_data.devpod_source_opts ~= nil then
+    devpod_opts["source_opts"] = workspace_data.devpod_source_opts
+  end
+  return devpod_opts
+end
+
 ---Get correctly initialized devpod provider options
 ---@param opts remote-nvim.providers.ProviderOpts Options to pass to the DevpodProvider
 function M.get_devpod_provider_opts(opts)
