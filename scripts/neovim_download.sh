@@ -140,9 +140,19 @@ if [[ -z $nvim_version || -z $download_dir || -z $download_type || -z $arch_type
 	exit 1
 fi
 
+if [[ $download_dir == *"remote-nvim.nvim/version_cache"* ]]; then
+	echo "$download_dir is the default path. So, recursively creating the necessary directories"
+	mkdir -p "$download_dir"
+fi
+
 if [[ ! -d $download_dir ]]; then
-	echo "$download_dir does not exist or is not a directory"
-	exit 1
+	echo "$download_dir does not exist. Will try creating it now.."
+	if ! mkdir "$download_dir"; then
+		echo "$download_dir creation failed as parent directories do not exist"
+		exit 1
+	else
+		echo "Created $download_dir successfully"
+	fi
 fi
 
 if [[ $nvim_version != "stable" && $nvim_version != "nightly" && ! $nvim_version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
