@@ -55,6 +55,7 @@
 ---@field private _remote_neovim_install_method neovim_install_method Get neovim installation method
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
 ---@field private _remote_neovim_download_script_path  string Get Neovim download script path on the remote host
+---@field private _remote_neovim_utils_script_path  string Get Neovim utils script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
 ---@field protected _remote_working_dir string? Working directory on the remote server
 local Provider = require("remote-nvim.middleclass")("Provider")
@@ -213,6 +214,8 @@ function Provider:_setup_workspace_variables()
   )
   self._remote_neovim_download_script_path =
     utils.path_join(self._remote_is_windows, self._remote_scripts_path, "neovim_download.sh")
+  self._remote_neovim_utils_script_path =
+    utils.path_join(self._remote_is_windows, self._remote_scripts_path, "neovim_utils.sh")
   self._remote_workspace_id_path =
     utils.path_join(self._remote_is_windows, self._remote_workspaces_path, self._remote_workspace_id)
 
@@ -586,8 +589,9 @@ function Provider:_setup_remote()
     end
 
     -- Set correct permissions and install Neovim
-    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && %s -v %s -d %s -m %s -a %s]]):format(
+    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && chmod +x %s && %s -v %s -d %s -m %s -a %s]]):format(
       self._remote_neovim_download_script_path,
+      self._remote_neovim_utils_script_path,
       self._remote_neovim_install_script_path,
       self._remote_neovim_install_script_path,
       self._remote_neovim_version,

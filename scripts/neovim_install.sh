@@ -104,9 +104,16 @@ function setup_neovim_linux_appimage() {
 
 # Function to download and decompress Neovim binary for macOS
 function setup_neovim_macos() {
-	local nvim_release_name="nvim-$1-macos.tar.gz"
+	local version="$1"
+	local nvim_release_name="nvim-$version-macos.tar.gz"
 	local extract_dir="nvim-macos"
-	if [ "$1" == "nightly" ]; then
+
+	set +e # Prevent termination based on compare_version's return
+	compare_versions "$version" v0.9.5
+	local result=$?
+	set -e # Re-enable termination based on return values
+
+	if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
 		nvim_release_name="nvim-$1-macos-$2.tar.gz"
 		extract_dir="nvim-macos-$2"
 	fi
@@ -239,5 +246,8 @@ fi
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 download_neovim_script="$SCRIPT_DIR/neovim_download.sh"
+# shellcheck source=./scripts/neovim_utils.sh
+source "${SCRIPT_DIR}/neovim_utils.sh"
+
 cd "$temp_dir" || exit 1
 install_neovim
