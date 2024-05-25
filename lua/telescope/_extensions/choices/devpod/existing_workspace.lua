@@ -3,7 +3,14 @@ local remote_nvim = require("remote-nvim")
 
 local function show_workspace_list(workspace_list)
   if not workspace_list then
-    error("Error: Unable to retrieve Docker container list.")
+    error("Error: Unable to retrieve devpod workspace list.")
+    return
+  end
+
+  if #workspace_list == 0 then
+    vim.schedule(function()
+      vim.notify("Did not find any devpod workspaces", vim.log.levels.WARN)
+    end)
     return
   end
 
@@ -28,7 +35,6 @@ local function show_workspace_list(workspace_list)
           host = choice.id,
           unique_host_id = choice.id,
           devpod_opts = {
-            devpod_type = "existing",
             source_opts = {
               type = "existing",
               id = choice.id,
