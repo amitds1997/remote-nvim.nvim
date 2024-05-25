@@ -34,6 +34,7 @@ function DevpodProvider:init(opts)
     vim.fn.executable(remote_nvim.config.devpod.binary) == 1,
     ("Devpod binary '%s' not found"):format(remote_nvim.config.devpod.binary)
   )
+  assert(opts.devpod_opts.source_opts ~= nil, "Source options should not be nil")
 
   self.unique_host_id = opts.unique_host_id
   self.host = ("%s.devpod"):format(self.unique_host_id)
@@ -41,10 +42,23 @@ function DevpodProvider:init(opts)
   self.provider_type = opts.provider_type
   self.binary = remote_nvim.config.devpod.binary
   self.ssh_config_path = remote_nvim.config.devpod.ssh_config_path
-  self.ssh_conn_opts = { "-F", self.ssh_config_path }
+  self.ssh_conn_opts = {}
   self._remote_working_dir = opts.devpod_opts.working_dir
   self._devpod_provider = opts.devpod_opts.provider
   self._devpod_source_opts = opts.devpod_opts.source_opts
+
+  self._default_opts = {
+    "--log-output=raw",
+  }
+  self._up_default_opts = {
+    "--open-ide=false",
+    "--configure-ssh=true",
+    "--ide=none",
+  }
+  if self._devpod_source_opts.type ~= "existing" then
+    table.insert(self._up_default_opts, ("--ssh-config=%s"):format(self.ssh_config_path))
+    self.ssh_conn_opts = vim.list_extend(self.ssh_conn_opts, { "-F", self.ssh_config_path })
+  end
 
   DevpodProvider.super.init(self, {
     host = self.host,
@@ -55,19 +69,10 @@ function DevpodProvider:init(opts)
     devpod_opts = {
       source = self.source,
       working_dir = self._remote_working_dir,
-      source_opts = opts.devpod_opts.source_opts,
+      source_opts = self._devpod_source_opts,
     },
   })
 
-  self._default_opts = {
-    "--log-output=raw",
-  }
-  self._up_default_opts = {
-    "--open-ide=false",
-    "--configure-ssh=true",
-    "--ide=none",
-    ("--ssh-config=%s"):format(self.ssh_config_path),
-  }
   self._up_default_opts = vim.list_extend(self._up_default_opts, self._default_opts)
   self.launch_opts = vim.list_extend(self._up_default_opts, opts.conn_opts or {})
 

@@ -4,7 +4,6 @@ local mock = require("luassert.mock")
 local remote_nvim = require("remote-nvim")
 local stub = require("luassert.stub")
 
--- _launch_devpod_workspace
 describe("Provider", function()
   local progress_viewer, executable_stub
   before_each(function()
@@ -21,6 +20,9 @@ describe("Provider", function()
           host = "localhost",
           devpod_opts = {
             source = "docker",
+            source_opts = {
+              type = "image",
+            },
           },
           progress_view = progress_viewer,
         })
@@ -33,6 +35,9 @@ describe("Provider", function()
           host = nil,
           devpod_opts = {
             source = "docker",
+            source_opts = {
+              type = "image",
+            },
           },
           progress_view = progress_viewer,
         })
@@ -55,6 +60,9 @@ describe("Provider", function()
           host = "localhost",
           devpod_opts = {
             source = nil,
+            source_opts = {
+              type = "image",
+            },
           },
           progress_view = progress_viewer,
         })
@@ -66,6 +74,9 @@ describe("Provider", function()
         host = "localhost",
         devpod_opts = {
           source = "docker",
+          source_opts = {
+            type = "image",
+          },
         },
         progress_view = progress_viewer,
       })
@@ -81,6 +92,28 @@ describe("Provider", function()
         "--log-output=raw",
       }, provider.launch_opts)
     end)
+
+    it("does not add ssh-config details for existing devpod workspace", function()
+      local provider = DevpodProvider({
+        unique_host_id = "unique-local-host",
+        host = "localhost",
+        devpod_opts = {
+          source = "docker",
+          source_opts = {
+            type = "existing",
+          },
+        },
+        progress_view = progress_viewer,
+      })
+
+      assert.are.same({}, provider.ssh_conn_opts)
+      assert.are.same({
+        "--open-ide=false",
+        "--configure-ssh=true",
+        "--ide=none",
+        "--log-output=raw",
+      }, provider.launch_opts)
+    end)
   end)
 
   describe("should launch devpod workspace correctly", function()
@@ -92,6 +125,9 @@ describe("Provider", function()
         host = "localhost",
         devpod_opts = {
           source = "docker",
+          source_opts = {
+            type = "image",
+          },
         },
         progress_view = progress_viewer,
       })
