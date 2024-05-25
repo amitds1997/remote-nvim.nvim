@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.7...v0.3.8) (2024-05-25)
+
+
+### Bug Fixes
+
+* **install:** handle arm releases better ([7f882cc](https://github.com/amitds1997/remote-nvim.nvim/commit/7f882ccd02f6efe5f54a6a05eebc165eaca89476))
+
 ## [0.3.7](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.6...v0.3.7) (2024-05-25)
 
 
