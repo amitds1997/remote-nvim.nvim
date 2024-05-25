@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.7](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.6...v0.3.7) (2024-05-25)
+
+
+### Bug Fixes
+
+* devpod opts adding and container launch ([a6b741b](https://github.com/amitds1997/remote-nvim.nvim/commit/a6b741bd78c93a21cc57b2e536c58acaef3d3a85))
+* handle docker wrappers well ([322e992](https://github.com/amitds1997/remote-nvim.nvim/commit/322e992a8f06b9f54fd60738a500dd7cb73a4b45))
+* handle not adding ssh config path to existing devpod workspaces ([ff04924](https://github.com/amitds1997/remote-nvim.nvim/commit/ff04924d4d5243982bf1ccb42dd9f104fb8ef8e0))
+* improve directory creation ([#134](https://github.com/amitds1997/remote-nvim.nvim/issues/134)) ([86e8fc5](https://github.com/amitds1997/remote-nvim.nvim/commit/86e8fc553826d5ac521f158ea745c9d30aba8ce3))
+* **install:** handle new URIs for macOS releases ([eb76078](https://github.com/amitds1997/remote-nvim.nvim/commit/eb7607843ebc7accfcce1d24054cee35f4081333))
+* macos installation ([#133](https://github.com/amitds1997/remote-nvim.nvim/issues/133)) ([1217416](https://github.com/amitds1997/remote-nvim.nvim/commit/1217416704a21bcfa79612e7f63ed28ad43e0040))
+
 ## [0.3.6](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.5...v0.3.6) (2024-05-22)
 
 
