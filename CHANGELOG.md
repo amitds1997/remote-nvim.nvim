@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.9](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.8...v0.3.9) (2024-05-26)
+
+
+### Features
+
+* support NVIM_APPNAME ([#139](https://github.com/amitds1997/remote-nvim.nvim/issues/139)) ([4460db7](https://github.com/amitds1997/remote-nvim.nvim/commit/4460db718b8fa39e40162fd0507ba2beebec8fa6))
+
+
+### Bug Fixes
+
+* **container:** handle container IDs correctly ([aadb0a0](https://github.com/amitds1997/remote-nvim.nvim/commit/aadb0a097ad0b3b1d8276fc082c2b8866bbf740d))
+
 ## [0.3.8](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.7...v0.3.8) (2024-05-25)
 
 
