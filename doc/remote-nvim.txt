@@ -1,4 +1,4 @@
-*remote-nvim.txt*         For Neovim >= 0.9.0         Last change: 2024 May 22
+*remote-nvim.txt*         For Neovim >= 0.9.0         Last change: 2024 May 26
 
 ==============================================================================
 Table of Contents                              *remote-nvim-table-of-contents*
@@ -96,7 +96,8 @@ LOCAL MACHINE  ~
 - Binaries
     - `curl`
     - `tar` (optional; if you use compressed uploads)
-    - `devpod` >= 0.5.0 (optional; if you want to use devcontainer)
+    - `devpod` <https://devpod.sh/docs/getting-started/install#optional-install-devpod-cli> >= 0.5.0 (optional;
+        if you want to use devcontainer)
 - Connectivity to neovim repo <https://github.com/neovim/neovim> on GitHub
 
 Connectivity to neovim repo <https://github.com/neovim/neovim> on GitHub is not
@@ -133,6 +134,9 @@ Using lazy.nvim <https://github.com/folke/lazy.nvim>
        config = true,
     }
 <
+
+_Ensure you have devpod >= 0.5.0 installed for any devcontainer-related
+features to work_
 
 If you use any other plugin manager, ensure that you call
 `require("remote-nvim").setup()`.
@@ -225,6 +229,7 @@ value.
     
       -- Remote configuration
       remote = {
+        app_name = "nvim", -- This directly maps to the value NVIM_APPNAME. If you use any other paths for configuration, also make sure to set this.
         -- List of directories that should be copied over
         copy_dirs = {
           -- What to copy to remote's Neovim config directory
