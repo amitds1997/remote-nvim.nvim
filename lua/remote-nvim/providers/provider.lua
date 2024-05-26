@@ -236,7 +236,8 @@ function Provider:_setup_workspace_variables()
     self["_remote_xdg_" .. xdg_name .. "_path"] =
       utils.path_join(self._remote_is_windows, self._remote_workspace_id_path, path)
   end
-  self._remote_neovim_config_path = utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim")
+  self._remote_neovim_config_path =
+    utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, remote_nvim.config.remote.app_name)
 
   self:_add_session_info()
 end
@@ -560,10 +561,10 @@ function Provider:_setup_remote()
     -- Create necessary directories
     local necessary_dirs = {
       self._remote_scripts_path,
-      utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, "nvim"),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_cache_path, "nvim"),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_state_path, "nvim"),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_data_path, "nvim"),
+      utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, remote_nvim.config.remote.app_name),
+      utils.path_join(self._remote_is_windows, self._remote_xdg_cache_path, remote_nvim.config.remote.app_name),
+      utils.path_join(self._remote_is_windows, self._remote_xdg_state_path, remote_nvim.config.remote.app_name),
+      utils.path_join(self._remote_is_windows, self._remote_xdg_data_path, remote_nvim.config.remote.app_name),
       self:_remote_neovim_binary_dir(),
     }
     local mkdirs_cmds = {}
@@ -659,7 +660,11 @@ function Provider:_setup_remote()
       if not vim.tbl_isempty(value) then
         self:upload(
           value,
-          utils.path_join(self._remote_is_windows, self["_remote_xdg_" .. key .. "_path"], "nvim"),
+          utils.path_join(
+            self._remote_is_windows,
+            self["_remote_xdg_" .. key .. "_path"],
+            remote_nvim.config.remote.app_name
+          ),
           ("Copying over Neovim '%s' directories onto remote"):format(key),
           remote_nvim.config.remote.copy_dirs[key].compression
         )
@@ -696,11 +701,12 @@ function Provider:_launch_remote_neovim_server()
 
     -- Launch Neovim server and port forward
     local port_forward_opts = ([[-t -L %s:localhost:%s]]):format(self._local_free_port, remote_free_port)
-    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s NVIM_APPNAME=%s %s --listen 0.0.0.0:%s --headless]]):format(
       self._remote_xdg_config_path,
       self._remote_xdg_data_path,
       self._remote_xdg_state_path,
       self._remote_xdg_cache_path,
+      remote_nvim.config.remote.app_name,
       self:_remote_neovim_binary_path(),
       remote_free_port
     )
