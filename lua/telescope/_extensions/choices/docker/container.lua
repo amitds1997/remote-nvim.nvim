@@ -33,13 +33,14 @@ local function show_container_list(container_list)
       if not choice then
         return
       end
+      local container_id = choice.Id or choice.ID
 
-      local source = ("container:%s"):format(choice.Id)
+      local source = ("container:%s"):format(container_id)
       require("remote-nvim.utils").run_cmd(remote_nvim.config.devpod.docker_binary, {
         "inspect",
         "--type",
         "container",
-        choice.Id,
+        container_id,
         "-f",
         '{"name": "{{ .Name }}", "working_dir": "{{ .Config.WorkingDir }}"}',
       }, function(stdout)
@@ -52,14 +53,14 @@ local function show_container_list(container_list)
               host = name,
               conn_opts = { "--source", source },
               provider_type = "devpod",
-              unique_host_id = choice.Id,
+              unique_host_id = container_id,
               devpod_opts = {
                 provider = "docker",
                 working_dir = container_info.working_dir,
                 source_opts = {
                   type = "container",
                   name = name,
-                  id = choice.Id,
+                  id = container_id,
                 },
               },
             })
