@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.10](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.9...v0.3.10) (2024-06-08)
+
+
+### Bug Fixes
+
+* **provider:** Correctly handle upload dirs for non-standard configurations ([#142](https://github.com/amitds1997/remote-nvim.nvim/issues/142)) ([6927788](https://github.com/amitds1997/remote-nvim.nvim/commit/69277888c366440c01fd5cd5689867ce8b63f7a2))
+* **provider:** use compression options correctly for user configuration ([#144](https://github.com/amitds1997/remote-nvim.nvim/issues/144)) ([a1ea159](https://github.com/amitds1997/remote-nvim.nvim/commit/a1ea1592770fe027849826f90212d99d231e935c))
+
 ## [0.3.9](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.8...v0.3.9) (2024-05-26)
 
 
