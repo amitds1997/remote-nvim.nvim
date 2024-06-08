@@ -503,9 +503,7 @@ end
 function Provider:_get_neovim_config_upload_preference()
   if self._host_config.config_copy == nil then
     local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
-      prompt = ("Copy config at '%s' to remote host? "):format(
-        table.concat(self._local_path_to_remote_neovim_config, ", ")
-      ),
+      prompt = "Copy local Neovim configuration to remote host? ",
     })
 
     -- Handle choices
@@ -651,7 +649,8 @@ function Provider:_setup_remote()
       self:upload(
         self._local_path_to_remote_neovim_config,
         self._remote_neovim_config_path,
-        "Copying your Neovim configuration files onto remote"
+        "Copying your Neovim configuration files onto remote",
+        remote_nvim.config.remote.copy_dirs.config.compression
       )
     end
 

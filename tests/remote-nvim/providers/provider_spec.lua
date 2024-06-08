@@ -643,7 +643,8 @@ describe("Provider", function()
           match.is_ref(provider),
           provider._local_path_to_remote_neovim_config,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config/nvim",
-          match.is_string()
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.config.compression
         )
       end)
 
@@ -658,7 +659,8 @@ describe("Provider", function()
           match.is_ref(provider),
           provider._local_path_to_remote_neovim_config,
           "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
-          match.is_string()
+          match.is_string(),
+          remote_nvim.config.remote.copy_dirs.config.compression
         )
       end)
 
