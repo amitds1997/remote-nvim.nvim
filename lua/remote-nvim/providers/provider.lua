@@ -70,7 +70,7 @@ local utils = require("remote-nvim.utils")
 local function get_copy_paths(copy_config)
   local local_dirs = copy_config.dirs
   if local_dirs == "*" then
-    return { copy_config.base }
+    return { utils.path_join(utils.is_windows, copy_config.base, ".") }
   else
     assert(
       type(local_dirs) == "table",
@@ -650,21 +650,23 @@ function Provider:_setup_remote()
     if self:_get_neovim_config_upload_preference() then
       self:upload(
         self._local_path_to_remote_neovim_config,
-        self._remote_xdg_config_path,
+        self._remote_neovim_config_path,
         "Copying your Neovim configuration files onto remote"
       )
     end
 
     -- If user has specified certain directories to copy over in the "state", "cache" or "data" directories, do it now
-    for key, value in pairs(self._local_path_copy_dirs) do
-      if not vim.tbl_isempty(value) then
+    for key, local_paths in pairs(self._local_path_copy_dirs) do
+      if not vim.tbl_isempty(local_paths) then
+        local remote_upload_path = utils.path_join(
+          self._remote_is_windows,
+          self["_remote_xdg_" .. key .. "_path"],
+          remote_nvim.config.remote.app_name
+        )
+
         self:upload(
-          value,
-          utils.path_join(
-            self._remote_is_windows,
-            self["_remote_xdg_" .. key .. "_path"],
-            remote_nvim.config.remote.app_name
-          ),
+          local_paths,
+          remote_upload_path,
           ("Copying over Neovim '%s' directories onto remote"):format(key),
           remote_nvim.config.remote.copy_dirs[key].compression
         )
