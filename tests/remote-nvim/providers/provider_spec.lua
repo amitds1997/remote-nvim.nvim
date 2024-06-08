@@ -218,7 +218,7 @@ describe("Provider", function()
 
       assert.are.same({ "a/b/c", "a/b/d" }, provider._local_path_to_remote_neovim_config)
       assert.are.same({
-        data = { "d/e" },
+        data = { "d/e/." },
         cache = {},
         state = { "h/e/x", "h/e/y", "h/e/z" },
       }, provider._local_path_copy_dirs)
@@ -642,7 +642,7 @@ describe("Provider", function()
         assert.stub(upload_stub).was.called_with(
           match.is_ref(provider),
           provider._local_path_to_remote_neovim_config,
-          "~/.remote-nvim/workspaces/akfdjakjfdk/.config",
+          "~/.remote-nvim/workspaces/akfdjakjfdk/.config/nvim",
           match.is_string()
         )
       end)
@@ -766,7 +766,7 @@ describe("Provider", function()
         )
         assert.stub(upload_stub).was.called_with(
           match.is_ref(provider),
-          { "data-path" },
+          { "data-path/." },
           "~/.remote-nvim/workspaces/akfdjakjfdk/.local/share/nvim",
           match.is_string(),
           remote_nvim.config.remote.copy_dirs.data.compression
