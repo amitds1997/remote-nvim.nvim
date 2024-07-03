@@ -108,7 +108,7 @@ If you use any other plugin manager, ensure that you call `require("remote-nvim"
 
 > [!NOTE]
 >
-> Run `:checkhealth remote-nvim.nvim` to ensure necesssary binaries are available. If missing,
+> Run `:checkhealth remote-nvim` to ensure necesssary binaries are available. If missing,
 > parts of the plugin might be broken.
 
 ## ⚙️ Advanced configuration
