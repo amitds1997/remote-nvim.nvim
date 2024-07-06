@@ -3,7 +3,7 @@ load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/ma
 
 require("lazy.minit").repro({
   spec = {
-    { "amitds1997/remote-nvim.nvim", branch = "main", config = true },
+    { "amitds1997/remote-nvim.nvim", version = "*", config = true },
   },
 })
 
