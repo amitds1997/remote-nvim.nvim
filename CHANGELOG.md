@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.11](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.10...v0.3.11) (2024-07-06)
+
+
+### Bug Fixes
+
+* **CI:** Fix broken test CI and deprecated actions ([931ed63](https://github.com/amitds1997/remote-nvim.nvim/commit/931ed63fee2f53339b22cb604af6ec4b643f3000))
+
 ## [0.3.10](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.9...v0.3.10) (2024-06-08)
 
 
