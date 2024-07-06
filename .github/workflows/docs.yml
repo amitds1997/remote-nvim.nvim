@@ -3,10 +3,12 @@ name: Docs
 on:  # yamllint disable-line rule:truthy
   pull_request:
     paths: [README.md]
+
 concurrency:
   group: |
     ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
 jobs:
   docs:
     if: ${{ github.event.label.name != 'no-doc-gen' }}
@@ -15,7 +17,7 @@ jobs:
       contents: write
     name: Generate docs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: panvimdoc
         uses: kdheepak/panvimdoc@v3.0.6
         with:

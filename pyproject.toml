@@ -1,0 +1,4 @@
+[tool.yamlfix]
+preserve_quotes = true
+whitelines = 1
+section_whitelines = 1

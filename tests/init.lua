@@ -3,6 +3,6 @@ load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/ma
 
 require("lazy.minit").repro({
   spec = {
-    { dir = vim.uv.cwd(), config = true },
+    { dir = (vim.uv or vim.loop).cwd(), config = true },
   },
 })
