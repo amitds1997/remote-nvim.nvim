@@ -1,8 +1,8 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Create report about something broken
 title: ''
-labels: ''
+labels: bug
 assignees: ''
 ---
 
@@ -12,22 +12,26 @@ A clear and concise description of what the bug is.
 
 ## To reproduce
 
+Use the [repro.lua](https://github.com/amitds1997/remote-nvim.nvim/blob/main/Makefile) to
+reproduce the issue. This provides me with a better chance to reproduce the issue.
+This also provides a sanity check of if the issue is with the plugin or some other part of your configuration.
+
+Incase you cannot and still feel something is off with the plugin, do report. I won't bite!
+
 Steps to reproduce the behavior:
 
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+1. Run `nvim -u <repro.lua>`
+2. Add your steps...
 
 ## Expected behavior
 
 A clear and concise description of what you expected to happen.
 
-## Screenshots
+## Screenshot/Screencast(s)
 
-If applicable, add screenshots to help explain your problem.
+If possible and applicable, add screenshot(s)/screencast.
 
-## System info
+## System information
 
 - Your local OS:
 - Local Neovim version:

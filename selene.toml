@@ -1,2 +1,2 @@
 std = "neovim"
-exclude = ["lua/remote-nvim/middleclass.lua", ".tests/*"]
+exclude = ["lua/remote-nvim/middleclass.lua", ".tests/*", "lazy.lua", "repro.lua"]

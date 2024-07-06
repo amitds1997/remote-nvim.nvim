@@ -42,3 +42,4 @@ luac.out
 
 # Ignore tests directory that we generate
 .tests/
+.repro/
