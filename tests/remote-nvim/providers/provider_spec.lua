@@ -73,9 +73,10 @@ describe("Provider", function()
 
   describe("should handle setting workspace variables", function()
     local detect_remote_os_and_arch_stub, get_remote_neovim_version_preference_stub
-    local workspace_id = require("remote-nvim.utils").generate_random_string(10)
+    local workspace_id
 
     before_each(function()
+      workspace_id = require("remote-nvim.utils").generate_random_string(10)
       provider = Provider({
         host = provider_host,
         conn_opts = { "-p", "3011" },
