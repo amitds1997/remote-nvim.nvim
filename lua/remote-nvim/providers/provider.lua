@@ -588,7 +588,7 @@ function Provider:_setup_remote()
     end
 
     -- Set correct permissions and install Neovim
-    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && chmod +x %s && %s -v %s -d %s -m %s -a %s]]):format(
+    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && chmod +x %s && bash %s -v %s -d %s -m %s -a %s]]):format(
       self._remote_neovim_download_script_path,
       self._remote_neovim_utils_script_path,
       self._remote_neovim_install_script_path,
@@ -603,7 +603,7 @@ function Provider:_setup_remote()
       -- We need to ensure that we download Neovim version locally and then push it to the remote
       if not remote_nvim.config.offline_mode.no_github then
         self:run_command(
-          ("%s -o %s -v %s -a %s -t %s -d %s"):format(
+          ("bash %s -o %s -v %s -a %s -t %s -d %s"):format(
             utils.path_join(utils.is_windows, utils.get_plugin_root(), "scripts", "neovim_download.sh"),
             self._remote_os,
             self._remote_neovim_version,
