@@ -636,7 +636,7 @@ describe("Provider", function()
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_utils.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_utils.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64",
           match.is_string()
         )
 
@@ -695,7 +695,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_utils.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_utils.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
           match.is_string()
         )
       end)
@@ -707,7 +707,7 @@ describe("Provider", function()
         provider:_setup_remote()
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          ("%s/scripts/neovim_download.sh -o Linux -v stable -a x86_64 -t binary -d %s"):format(
+          ("bash %s/scripts/neovim_download.sh -o Linux -v stable -a x86_64 -t binary -d %s"):format(
             require("remote-nvim.utils").get_plugin_root(),
             remote_nvim.config.offline_mode.cache_dir
           ),
@@ -719,7 +719,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_utils.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_utils.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
           match.is_string()
         )
       end)
