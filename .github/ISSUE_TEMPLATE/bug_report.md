@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 
 ## To reproduce
 
-Use the [repro.lua](https://github.com/amitds1997/remote-nvim.nvim/blob/main/Makefile) to
+Use the [repro.lua](https://github.com/amitds1997/remote-nvim.nvim/blob/main/repro.lua) to
 reproduce the issue. This provides me with a better chance to reproduce the issue.
 This also provides a sanity check of if the issue is with the plugin or some other part of your configuration.
 
