@@ -2,7 +2,8 @@
 
 Adds support for [remote development](https://code.visualstudio.com/docs/remote/remote-overview)
 and [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers)
-to Neovim (just like VSCode).
+to Neovim (just like VSCode). Read in the [FAQ](#faq) at the end of this document why you would prefer
+using remote-nvim instead of SSH into remote + local neovim.
 
 > [!WARNING]
 > This plugin has not yet reached maturity. So, breaking changes are expected. Any such change would be
@@ -568,6 +569,21 @@ uploading by setting `compression.enabled` to `true` for those particular upload
 - Neovim versions `< v0.9.2` are incompatible with versions `>= v0.9.2` due to a breaking UI change introduced in
   `v0.9.2`. For more information, read the [release notes for
   v0.9.2](https://github.com/neovim/neovim/releases/tag/v0.9.2).
+
+## FAQ
+
+### Why would I use this plugin instead of the usual ssh + nvim?
+
+This plugins provide some additional nice-to have features on top:
+
+- Automatically installs Neovim on remote
+- Does not mess with the global configuration and instead just writes everything to a single directory on remote
+- Can copy over your local Neovim configuration to remote
+- Allows easy re-connection to past sessions
+- Makes it easy to clean up remote machine changes once you are done
+- It launches Neovim server on the remote server and connects a UI to it locally. 
+
+You can read more in [this Neovim discussion](https://github.com/amitds1997/remote-nvim.nvim/discussions/145)
 
 ## 🌟 Credits
 
