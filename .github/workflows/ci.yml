@@ -4,10 +4,12 @@ on:  # yamllint disable-line rule:truthy
   pull_request:
   push:
     branches: [main]
+
 concurrency:
   group: |
     ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
 jobs:
   tests:
     name: Run tests
@@ -17,7 +19,7 @@ jobs:
         version: [stable, nightly, v0.9.0]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
         name: Install Neovim
         with:
