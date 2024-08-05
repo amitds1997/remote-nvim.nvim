@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.12](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.11...v0.3.12) (2024-08-04)
+
+
+### Bug Fixes
+
+* **scripts:** Explicitly specify bash command to run scripts ([#156](https://github.com/amitds1997/remote-nvim.nvim/issues/156)) ([f837763](https://github.com/amitds1997/remote-nvim.nvim/commit/f83776310adc130e5084d1b7672f402dba4cc70e))
+
 ## [0.3.11](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.10...v0.3.11) (2024-07-06)
 
 
