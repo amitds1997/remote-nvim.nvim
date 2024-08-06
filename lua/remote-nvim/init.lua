@@ -52,6 +52,9 @@ local utils = require("remote-nvim.utils")
 ---@field no_github boolean Do not reach to GitHub at all
 ---@field cache_dir string Path to the cache directory
 
+---@class remote-nvim.config.PluginConfig.Git
+---@field repository_url string url of the git repository
+
 ---@class remote-nvim.config.PluginConfig.ProgressViewConfig
 ---@field type "popup"|"split" Type of holder to launch
 ---@field relative nui_layout_option_relative_type|nui_layout_option_relative? How should split/popup be placed
@@ -82,6 +85,7 @@ local utils = require("remote-nvim.utils")
 ---@field neovim_install_script_path string Local path where neovim installation script is stored
 ---@field neovim_user_config_path string? Local path where the neovim configuration to be copied over to the remote
 ---@field remote remote-nvim.config.PluginConfig.Remote Configurations related to the remote
+---@field git remote-nvim.config.PluginConfig.Git Git configuration
 --server is stored. This is assumed to be a directory and entire directory would be copied over
 ---@field progress_view remote-nvim.config.PluginConfig.ProgressViewConfig Progress view configuration
 ---@field local_client_config remote-nvim.config.RemoteConfig.LocalClientConfig? Configuration for the local client
@@ -143,6 +147,9 @@ M.default_opts = {
       },
     },
   },
+  git = {
+    repository_url = "",
+  },
   remote = {
     app_name = "nvim",
     copy_dirs = {
@@ -150,6 +157,8 @@ M.default_opts = {
         ---@diagnostic disable-next-line:assign-type-mismatch
         base = vim.fn.stdpath("config"),
         dirs = "*",
+        exclude_files = {},
+        exclude_dirs = {},
         compression = {
           enabled = false,
         },
@@ -158,6 +167,8 @@ M.default_opts = {
         ---@diagnostic disable-next-line:assign-type-mismatch
         base = vim.fn.stdpath("data"),
         dirs = {},
+        exclude_files = {},
+        exclude_dirs = {},
         compression = {
           enabled = true,
         },
@@ -166,6 +177,8 @@ M.default_opts = {
         ---@diagnostic disable-next-line:assign-type-mismatch
         base = vim.fn.stdpath("cache"),
         dirs = {},
+        exclude_files = {},
+        exclude_dirs = {},
         compression = {
           enabled = true,
         },
@@ -174,6 +187,8 @@ M.default_opts = {
         ---@diagnostic disable-next-line:assign-type-mismatch
         base = vim.fn.stdpath("state"),
         dirs = {},
+        exclude_files = {},
+        exclude_dirs = {},
         compression = {
           enabled = true,
         },
