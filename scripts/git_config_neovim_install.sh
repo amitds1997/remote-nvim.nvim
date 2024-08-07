@@ -22,25 +22,39 @@ function check_git_in_path() {
 }
 
 
-# Function to install Neovim
+# Function to install Neovim conf from git repository
 function install_neovim_config() {
-	# Check if the specified download directory exists
-	if [[ ! -d $remote_nvim_dir ]]; then
-		echo "Remote neovim directory does not exist."
-		exit 0
-	fi
-
-    # Clone the repository into the remote Neovim directory
-    git clone $git_url_repo $remote_nvim_dir
-
-    # Check if the clone was successful
-    if [[ $? -ne 0 ]]; then
-        echo "Failed to clone the repository."
-        exit 1
+    # Check if the specified download directory exists
+    if [[ ! -d $remote_nvim_dir ]]; then
+        echo "Remote neovim directory does not exist."
+        exit 0
     fi
 
-    echo "Neovim configuration successfully cloned into $remote_nvim_dir"
+    # Check if the .git directory exists in the remote Neovim directory
+    # If it exists, navigate to the directory and pull the latest changes
+    if [[ -d $remote_nvim_dir/.git ]]; then
+        cd $remote_nvim_dir
+        git pull
+
+        if [[ $? -ne 0 ]]; then
+            echo "Failed to pull the latest changes."
+            exit 1
+        fi
+
+        echo "Neovim configuration successfully updated in $remote_nvim_dir"
+    else
+        # If .git directory does not exist, clone the repository
+        git clone $git_url_repo $remote_nvim_dir
+
+        if [[ $? -ne 0 ]]; then
+            echo "Failed to clone the repository."
+            exit 1
+        fi
+
+        echo "Neovim configuration successfully cloned into $remote_nvim_dir"
+    fi
 }
+
 
 # Parse command-line options
 while getopts "d:g:h" opt; do
