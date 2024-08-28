@@ -70,7 +70,7 @@ local utils = require("remote-nvim.utils")
 local function get_copy_paths(copy_config)
   local local_dirs = copy_config.dirs
   if local_dirs == "*" then
-    return { utils.path_join(utils.is_windows, copy_config.base, ".") }
+    return { utils.path_join(utils.is_windows, copy_config.base) }
   else
     assert(
       type(local_dirs) == "table",
