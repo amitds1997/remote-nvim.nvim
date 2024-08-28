@@ -168,7 +168,12 @@ function Provider:_setup_workspace_variables()
   if self._host_config.neovim_version == nil then
     local prompt_title
 
-    if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
+
+    if self.offline_mode and remote_nvim.config.offline_mode.no_github then
+      -- hard code to binary for offline mode, without github
+      self._host_config.neovim_install_method = "binary"
+      prompt_title = "Choose Neovim version to install"
+    elseif provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
       self._host_config.neovim_install_method = "binary"
       prompt_title = "Choose Neovim version to install"
     else
