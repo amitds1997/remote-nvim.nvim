@@ -237,7 +237,7 @@ function Provider:_setup_workspace_variables()
       utils.path_join(self._remote_is_windows, self._remote_workspace_id_path, path)
   end
   self._remote_neovim_config_path =
-    utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, remote_nvim.config.remote.app_name)
+    utils.path_join(self._remote_is_windows, self._remote_xdg_config_path)
 
   self:_add_session_info()
 end
