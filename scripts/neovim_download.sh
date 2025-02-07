@@ -47,7 +47,7 @@ function download_neovim() {
 	local download_path=""
 
 	if [ "$os" == "Linux" ]; then
-		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim.appimage"
+		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-linux-${arch_type}.appimage"
 		download_path="$download_dir/nvim-$version-linux.appimage"
 	elif [ "$os" == "Darwin" ]; then
 		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos.tar.gz"
