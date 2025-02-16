@@ -49,6 +49,15 @@ function download_neovim() {
 	if [ "$os" == "Linux" ]; then
 		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim.appimage"
 		download_path="$download_dir/nvim-$version-linux.appimage"
+
+		set +e # Prevent termination based on compare_version's return
+		compare_versions "$version" v0.10.3
+		local result=$?
+		set -e # Re-enable termination based on return values
+
+		if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
+            download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-linux-${arch_type}.appimage"
+        fi
 	elif [ "$os" == "Darwin" ]; then
 		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos.tar.gz"
 		download_path="$download_dir/nvim-$version-macos.tar.gz"
