@@ -56,8 +56,8 @@ function download_neovim() {
 		set -e # Re-enable termination based on return values
 
 		if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
-            download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-linux-${arch_type}.appimage"
-        fi
+			download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-linux-${arch_type}.appimage"
+		fi
 	elif [ "$os" == "Darwin" ]; then
 		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos.tar.gz"
 		download_path="$download_dir/nvim-$version-macos.tar.gz"
