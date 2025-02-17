@@ -82,8 +82,18 @@ function build_from_source() {
 
 # Install on Linux using AppImage
 function setup_neovim_linux_appimage() {
+	local version="$1"
 	local nvim_release_name="nvim-$1-linux.appimage"
 	local nvim_appimage_temp_path="$temp_dir/$nvim_release_name"
+
+	set +e # Prevent termination based on compare_version's return
+	compare_versions "$version" v0.10.3
+	local result=$?
+	set -e # Re-enable termination based on return values
+
+	if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
+		nvim_release_name="nvim-$1-linux-$2.appimage"
+	fi
 
 	if [ ! -e "$nvim_version_dir/$nvim_release_name" ]; then
 		echo "Expected release to be present at $nvim_version_dir/$nvim_release_name. Aborting..."
@@ -169,7 +179,7 @@ function install_neovim() {
 
 			# Install Neovim based on the detected OS
 			if [[ $os == "Linux" ]]; then
-				setup_neovim_linux_appimage "$nvim_version"
+				setup_neovim_linux_appimage "$nvim_version" "$arch_type"
 			elif [[ $os == "Darwin" ]]; then
 				setup_neovim_macos "$nvim_version" "$arch_type"
 			else
