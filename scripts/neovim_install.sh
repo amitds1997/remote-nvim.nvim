@@ -80,6 +80,40 @@ function build_from_source() {
 	echo "Building and installation done"
 }
 
+function setup_neovim_linux_tar_gz() {
+	local version="$1"
+	local arch_type="$2"
+	local nvim_release_name="nvim-$version-linux-$arch_type.tar.gz"
+	local extract_dir="nvim-linux-$arch_type"
+
+	set +e # Prevent termination based on compare_version's return
+	compare_versions "$version" v0.9.5
+	local result=$?
+	set -e # Re-enable termination based on return values
+
+	if [[ $version != "nightly" ]] && [[ $version != "stable" ]] && [[ $result -ne 1 ]]; then
+		echo "Expected release to be nightly, stable or more recent than v0.9.5"
+		exit 1
+	fi
+
+	local nvim_linux_tar_path="$temp_dir/$nvim_release_name"
+	cp "$nvim_version_dir/$nvim_release_name" "$nvim_linux_tar_path"
+
+	if [ ! -e "$nvim_version_dir/$nvim_release_name" ]; then
+		echo "Expected release to be present at $nvim_version_dir/$nvim_release_name"
+		exit 1
+	fi
+
+	echo "Extracting Neovim binary..."
+	tar -xzf "$nvim_linux_tar_path" -C "$temp_dir"
+
+	echo "Finishing up Neovim installation..."
+	mkdir -p "$nvim_version_dir"
+	mv -f "$temp_dir"/"$extract_dir"/* "$nvim_version_dir"
+
+	echo "Neovim installation completed!"
+}
+
 # Install on Linux using AppImage
 function setup_neovim_linux_appimage() {
 	local nvim_release_name="nvim-$1-linux.appimage"
@@ -169,7 +203,11 @@ function install_neovim() {
 
 			# Install Neovim based on the detected OS
 			if [[ $os == "Linux" ]]; then
-				setup_neovim_linux_appimage "$nvim_version"
+				if [[ $arch_type == "aarch64" ]]; then
+					setup_neovim_linux_tar_gz "$nvim_version" "$arch_type"
+				else
+					setup_neovim_linux_appimage "$nvim_version"
+				fi
 			elif [[ $os == "Darwin" ]]; then
 				setup_neovim_macos "$nvim_version" "$arch_type"
 			else

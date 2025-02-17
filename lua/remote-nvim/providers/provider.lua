@@ -70,7 +70,7 @@ local utils = require("remote-nvim.utils")
 local function get_copy_paths(copy_config)
   local local_dirs = copy_config.dirs
   if local_dirs == "*" then
-    return { utils.path_join(utils.is_windows, copy_config.base, ".") }
+    return { utils.path_join(utils.is_windows, copy_config.base) }
   else
     assert(
       type(local_dirs) == "table",
@@ -168,7 +168,12 @@ function Provider:_setup_workspace_variables()
   if self._host_config.neovim_version == nil then
     local prompt_title
 
-    if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
+
+    if self.offline_mode and remote_nvim.config.offline_mode.no_github then
+      -- hard code to binary for offline mode, without github
+      self._host_config.neovim_install_method = "binary"
+      prompt_title = "Choose Neovim version to install"
+    elseif provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
       self._host_config.neovim_install_method = "binary"
       prompt_title = "Choose Neovim version to install"
     else
@@ -237,7 +242,7 @@ function Provider:_setup_workspace_variables()
       utils.path_join(self._remote_is_windows, self._remote_workspace_id_path, path)
   end
   self._remote_neovim_config_path =
-    utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, remote_nvim.config.remote.app_name)
+    utils.path_join(self._remote_is_windows, self._remote_xdg_config_path)
 
   self:_add_session_info()
 end
