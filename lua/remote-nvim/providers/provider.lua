@@ -51,6 +51,7 @@
 ---@field private _remote_xdg_data_path  string Get workspace specific XDG data path
 ---@field private _remote_xdg_state_path  string Get workspace specific XDG state path
 ---@field private _remote_xdg_cache_path  string Get workspace specific XDG cache path
+---@field private _remote_xdg_local_plugins_path  string Get workspace specific XDG local_plugins path
 ---@field private _remote_neovim_config_path  string Get neovim configuration path on the remote host
 ---@field private _remote_neovim_install_method neovim_install_method Get neovim installation method
 ---@field private _remote_neovim_install_script_path  string Get Neovim installation script path on the remote host
@@ -221,6 +222,7 @@ function Provider:_setup_workspace_variables()
 
   self._local_path_to_remote_neovim_config = get_copy_paths(remote_nvim.config.remote.copy_dirs.config)
   self._local_path_copy_dirs = {
+    local_plugins = get_copy_paths(remote_nvim.config.remote.copy_dirs.local_plugins),
     data = get_copy_paths(remote_nvim.config.remote.copy_dirs.data),
     state = get_copy_paths(remote_nvim.config.remote.copy_dirs.state),
     cache = get_copy_paths(remote_nvim.config.remote.copy_dirs.cache),
@@ -231,6 +233,7 @@ function Provider:_setup_workspace_variables()
     cache = ".cache",
     data = utils.path_join(self._remote_is_windows, ".local", "share"),
     state = utils.path_join(self._remote_is_windows, ".local", "state"),
+    local_plugins = '.config/local_plugins',
   }
   for xdg_name, path in pairs(xdg_variables) do
     self["_remote_xdg_" .. xdg_name .. "_path"] =
@@ -652,23 +655,22 @@ function Provider:_setup_remote()
         "Copying your Neovim configuration files onto remote",
         remote_nvim.config.remote.copy_dirs.config.compression
       )
-    end
+      -- If user has specified certain directories to copy over in the "state", "cache" or "data" directories, do it now
+      for key, local_paths in pairs(self._local_path_copy_dirs) do
+        if not vim.tbl_isempty(local_paths) then
+          local remote_upload_path = utils.path_join(
+            self._remote_is_windows,
+            self["_remote_xdg_" .. key .. "_path"],
+            remote_nvim.config.remote.app_name
+          )
 
-    -- If user has specified certain directories to copy over in the "state", "cache" or "data" directories, do it now
-    for key, local_paths in pairs(self._local_path_copy_dirs) do
-      if not vim.tbl_isempty(local_paths) then
-        local remote_upload_path = utils.path_join(
-          self._remote_is_windows,
-          self["_remote_xdg_" .. key .. "_path"],
-          remote_nvim.config.remote.app_name
-        )
-
-        self:upload(
-          local_paths,
-          remote_upload_path,
-          ("Copying over Neovim '%s' directories onto remote"):format(key),
-          remote_nvim.config.remote.copy_dirs[key].compression
-        )
+          self:upload(
+            local_paths,
+            remote_upload_path,
+            ("Copying over Neovim '%s' directories onto remote"):format(key, remote_upload_path),
+            remote_nvim.config.remote.copy_dirs[key].compression
+          )
+        end
       end
     end
 
@@ -702,14 +704,15 @@ function Provider:_launch_remote_neovim_server()
 
     -- Launch Neovim server and port forward
     local port_forward_opts = ([[-t -L %s:localhost:%s]]):format(self._local_free_port, remote_free_port)
-    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s NVIM_APPNAME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s NVIM_APPNAME=%s %s --listen 0.0.0.0:%s --cmd ':lua vim.g.remote_neovim_host=true' --cmd ':lua vim.g.remote_neovim_unique_host_id="%s"' --headless]]):format(
       self._remote_xdg_config_path,
       self._remote_xdg_data_path,
       self._remote_xdg_state_path,
       self._remote_xdg_cache_path,
       remote_nvim.config.remote.app_name,
       self:_remote_neovim_binary_path(),
-      remote_free_port
+      remote_free_port,
+      self.unique_host_id
     )
 
     -- If we have a specified working directory, we launch there
@@ -774,6 +777,14 @@ function Provider:_wait_for_server_to_be_ready()
   local cmd = ("nvim --server localhost:%s --remote-send ':lua vim.g.remote_neovim_host=true<CR>'"):format(
     self._local_free_port
   )
+  self.progress_viewer:add_progress_node({
+    type = "stdout_node",
+    text = ("Running neovim on port %s"):format(self._local_free_port),
+  })
+  self.progress_viewer:add_progress_node({
+    type = "stdout_node",
+    text = ("Command: %s"):format(cmd),
+  })
   local timeout = 20000 -- Wait for max 20 seconds for server to get ready
 
   local timer = utils.uv.new_timer()
