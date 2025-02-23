@@ -17,16 +17,33 @@ concurrency:
 
 jobs:
   install_linux:
-    name: Test official release install on Linux
+    name: |
+      Linux [${{ matrix.config.version }}, ${{ matrix.config.arch }},
+      ${{ matrix.install_method }}]
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {instance: ubuntu-latest, arch: x86-64}
-          - {instance: ubuntu-24.04-arm, arch: arm64}
+          - os: ubuntu-latest
+            arch: x86-64
+            version: stable
+          - os: ubuntu-latest
+            arch: x86-64
+            version: nightly
+          - os: ubuntu-latest
+            arch: x86-64
+            version: v0.9.0
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            version: stable
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            version: nightly
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            version: v0.10.4
         install_method: [binary, source]
-        neovim_version: [stable, nightly, v0.9.0]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install build pre-requisites
@@ -38,21 +55,23 @@ jobs:
         run: |-
           chmod +x ./scripts/neovim_install.sh ./scripts/neovim_download.sh \
           ./scripts/neovim_utils.sh
-          ./scripts/neovim_install.sh -v ${{ matrix.neovim_version }} \
+          ./scripts/neovim_install.sh -v ${{ matrix.config.version }} \
           -d ~/.remote-nvim \
           -m ${{ matrix.install_method }} -a x86_64
           ~/.remote-nvim/nvim-downloads/${{ matrix.neovim_version }}/bin/nvim -v
   install_macos:
-    name: Test official release install on macOS
+    name: |
+      MacOS [${{ matrix.neovim_version }}, ${{ matrix.config.arch }},
+      ${{ matrix.install_method }}]
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {instance: macos-13, arch: x86_64}
-          - {instance: macos-latest, arch: arm64}
+          - {os: macos-13, arch: x86_64}
+          - {os: macos-latest, arch: arm64}
         install_method: [binary, source]
         neovim_version: [stable, nightly, v0.9.0]
-    runs-on: ${{ matrix.config.instance }}
+    runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Neovim
@@ -65,24 +84,58 @@ jobs:
           -m ${{ matrix.install_method }} -a ${{ matrix.config.arch }}
           ~/.remote-nvim/nvim-downloads/${{ matrix.neovim_version }}/bin/nvim -v
   symlink_test:
-    name: Test symlink to system Neovim works
+    name: |
+      Symlink [${{ matrix.config.version }},
+      ${{ matrix.config.os }}-${{ matrix.config.arch }},
+      ${{ matrix.install_method }}]
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {instance: ubuntu-latest, arch: x86-64}
-          - {instance: ubuntu-24.04-arm, arch: arm64}
-          - {instance: macos-13, arch: x86_64}
-          - {instance: macos-latest, arch: arm64}
-        neovim_version: [stable, nightly, v0.9.0]
-    runs-on: ${{ matrix.config.instance }}
+          - os: ubuntu-latest
+            arch: x86-64
+            version: stable
+          - os: ubuntu-latest
+            arch: x86-64
+            version: nightly
+          - os: ubuntu-latest
+            arch: x86-64
+            version: v0.9.0
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            version: stable
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            version: nightly
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            version: v0.10.4
+          - os: macos-13
+            arch: x86-64
+            version: stable
+          - os: macos-13
+            arch: x86-64
+            version: nightly
+          - os: macos-13
+            arch: x86-64
+            version: v0.9.0
+          - os: macos-latest
+            arch: arm64
+            version: stable
+          - os: macos-latest
+            arch: arm64
+            version: nightly
+          - os: macos-latest
+            arch: arm64
+            version: v0.9.0
+    runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
         name: Install Neovim
         with:
           neovim: true
-          version: ${{ matrix.neovim_version }}
+          version: ${{ matrix.config.version }}
       - name: Symlink Neovim to system neovim install
         shell: bash
         run: |-
