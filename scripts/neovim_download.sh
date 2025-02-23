@@ -94,7 +94,10 @@ function download_neovim() {
 
 	echo "Downloading Neovim..."
 	download "$download_url" "$download_path"
-	download "$download_url".sha256sum "$checksum_path"
+	if [[ $version != "nightly" ]]; then
+		# Nightly versions do not come with checksums
+		download "$download_url".sha256sum "$checksum_path"
+	fi
 	echo "Download completed."
 }
 
