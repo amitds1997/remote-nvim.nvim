@@ -50,6 +50,7 @@ jobs:
         run: |
           sudo apt-get install -y ninja-build gettext \
           cmake unzip curl build-essential
+          uname -a
       - name: Install Neovim
         shell: bash
         run: |-
@@ -57,7 +58,7 @@ jobs:
           ./scripts/neovim_utils.sh
           ./scripts/neovim_install.sh -v ${{ matrix.config.version }} \
           -d ~/.remote-nvim \
-          -m ${{ matrix.install_method }} -a x86_64
+          -m ${{ matrix.install_method }} -a ${{ matrix.config.arch }}
           ~/.remote-nvim/nvim-downloads/${{ matrix.neovim_version }}/bin/nvim -v
   install_macos:
     name: |
