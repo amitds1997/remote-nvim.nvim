@@ -59,7 +59,7 @@ jobs:
           ./scripts/neovim_install.sh -v ${{ matrix.config.version }} \
           -d ~/.remote-nvim \
           -m ${{ matrix.install_method }} -a ${{ matrix.config.arch }}
-          ~/.remote-nvim/nvim-downloads/${{ matrix.neovim_version }}/bin/nvim -v
+          ~/.remote-nvim/nvim-downloads/${{ matrix.config.version }}/bin/nvim -v
   install_macos:
     name: |
       MacOS [${{ matrix.neovim_version }}, ${{ matrix.config.arch }},
