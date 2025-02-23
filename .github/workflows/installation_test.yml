@@ -6,18 +6,24 @@ on:  # yamllint disable-line rule:truthy
     paths: [scripts/, .github/workflows/installation_test.yml]
   pull_request:
     paths: [scripts/, .github/workflows/installation_test.yml]
+  workflow_dispatch:
   schedule:
     - cron: 23 11 * * *
+
 concurrency:
   group: |
     ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
 jobs:
   install_linux:
     name: Test official release install on Linux
     strategy:
       fail-fast: false
       matrix:
+        config:
+          - {instance: ubuntu-latest, arch: x86-64}
+          - {instance: ubuntu-24.04-arm, arch: arm64}
         install_method: [binary, source]
         neovim_version: [stable, nightly, v0.9.0]
     runs-on: ubuntu-latest
@@ -42,8 +48,8 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {instance: macos-latest, arch: x86_64}
-          - {instance: macos-14, arch: arm64}
+          - {instance: macos-13, arch: x86_64}
+          - {instance: macos-latest, arch: arm64}
         install_method: [binary, source]
         neovim_version: [stable, nightly, v0.9.0]
     runs-on: ${{ matrix.config.instance }}
@@ -64,9 +70,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {instance: ubuntu-latest, arch: x86_64}
-          - {instance: macos-latest, arch: x86_64}
-          - {instance: macos-14, arch: arm64}
+          - {instance: ubuntu-latest, arch: x86-64}
+          - {instance: ubuntu-24.04-arm, arch: arm64}
+          - {instance: macos-13, arch: x86_64}
+          - {instance: macos-latest, arch: arm64}
         neovim_version: [stable, nightly, v0.9.0]
     runs-on: ${{ matrix.config.instance }}
     steps:
