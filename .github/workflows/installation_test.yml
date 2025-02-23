@@ -25,13 +25,13 @@ jobs:
       matrix:
         config:
           - os: ubuntu-latest
-            arch: x86-64
+            arch: x86_64
             version: stable
           - os: ubuntu-latest
-            arch: x86-64
+            arch: x86_64
             version: nightly
           - os: ubuntu-latest
-            arch: x86-64
+            arch: x86_64
             version: v0.9.0
           - os: ubuntu-24.04-arm
             arch: arm64
