@@ -45,9 +45,12 @@ function download_neovim() {
 	local arch_type="$4"
 	local download_url=""
 	local download_path=""
+	local file_name=""
+
+	local download_base_url="https://github.com/neovim/neovim/releases/download"
 
 	if [ "$os" == "Linux" ]; then
-		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim.appimage"
+		file_name="nvim.appimage"
 		download_path="$download_dir/nvim-$version-linux.appimage"
 
 		set +e # Prevent termination based on compare_version's return
@@ -56,11 +59,11 @@ function download_neovim() {
 		set -e # Re-enable termination based on return values
 
 		if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
-			download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-linux-${arch_type}.appimage"
+			file_name="nvim-linux-${arch_type}.appimage"
 			download_path="$download_dir/nvim-$version-linux-$arch_type.appimage"
 		fi
 	elif [ "$os" == "Darwin" ]; then
-		download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos.tar.gz"
+		file_name="nvim-macos.tar.gz"
 		download_path="$download_dir/nvim-$version-macos.tar.gz"
 
 		set +e # Prevent termination based on compare_version's return
@@ -69,13 +72,15 @@ function download_neovim() {
 		set -e # Re-enable termination based on return values
 
 		if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
-			download_url="https://github.com/neovim/neovim/releases/download/${version}/nvim-macos-${arch_type}.tar.gz"
+			file_name="nvim-macos-${arch_type}.tar.gz"
 			download_path="$download_dir/nvim-$version-macos-$arch_type.tar.gz"
 		fi
 	else
 		echo "Error: Currently download support is present only for Linux and macOS"
 		exit 1
 	fi
+
+	local download_url="$download_base_url/${version}/$file_name"
 
 	local checksum_path="$download_path".sha256sum
 	local expected_checksum=""
@@ -94,9 +99,24 @@ function download_neovim() {
 
 	echo "Downloading Neovim..."
 	download "$download_url" "$download_path"
+
+	set +e # Prevent termination based on compare_version's return
+	compare_versions "$version" v0.10.4
+	local result=$?
+	set -e # Re-enable termination based on return values
+
 	if [[ $version != "nightly" ]]; then
 		# Nightly versions do not come with checksums
-		download "$download_url".sha256sum "$checksum_path"
+		if [ $result -eq 1 ]; then
+			# Since v0.11.0, checksums are gathered in shasum.txt,
+			# so we need to extract the checksum from it
+			local temp_path="$download_path".sha256sum.tmp
+			download "$download_base_url/${version}/shasum.txt" "$temp_path"
+			cat $temp_path | grep "$file_name\$" >>"$checksum_path"
+			rm $temp_path
+		else
+			download "$download_url".sha256sum "$checksum_path"
+		fi
 	fi
 	echo "Download completed."
 }
