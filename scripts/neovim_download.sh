@@ -15,7 +15,7 @@ fi
 
 function display_help() {
 	cat <<EOM
-Usage: $0 -v <nvim-version> -d <download-path> -o <os-name> -t <download-type>
+Usage: $0 -v <nvim-version> -d <download-path> -o <os-name> -t <download-type> -a <architecture>
 Options:
   -v       Specify the desired Neovim version to download.
   -d       Specify directory inside which Neovim release should be downloaded.
@@ -107,7 +107,7 @@ function download_neovim() {
 
 	if [[ $version != "nightly" ]]; then
 		# Nightly versions do not come with checksums
-		if [ $result -eq 1 ]; then
+		if [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
 			# Since v0.11.0, checksums are gathered in shasum.txt,
 			# so we need to extract the checksum from it
 			local temp_path="$download_path".sha256sum.tmp
