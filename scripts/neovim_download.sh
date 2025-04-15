@@ -105,18 +105,15 @@ function download_neovim() {
 	local result=$?
 	set -e # Re-enable termination based on return values
 
-	if [[ $version != "nightly" ]]; then
-		# Nightly versions do not come with checksums
-		if [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
-			# Since v0.11.0, checksums are gathered in shasum.txt,
-			# so we need to extract the checksum from it
-			local temp_path="$download_path".sha256sum.tmp
-			download "$download_base_url/${version}/shasum.txt" "$temp_path"
-			cat $temp_path | grep "$file_name\$" >> "$checksum_path"
-			rm $temp_path
-		else
-			download "$download_url".sha256sum "$checksum_path"
-		fi
+	if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
+		# Since v0.11.0, checksums are gathered in shasum.txt,
+		# so we need to extract the checksum from it
+		local temp_path="$download_path".sha256sum.tmp
+		download "$download_base_url/${version}/shasum.txt" "$temp_path"
+		cat $temp_path | grep "$file_name\$" >> "$checksum_path"
+		rm $temp_path
+	else
+		download "$download_url".sha256sum "$checksum_path"
 	fi
 	echo "Download completed."
 }
