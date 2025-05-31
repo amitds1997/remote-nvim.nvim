@@ -43,7 +43,6 @@ function download_neovim() {
 	local version="$2"
 	local download_dir="$3"
 	local arch_type="$4"
-	local download_url=""
 	local download_path=""
 	local file_name=""
 
