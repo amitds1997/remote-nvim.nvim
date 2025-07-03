@@ -684,7 +684,7 @@ describe("Provider", function()
         provider.offline_mode = true
         remote_nvim.config.offline_mode.no_github = true
 
-        local release_path = ("%s/nvim-stable-linux.appimage"):format(remote_nvim.config.offline_mode.cache_dir)
+        local release_path = ("%s/nvim-stable-linux-x86_64.appimage"):format(remote_nvim.config.offline_mode.cache_dir)
         local release_checksum_path = ("%s.sha256sum"):format(release_path)
 
         provider:_setup_remote()
