@@ -38,6 +38,45 @@ function download() {
 	fi
 }
 
+# Get checksum
+function get_checksum() {
+	local api_url="$1"
+	local output_file="$2"
+	local tmpfile=$(mktemp)
+
+	if [ "$downloader" = "curl" ]; then
+		curl -fsSL -o "$tmpfile" "$api_url"
+	elif [ "$downloader" = "wget" ]; then
+		wget --quiet --output-document="$tmpfile" "$api_url"
+	fi
+
+	cat $tmpfile | \
+	awk -v 'OFS=  ' '
+	  # Extracts the "name" and "digest" fields from the JSON response
+	  /"assets": *\[/,/^\s*\]/ {
+		if (/"name":/) {
+		  name = $0
+		  sub(/.*"name"[[:space:]]*:[[:space:]]*/, "", name)
+		  sub(/^"/, "", name)
+		  sub(/",?$/, "", name)
+		}
+		if (/"digest":/) {
+		  digest = $0
+		  sub(/.*"digest"[[:space:]]*:[[:space:]]*/, "", digest)
+		  sub(/^"/, "", digest)
+		  sub(/",?$/, "", digest)
+		  # remove the "sha256:" prefix if it exists
+		  sub(/^sha256:/, "", digest)
+		}
+		if (/}/ && name != "" && digest != "") {
+		  print digest, name
+		  name = ""
+		  digest = ""
+		}
+	  }
+	' > "$output_file"
+}
+
 function download_neovim() {
 	local os="$1"
 	local version="$2"
@@ -47,6 +86,7 @@ function download_neovim() {
 	local file_name=""
 
 	local download_base_url="https://github.com/neovim/neovim/releases/download"
+	local api_base_url="https://api.github.com/repos/neovim/neovim/releases/tags"
 
 	if [ "$os" == "Linux" ]; then
 		file_name="nvim.appimage"
@@ -102,9 +142,18 @@ function download_neovim() {
 	set +e # Prevent termination based on compare_version's return
 	compare_versions "$version" v0.10.4
 	local result=$?
+	compare_versions "$version" v0.11.3
+	local no_checksum_file=$?
 	set -e # Re-enable termination based on return values
 
-	if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
+	if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $no_checksum_file -le 1 ]]; then
+		# If the version is v0.11.3 or later,
+		# we can comfirm checksum from REST API
+		local temp_path="$download_path".sha256sum.tmp
+		get_checksum "$api_base_url/$version" "$temp_path"
+		cat $temp_path | grep "$file_name\$" >> "$checksum_path"
+		rm $temp_path
+	elif [[ $result -eq 1 ]]; then
 		# Since v0.11.0, checksums are gathered in shasum.txt,
 		# so we need to extract the checksum from it
 		local temp_path="$download_path".sha256sum.tmp
