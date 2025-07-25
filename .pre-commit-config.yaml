@@ -37,7 +37,7 @@ repos:
     hooks:
       - id: stylua
   - repo: https://github.com/lyz-code/yamlfix/
-    rev: 1.16.0
+    rev: main
     hooks:
       - id: yamlfix
   - repo: https://github.com/adrienverge/yamllint.git
@@ -49,7 +49,3 @@ repos:
     rev: v3.24.0
     hooks:
       - id: commitizen
-  - repo: https://github.com/amitds1997/selene
-    rev: d895ab518a9a3fd6e8efe1716fde501dd29fe8ba
-    hooks:
-      - id: selene-github
