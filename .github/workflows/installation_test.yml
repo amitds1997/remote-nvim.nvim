@@ -35,8 +35,6 @@ jobs:
       - name: Install Neovim
         shell: bash
         run: |-
-          chmod +x ./scripts/neovim_install.sh ./scripts/neovim_download.sh \
-          ./scripts/neovim_utils.sh
           ./scripts/neovim_install.sh -v ${{ matrix.neovim_version }} \
           -d ~/.remote-nvim \
           -m ${{ matrix.install_method }} -a x86_64
@@ -57,8 +55,6 @@ jobs:
       - name: Install Neovim
         shell: bash
         run: |-
-          chmod +x ./scripts/neovim_install.sh ./scripts/neovim_download.sh \
-          ./scripts/neovim_utils.sh
           ./scripts/neovim_install.sh -v ${{ matrix.neovim_version }} \
           -d ~/.remote-nvim \
           -m ${{ matrix.install_method }} -a ${{ matrix.config.arch }}
@@ -85,8 +81,6 @@ jobs:
       - name: Symlink Neovim to system neovim install
         shell: bash
         run: |-
-          chmod +x ./scripts/neovim_install.sh ./scripts/neovim_download.sh \
-          ./scripts/neovim_utils.sh
           ./scripts/neovim_install.sh -v system -d ~/.remote-nvim -m system \
            -a ${{ matrix.config.arch }}
           ~/.remote-nvim/nvim-downloads/system/bin/nvim -v
