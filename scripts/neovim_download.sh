@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # If anything fails, exit
-set -eouE pipefail
+set -eoE pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
@@ -28,7 +28,11 @@ EOM
 function download_neovim() {
 	local os="$1" version="$2" download_dir="$3" arch_type="$4"
 
-	local download_url, download_path, checksum_path, expected_checksum, actual_checksum
+	local download_url
+	local download_path
+	local checksum_path
+	local expected_checksum
+	local actual_checksum
 	download_url=$(safe_subshell build_github_uri "$version" "$os" "$arch_type")
 	download_path="$download_dir/$(basename "$download_url")"
 

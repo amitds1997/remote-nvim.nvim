@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # If anything fails, exit
-set -eouE pipefail
+set -eoE pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
@@ -94,11 +94,12 @@ function build_from_source() {
 # Install on Linux using AppImage
 function setup_neovim_linux_appimage() {
 	local version="$1" arch_type="$2"
-	local nvim_appimage_temp_path="$temp_dir/$nvim_release_name"
 
 	local nvim_release_name
+	local download_url
 	download_url=$(safe_subshell build_github_uri "$version" "Linux" "$arch_type")
 	nvim_release_name=$(basename "$download_url")
+	local nvim_appimage_temp_path="$temp_dir/$nvim_release_name"
 
 	if [ ! -e "$nvim_version_dir/$nvim_release_name" ]; then
 		error "Expected release to be present at $nvim_version_dir/$nvim_release_name. Aborting..."
@@ -119,35 +120,30 @@ function setup_neovim_linux_appimage() {
 
 # Function to download and decompress Neovim binary for macOS
 function setup_neovim_macos() {
-	local version="$1"
-	local nvim_release_name="nvim-$version-macos.tar.gz"
-	local extract_dir="nvim-macos"
+	local version="$1" arch_type="$2"
 
-	set +e # Prevent termination based on compare_version's return
-	compare_versions "$version" v0.9.5
-	local result=$?
-	set -e # Re-enable termination based on return values
+	local nvim_release_name
+	local download_url
+	download_url=$(safe_subshell build_github_uri "$version" "Darwin" "$arch_type")
+	nvim_release_name=$(basename "$download_url")
 
-	if [[ $version == "nightly" ]] || [[ $version == "stable" ]] || [[ $result -eq 1 ]]; then
-		nvim_release_name="nvim-$1-macos-$2.tar.gz"
-		extract_dir="nvim-macos-$2"
-	fi
+	local extract_dir="${nvim_release_name%.tar.gz}"
 	local nvim_macos_tar_path="$temp_dir/$nvim_release_name"
 	cp "$nvim_version_dir/$nvim_release_name" "$nvim_macos_tar_path"
 
 	if [ ! -e "$nvim_version_dir/$nvim_release_name" ]; then
-		echo "Expected release to be present at $nvim_version_dir/$nvim_release_name"
+		error "Expected release to be present at $nvim_version_dir/$nvim_release_name"
 		exit 1
 	fi
 
-	echo "Extracting Neovim binary..."
+	info "Extracting Neovim binary..."
 	tar -xzf "$nvim_macos_tar_path" -C "$temp_dir"
 
-	echo "Finishing up Neovim installation..."
+	info "Finishing up Neovim installation..."
 	mkdir -p "$nvim_version_dir"
 	mv -f "$temp_dir"/"$extract_dir"/* "$nvim_version_dir"
 
-	echo "Neovim installation completed!"
+	info "Neovim installation completed!"
 }
 
 # Function to install Neovim

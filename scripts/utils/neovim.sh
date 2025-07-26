@@ -79,7 +79,7 @@ function _get_asset_name {
 	local asset_name
 	if [[ $os == "Linux" ]]; then
 		asset_name=$(safe_subshell _linux_asset_name "$version" "$arch_type")
-	elif [[ $os == "macOS" ]]; then
+	elif [[ $os == "Darwin" ]]; then
 		asset_name=$(safe_subshell _macos_asset_name "$version" "$arch_type")
 	else
 		fatal --status=3 "Unsupported OS: $os"
