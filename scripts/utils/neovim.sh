@@ -5,10 +5,17 @@ function is_lesser_version {
 	local version1=${1#v}
 	local version2=${2#v}
 
+	# Special cases for 'stable' and 'nightly': It is not lesser than any specific version
+	if [[ $version1 == "stable" ]] || [[ $version1 == "nightly" ]]; then
+		# If version1 is 'stable' or 'nightly', it is not lesser than any specific version
+		return 1
+	fi
+
 	# Split version numbers into arrays
 	IFS='.' read -r -a ver1 <<<"$version1"
 	IFS='.' read -r -a ver2 <<<"$version2"
 
+	debug "Checking if version $version1 is lesser than $version2"
 	# Compare each part of the version numbers
 	for ((i = 0; i < ${#ver1[@]}; i++)); do
 		if [[ -z ${ver2[i]} ]]; then
@@ -39,14 +46,13 @@ function _linux_asset_name {
 	local version="$1" arch_type="$2"
 	local asset_name="nvim-linux-${arch_type}.appimage"
 
-	if [[ $version != "nightly" ]] && [[ $version != "stable" ]]; then
-		local is_lesser
-		is_lesser_version "$version" v0.10.4
-		is_lesser=$?
+	info "Determining asset name for Neovim version $version on Linux with architecture $arch_type"
+	local is_lesser
+	is_lesser_version "$version" v0.10.4
+	is_lesser=$?
 
-		if [[ $is_lesser -eq 0 ]]; then
-			asset_name="nvim.appimage"
-		fi
+	if [[ $is_lesser -eq 0 ]]; then
+		asset_name="nvim.appimage"
 	fi
 	echo "$asset_name"
 }
@@ -57,14 +63,12 @@ function _macos_asset_name {
 	local version="$1" arch_type="$2"
 	local asset_name="nvim-macos-${arch_type}.tar.gz"
 
-	if [[ $version != "nightly" ]] && [[ $version != "stable" ]]; then
-		local is_lesser
-		is_lesser_version "$version" v0.10.0
-		is_lesser=$?
+	local is_lesser
+	is_lesser_version "$version" v0.10.0
+	is_lesser=$?
 
-		if [[ $is_lesser -eq 0 ]]; then
-			asset_name="nvim-macos.tar.gz"
-		fi
+	if [[ $is_lesser -eq 0 ]]; then
+		asset_name="nvim-macos.tar.gz"
 	fi
 	echo "$asset_name"
 }
