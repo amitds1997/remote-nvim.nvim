@@ -2,7 +2,6 @@
 name: Installation CI
 on:  # yamllint disable-line rule:truthy
   push:
-    branches: [main]
     paths: [scripts/, .github/workflows/installation_test.yml]
   pull_request:
     paths: [scripts/, .github/workflows/installation_test.yml]
