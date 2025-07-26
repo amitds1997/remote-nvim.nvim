@@ -13,6 +13,14 @@ source "${SCRIPTS_DIR}/utils/api.sh"
 source "${SCRIPTS_DIR}/utils/neovim.sh"
 
 download_neovim_script="$SCRIPTS_DIR/neovim_download.sh"
+nvim_version_dir=""
+nvim_binary=""
+remote_nvim_dir=""
+nvim_version=""
+force_installation=""
+install_method=""
+offline_mode=""
+arch_type=""
 
 # Create a temporary directory to handle any remote nvim data location things
 temp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t 'neovim_download')
