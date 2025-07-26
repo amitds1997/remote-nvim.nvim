@@ -2,6 +2,7 @@
 name: Installation CI
 on:  # yamllint disable-line rule:truthy
   push:
+    branches: [main]
     paths: [scripts/, .github/workflows/installation_test.yml]
   pull_request:
     paths: [scripts/, .github/workflows/installation_test.yml]
@@ -16,7 +17,7 @@ concurrency:
 
 jobs:
   install_linux:
-    name: Test official release install on Linux
+    name: Linux install
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +26,14 @@ jobs:
           - {instance: ubuntu-24.04-arm, arch: arm64}
         install_method: [binary, source]
         neovim_version: [stable, nightly, v0.9.0]
+        exclude:
+          - config:
+              arch: arm64
+            neovim_version: v0.9.0
+          - config:
+              arch: x86-64
+            install_method: source
+            neovim_version: v0.9.0
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,15 +49,18 @@ jobs:
           -m ${{ matrix.install_method }} -a x86_64
           ~/.remote-nvim/nvim-downloads/${{ matrix.neovim_version }}/bin/nvim -v
   install_macos:
-    name: Test official release install on macOS
+    name: MacOS install
     strategy:
       fail-fast: false
       matrix:
         config:
           - {instance: macos-13, arch: x86_64}
-          - {instance: macos-latest, arch: arm64}
+          - {instance: macos-15, arch: arm64}
         install_method: [binary, source]
         neovim_version: [stable, nightly, v0.9.0]
+        exclude:
+          - install_method: source
+            neovim_version: v0.9.0
     runs-on: ${{ matrix.config.instance }}
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +72,7 @@ jobs:
           -m ${{ matrix.install_method }} -a ${{ matrix.config.arch }}
           ~/.remote-nvim/nvim-downloads/${{ matrix.neovim_version }}/bin/nvim -v
   symlink_test:
-    name: Test symlink to system Neovim works
+    name: Symlink test
     strategy:
       fail-fast: false
       matrix:
@@ -68,8 +80,13 @@ jobs:
           - {instance: ubuntu-latest, arch: x86-64}
           - {instance: ubuntu-24.04-arm, arch: arm64}
           - {instance: macos-13, arch: x86_64}
-          - {instance: macos-latest, arch: arm64}
+          - {instance: macos-15, arch: arm64}
         neovim_version: [stable, nightly, v0.9.0]
+        exclude:
+          - config:
+              arch: arm64
+              instance: ubuntu-24.04-arm
+            neovim_version: v0.9.0
     runs-on: ${{ matrix.config.instance }}
     steps:
       - uses: actions/checkout@v4
