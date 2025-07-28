@@ -71,6 +71,7 @@ local utils = require("remote-nvim.utils")
 ---@field data remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_DATA_HOME/nvim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("data")
 ---@field state remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_STATE_HOME/nvim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("state")
 ---@field cache remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_CACHE_HOME/nvim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("cache")
+---@field local_plugins remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_CACHE_HOME/nvim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("config")
 
 ---@class remote-nvim.config.PluginConfig.Remote
 ---@field copy_dirs remote-nvim.config.PluginConfig.Remote.CopyDirs Which directories should be copied over to the remote
