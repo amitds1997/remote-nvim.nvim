@@ -215,7 +215,7 @@ function Provider:_setup_workspace_variables()
   self._remote_neovim_download_script_path =
     utils.path_join(self._remote_is_windows, self._remote_scripts_path, "neovim_download.sh")
   self._remote_neovim_utils_script_path =
-    utils.path_join(self._remote_is_windows, self._remote_scripts_path, "neovim_utils.sh")
+    utils.path_join(self._remote_is_windows, self._remote_scripts_path, "utils/neovim.sh")
   self._remote_workspace_id_path =
     utils.path_join(self._remote_is_windows, self._remote_workspaces_path, self._remote_workspace_id)
 
