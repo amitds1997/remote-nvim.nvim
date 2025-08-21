@@ -105,7 +105,7 @@ function setup_neovim_linux_appimage() {
 
 	local nvim_release_name
 	local download_url
-	download_url=$(safe_subshell build_github_uri "$version" "Linux" "$arch_type")
+	download_url=$(build_github_uri "$version" "Linux" "$arch_type")
 	nvim_release_name=$(basename "$download_url")
 	local nvim_appimage_temp_path="$temp_dir/$nvim_release_name"
 
@@ -132,7 +132,7 @@ function setup_neovim_macos() {
 
 	local nvim_release_name
 	local download_url
-	download_url=$(safe_subshell build_github_uri "$version" "Darwin" "$arch_type")
+	download_url=$(build_github_uri "$version" "Darwin" "$arch_type")
 	nvim_release_name=$(basename "$download_url")
 
 	local extract_dir="${nvim_release_name%.tar.gz}"
@@ -189,9 +189,9 @@ function install_neovim() {
 
 			# Install Neovim based on the detected OS
 			if [[ $os == "Linux" ]]; then
-				safe_subshell setup_neovim_linux_appimage "$nvim_version" "$arch_type"
+				setup_neovim_linux_appimage "$nvim_version" "$arch_type"
 			elif [[ $os == "Darwin" ]]; then
-				safe_subshell setup_neovim_macos "$nvim_version" "$arch_type"
+				setup_neovim_macos "$nvim_version" "$arch_type"
 			else
 				echo "Unsupported operating system: $(uname)"
 				exit 1
@@ -202,11 +202,11 @@ function install_neovim() {
 			else
 				"$download_neovim_script" -o "$os" -v "$nvim_version" -d "$nvim_version_dir" -t "source" -a "$arch_type"
 			fi
-			safe_subshell build_from_source "$nvim_version"
+			build_from_source "$nvim_version"
 			# Handle tar file downloaded or copied over
 		elif [[ $install_method == "system" ]]; then
 			# Handle symlinking to the system binary version
-			safe_subshell link_to_system_neovim
+			link_to_system_neovim
 		else
 			error "Unsupported Neovim installation method. Available installation methods are: binary, source or system"
 			exit 1
@@ -265,4 +265,4 @@ if [[ $install_method == "system" && $nvim_version != "system" ]]; then
 fi
 
 cd "$temp_dir" || exit 1
-safe_subshell install_neovim
+install_neovim

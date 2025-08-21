@@ -17,10 +17,10 @@ function _get_available_downloader {
 function download_file {
 	local URL="$1" OUTPUT_FILE="$2"
 	if command -v curl &>/dev/null; then
-		safe_subshell curl -fsSL -o "$OUTPUT_FILE" "$URL"
+		curl -fsSL -o "$OUTPUT_FILE" "$URL"
 		debug "Downloaded file from $URL to $OUTPUT_FILE using cURL"
 	elif command -v wget &>/dev/null; then
-		safe_subshell wget --quiet --output-document="$OUTPUT_FILE" "$URL"
+		wget --quiet --output-document="$OUTPUT_FILE" "$URL"
 		debug "Downloaded file from $URL to $OUTPUT_FILE using wget"
 	else
 		fatal --status=3 "No downloader found. Current options are cURL and wget"
@@ -37,15 +37,15 @@ function run_api_call {
 	local URL="$1"
 
 	local downloader
-	downloader=$(safe_subshell _get_available_downloader)
+	downloader=$(_get_available_downloader)
 	if [[ $downloader == "none" ]]; then
 		fatal --status=3 "No downloader found. Available options are cURL and wget"
 	fi
 
 	local tmpfile
-	tmpfile="$(safe_subshell mktemp)"
+	tmpfile="$(mktemp)"
 
-	safe_subshell download_file "$URL" "$tmpfile"
+	download_file "$URL" "$tmpfile"
 	local response
 	response=$(<"$tmpfile")
 	rm -f "$tmpfile"

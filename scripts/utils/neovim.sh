@@ -78,9 +78,9 @@ function _get_asset_name {
 
 	local asset_name
 	if [[ $os == "Linux" ]]; then
-		asset_name=$(safe_subshell _linux_asset_name "$version" "$arch_type")
+		asset_name=$(_linux_asset_name "$version" "$arch_type")
 	elif [[ $os == "Darwin" ]]; then
-		asset_name=$(safe_subshell _macos_asset_name "$version" "$arch_type")
+		asset_name=$(_macos_asset_name "$version" "$arch_type")
 	else
 		fatal --status=3 "Unsupported OS: $os"
 	fi
@@ -96,7 +96,7 @@ function build_github_uri {
 	local BASE_GITHUB_URI_PATH="https://github.com/neovim/neovim/releases/download/${VERSION}"
 
 	local ASSET_NAME
-	ASSET_NAME=$(safe_subshell _get_asset_name "$VERSION" "$OS" "$ARCH_TYPE")
+	ASSET_NAME=$(_get_asset_name "$VERSION" "$OS" "$ARCH_TYPE")
 
 	echo "${BASE_GITHUB_URI_PATH}/${ASSET_NAME}"
 }
@@ -104,10 +104,10 @@ function build_github_uri {
 function _find_sha256_for_version {
 	local url="$1"
 	local release_json
-	release_json=$(safe_subshell cat)
+	release_json=$(cat)
 	local digest
 
-	digest=$(safe_subshell printf '%s' "$release_json" | tr -d '\n' | tr '{}' '\n' | grep "\"browser_download_url\"[[:space:]]*:[[:space:]]*\"$url\"" | grep -o 'digest"[[:space:]]*:[[:space:]]*"[^"]*' | grep -o '[^"]*$' | awk -F'sha256:' '{print $2}')
+	digest=$(printf '%s' "$release_json" | tr -d '\n' | tr '{}' '\n' | grep "\"browser_download_url\"[[:space:]]*:[[:space:]]*\"$url\"" | grep -o 'digest"[[:space:]]*:[[:space:]]*"[^"]*' | grep -o '[^"]*$' | awk -F'sha256:' '{print $2}')
 
 	if [ -n "$digest" ]; then
 		debug "SHA256 digest found for $url: $digest"
@@ -122,7 +122,7 @@ function get_sha256 {
 	local VERSION=$1 OS=$2 ARCH_TYPE=$3
 
 	local DOWNLOAD_URI
-	DOWNLOAD_URI=$(safe_subshell build_github_uri "$VERSION" "$OS" "$ARCH_TYPE")
+	DOWNLOAD_URI=$(build_github_uri "$VERSION" "$OS" "$ARCH_TYPE")
 
 	local is_lesser
 	is_lesser_version "$VERSION" v0.11.3
@@ -134,9 +134,9 @@ function get_sha256 {
 		info "Neovim version $VERSION is less than 0.11.3, using legacy checksum file"
 
 		SHA256_URI="${DOWNLOAD_URI}.sha256sum"
-		SHA256_SUM=$(safe_subshell run_api_call "$SHA256_URI")
+		SHA256_SUM=$(run_api_call "$SHA256_URI")
 
-		SHA256_SUM=$(safe_subshell printf '%s\n' "$SHA256_SUM" | awk '{print $1}')
+		SHA256_SUM=$(printf '%s\n' "$SHA256_SUM" | awk '{print $1}')
 	else
 		info "Neovim version $VERSION is greater than or equal to 0.11.3, using GitHub's checksum API"
 
@@ -144,10 +144,10 @@ function get_sha256 {
 		debug "Downloading SHA256 from $SHA256_URI"
 
 		local response
-		response=$(safe_subshell run_api_call "$SHA256_URI")
+		response=$(run_api_call "$SHA256_URI")
 		debug "Response from GitHub API: $response"
 
-		SHA256_SUM=$(safe_subshell printf '%s\n' "$response" | _find_sha256_for_version "$DOWNLOAD_URI")
+		SHA256_SUM=$(printf '%s\n' "$response" | _find_sha256_for_version "$DOWNLOAD_URI")
 	fi
 
 	if [[ -z $SHA256_SUM ]]; then

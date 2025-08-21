@@ -45,7 +45,7 @@ function _print_stack_trace {
 	local i=0
 	local line_no function_name file_name
 	local msg=""
-	local skip_functions=("fatal" "_print_stack_trace" "safe_subshell")
+	local skip_functions=("fatal" "_print_stack_trace")
 
 	msg+="\nStack Trace (most recent call first):"
 
@@ -183,14 +183,4 @@ function fatal {
 	jobs -p | xargs 'kill -9 --' 2>/dev/null
 
 	exit "$STATUS"
-}
-
-function safe_subshell {
-	local output
-	if ! output=$("$@"); then
-		local status=$?
-		fatal --status="$status" "Command '$*' failed with exit code $status"
-	fi
-
-	echo "$output"
 }
