@@ -587,17 +587,42 @@ function Provider:_setup_remote()
       )
     end
 
-    -- Set correct permissions and install Neovim
-    local install_neovim_cmd = ([[chmod +x %s && chmod +x %s && chmod +x %s && bash %s -v %s -d %s -m %s -a %s]]):format(
-      self._remote_neovim_download_script_path,
-      self._remote_neovim_utils_script_path,
-      self._remote_neovim_install_script_path,
+    local default_script_dir = vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h:p")
+    if not default_script_dir:match("/$") then
+      default_script_dir = default_script_dir .. "/"
+    end
+    -- We list all paths in our scripts since we want to `chmod +x` all of them
+    local all_scripts = vim.fs.find(function(name, _)
+      return name:match("%.sh$")
+    end, {
+      limit = math.huge,
+      type = "file",
+      path = default_script_dir,
+    })
+    local paths_to_chmod = {}
+    for _, path in ipairs(all_scripts) do
+      local filepath = vim.fn.fnamemodify(path, ":p")
+      local relative_path = filepath:gsub("^" .. vim.pesc(default_script_dir), "")
+      local remote_script_path = utils.path_join(utils.is_windows, self._remote_scripts_path, relative_path)
+      table.insert(paths_to_chmod, remote_script_path)
+    end
+
+    local install_cmd_lst = {}
+    for _, script_path in ipairs(paths_to_chmod) do
+      table.insert(install_cmd_lst, "chmod +x " .. script_path)
+    end
+
+    local install_cmd = ("bash %s -v %s -d %s -m %s -a %s"):format(
       self._remote_neovim_install_script_path,
       self._remote_neovim_version,
       self._remote_neovim_home,
       self._remote_neovim_install_method,
       self._remote_arch
     )
+    table.insert(install_cmd_lst, install_cmd)
+
+    -- Set correct permissions and install Neovim
+    local install_neovim_cmd = table.concat(install_cmd_lst, " && ")
 
     if self.offline_mode and self._remote_neovim_install_method ~= "system" then
       -- We need to ensure that we download Neovim version locally and then push it to the remote

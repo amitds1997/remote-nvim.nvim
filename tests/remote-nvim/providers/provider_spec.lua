@@ -636,7 +636,7 @@ describe("Provider", function()
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64",
           match.is_string()
         )
 
@@ -695,7 +695,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
           match.is_string()
         )
       end)
@@ -719,7 +719,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
           match.is_string()
         )
       end)
