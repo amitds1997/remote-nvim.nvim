@@ -271,4 +271,18 @@ function M.run_cmd(cmd, args, cb)
   return job
 end
 
+function M.get_release_arch_name(arch)
+  arch = arch:lower()
+
+  if arch:match("x86_64") or arch:match("amd64") then
+    return "x86_64"
+  end
+
+  if arch:match("aarch64") or arch:match("arm64") then
+    return "arm64"
+  end
+
+  return arch
+end
+
 return M

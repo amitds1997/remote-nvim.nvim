@@ -33,12 +33,12 @@ function download_neovim() {
 	local checksum_path
 	local expected_checksum
 	local actual_checksum
-	download_url=$(safe_subshell build_github_uri "$version" "$os" "$arch_type")
+	download_url=$(build_github_uri "$version" "$os" "$arch_type")
 	download_path="$download_dir/$(basename "$download_url")"
 
 	checksum_path="$download_path".sha256sum
 	actual_checksum="$expected_checksum-actual" # This ensures that they do not match
-	expected_checksum=$(safe_subshell get_sha256 "$version" "$os" "$arch_type")
+	expected_checksum=$(get_sha256 "$version" "$os" "$arch_type")
 
 	if [ -e "$download_path" ] && [ -e "$checksum_path" ]; then
 		expected_checksum=$(<"$checksum_path")

@@ -175,7 +175,7 @@ function M.is_binary_release_available(kernel_name, arch)
     return true
   end
 
-  local unsupported_archs = { "arm", "risc", "aarch" }
+  local unsupported_archs = { "risc" }
 
   -- Neovim currently does not provide binaries for ARM or RISC
   return (
