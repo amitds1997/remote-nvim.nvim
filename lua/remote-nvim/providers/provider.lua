@@ -163,7 +163,7 @@ function Provider:_setup_workspace_variables()
     })
   end
   self._remote_os = self._host_config.os
-  self._remote_arch = self._host_config.arch
+  self._remote_arch = utils.get_release_arch_name(self._host_config.arch)
 
   if self._host_config.neovim_version == nil then
     local prompt_title
