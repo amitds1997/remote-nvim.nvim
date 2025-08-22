@@ -140,7 +140,7 @@ function get_sha256 {
 
 		SHA256_SUM=$(printf '%s\n' "$SHA256_SUM" | awk '{print $1}')
 	elif [[ $older_than_v0_11_3 -eq 0 ]]; then
-		info "Neovim version $VERSION is greater than 0.10 but less than 0.11.3, using shasum.txt file"
+		info "Neovim version $VERSION is between 0.11.0 and 0.11.2, using shasum.txt file"
 		local base_path release_name
 		base_path=$(dirname "$DOWNLOAD_URI")
 		release_name=$(basename "$DOWNLOAD_URI")
