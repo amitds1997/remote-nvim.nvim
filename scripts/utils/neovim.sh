@@ -124,19 +124,30 @@ function get_sha256 {
 	local DOWNLOAD_URI
 	DOWNLOAD_URI=$(build_github_uri "$VERSION" "$OS" "$ARCH_TYPE")
 
-	local is_lesser
+	local older_than_v0_11 older_than_v0_11_3
+	is_lesser_version "$VERSION" v0.11.0
+	older_than_v0_11=$?
 	is_lesser_version "$VERSION" v0.11.3
-	is_lesser=$?
+	older_than_v0_11_3=$?
 
 	local SHA256_URI
 	local SHA256_SUM
-	if [[ $is_lesser -eq 0 ]]; then
-		info "Neovim version $VERSION is less than 0.11.3, using legacy checksum file"
+	if [[ $older_than_v0_11 -eq 0 ]]; then
+		info "Neovim version $VERSION is less than 0.11.0, using legacy checksum file"
 
 		SHA256_URI="${DOWNLOAD_URI}.sha256sum"
 		SHA256_SUM=$(run_api_call "$SHA256_URI")
 
 		SHA256_SUM=$(printf '%s\n' "$SHA256_SUM" | awk '{print $1}')
+	elif [[ $older_than_v0_11_3 -eq 0 ]]; then
+		info "Neovim version $VERSION is greater than 0.10 but less than 0.11.3, using shasum.txt file"
+		local base_path release_name
+		base_path=$(dirname "$DOWNLOAD_URI")
+		release_name=$(basename "$DOWNLOAD_URI")
+		SHA256_URI="$base_path/shasum.txt"
+		SHA256_SUM=$(run_api_call "$SHA256_URI")
+
+		SHA256_SUM=$(printf '%s\n' "$SHA256_SUM" | grep "$release_name" | grep -v "zsync" | awk '{print $1}')
 	else
 		info "Neovim version $VERSION is greater than or equal to 0.11.3, using GitHub's checksum API"
 
