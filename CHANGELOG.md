@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.12](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.11...v0.3.12) (2025-08-22)
+
+
+### Bug Fixes
+
+* correct neovim utils script path reference ([#221](https://github.com/amitds1997/remote-nvim.nvim/issues/221)) ([f0e271b](https://github.com/amitds1997/remote-nvim.nvim/commit/f0e271b84e6d820f1a2abf7f57bfb391e45d1b6c))
+* **nvim:** installation for v0.11.0-v0.11.2 ([#222](https://github.com/amitds1997/remote-nvim.nvim/issues/222)) ([8875247](https://github.com/amitds1997/remote-nvim.nvim/commit/8875247595d64a34442aefa5cda050f78dd97b4e))
+* **scripts:** Explicitly specify bash command to run scripts ([#156](https://github.com/amitds1997/remote-nvim.nvim/issues/156)) ([f837763](https://github.com/amitds1997/remote-nvim.nvim/commit/f83776310adc130e5084d1b7672f402dba4cc70e))
+
 ## [0.3.11](https://github.com/amitds1997/remote-nvim.nvim/compare/v0.3.10...v0.3.11) (2024-07-06)
 
 
