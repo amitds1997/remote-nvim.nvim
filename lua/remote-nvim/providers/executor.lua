@@ -11,6 +11,7 @@ local Executor = require("remote-nvim.middleclass")("Executor")
 ---@field additional_opts? string[] Additional options to pass to the `tar` command. See `man tar` for possible options
 
 ---@class remote-nvim.provider.Executor.JobOpts
+---@field pty boolean? Whether to set pty option
 ---@field additional_conn_opts string? Connection options
 ---@field stdout_cb function? Standard output callback
 ---@field exit_cb function? On exit callback
@@ -76,7 +77,7 @@ function Executor:run_executor_job(command, job_opts)
 
   self:reset() -- Reset job internal state variables
   self._job_id = vim.fn.jobstart(command, {
-    pty = true,
+    pty = job_opts.pty == nil or job_opts.pty,
     on_stdout = function(_, data_chunk)
       self:process_stdout(data_chunk, job_opts.stdout_cb)
     end,
