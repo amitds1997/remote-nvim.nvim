@@ -16,6 +16,7 @@ local Executor = require("remote-nvim.middleclass")("Executor")
 ---@field exit_cb function? On exit callback
 ---@field compression remote-nvim.provider.Executor.JobOpts.CompressionOpts? Compression options; for upload and download
 
+local utils = require("remote-nvim.utils")
 ---Initialize executor instance
 ---@param host string Host name
 ---@param conn_opts? string Connection options (passed when connecting)
@@ -23,6 +24,7 @@ function Executor:init(host, conn_opts)
   self.host = host
   self.conn_opts = conn_opts or ""
 
+  self.logger = utils.get_logger()
   self._job_id = nil
   self._job_exit_code = nil
   self._job_stdout = {}
@@ -71,6 +73,7 @@ end
 ---@param command string Command which should be started as a job
 ---@param job_opts remote-nvim.provider.Executor.JobOpts
 function Executor:run_executor_job(command, job_opts)
+  self.logger.fmt_debug("Executor running command  %s with options %s", command, job_opts)
   local co = coroutine.running()
   job_opts = job_opts or {}
 
