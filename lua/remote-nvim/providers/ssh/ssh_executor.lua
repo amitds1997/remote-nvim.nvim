@@ -46,6 +46,10 @@ function SSHExecutor:upload(localSrcPath, remoteDestPath, job_opts)
   job_opts = job_opts or {}
   job_opts.compression = job_opts.compression or {}
 
+  -- Ensure that destination folder exists
+  local mkdir_ssh_command = self:_build_run_command(("mkdir -p %s"):format(remoteDestPath), job_opts)
+  self:run_executor_job(mkdir_ssh_command, job_opts)
+
   if job_opts.compression.enabled or false then
     local paths = vim.split(localSrcPath, " ")
     local parent_dir, subdirs = utils.find_common_parent(paths)
