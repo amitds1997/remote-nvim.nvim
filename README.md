@@ -139,6 +139,7 @@ Please read the associated comments before changing the value.
     ssh_binary = "ssh", -- Binary to use for running SSH command
     scp_binary = "scp", -- Binary to use for running SSH copy commands
     ssh_config_file_paths = { "$HOME/.ssh/config" }, -- Which files should be considered to contain the ssh host configurations. NOTE: `Include` is respected in the provided files.
+    parse_osc52 = true, -- Workaround for nvim copy on remote problem (https://github.com/neovim/neovim/issues/28792)
 
     -- These are useful for password-based SSH authentication.
     -- It provides parsing pattern for the plugin to detect that an input is requested.
