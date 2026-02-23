@@ -809,8 +809,10 @@ function Provider:_wait_for_server_to_be_ready()
     -- This is synchronous but that's fine because the command we are running should immediately return
     local res = vim.fn.system(cmd)
     if res == "" then
-      timer:stop()
-      timer:close()
+      if not timer:is_closing() then
+        timer:stop()
+        timer:close()
+      end
       if co ~= nil and coroutine.status(co) == "suspended" then
         coroutine.resume(co)
       end
@@ -825,8 +827,10 @@ function Provider:_wait_for_server_to_be_ready()
   -- Start the timer
   timer:start(timeout, 0, function()
     vim.notify(("Server did not come up on local in %s ms. Try again :("):format(timeout), vim.log.levels.ERROR)
-    timer:stop()
-    timer:close()
+    if not timer:is_closing() then
+      timer:stop()
+      timer:close()
+    end
     error(("Server did not come up on local in %s ms. Try again :("):format(timeout))
   end)
   probe_server_readiness()
