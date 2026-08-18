@@ -587,7 +587,13 @@ function Provider:_setup_remote()
       )
     end
 
-    local default_script_dir = vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h:p")
+    -- `fnamemodify` uses backslashes on Windows but `vim.fs.find`/`:p` always use
+    -- forward slashes; normalize so the prefix stripping below actually matches.
+    -- `win` is explicit since `utils.is_windows` also covers win32unix.
+    local default_script_dir = vim.fs.normalize(
+      vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h:p"),
+      { win = utils.is_windows }
+    )
     if not default_script_dir:match("/$") then
       default_script_dir = default_script_dir .. "/"
     end
@@ -601,9 +607,9 @@ function Provider:_setup_remote()
     })
     local paths_to_chmod = {}
     for _, path in ipairs(all_scripts) do
-      local filepath = vim.fn.fnamemodify(path, ":p")
+      local filepath = vim.fs.normalize(vim.fn.fnamemodify(path, ":p"), { win = utils.is_windows })
       local relative_path = filepath:gsub("^" .. vim.pesc(default_script_dir), "")
-      local remote_script_path = utils.path_join(utils.is_windows, self._remote_scripts_path, relative_path)
+      local remote_script_path = utils.path_join(self._remote_is_windows, self._remote_scripts_path, relative_path)
       table.insert(paths_to_chmod, remote_script_path)
     end
 
@@ -796,9 +802,17 @@ end
 ---@private
 ---Wait until the server is ready
 function Provider:_wait_for_server_to_be_ready()
-  local cmd = ("nvim --server localhost:%s --remote-send ':lua vim.g.remote_neovim_host=true<CR>'"):format(
-    self._local_free_port
-  )
+  -- `--headless` is required: on connect failure, `nvim --server`/`--remote-send`
+  -- falls through to starting a normal UI instead of just erroring out, which as a
+  -- background probe job has nowhere sane to attach (fights the host console for
+  -- input on Windows).
+  local remote_send_args = {
+    "--headless",
+    "--server",
+    ("localhost:%s"):format(self._local_free_port),
+    "--remote-send",
+    ":lua vim.g.remote_neovim_host=true<CR>",
+  }
   local timeout = 20000 -- Wait for max 20 seconds for server to get ready
 
   local timer = utils.uv.new_timer()
@@ -806,18 +820,52 @@ function Provider:_wait_for_server_to_be_ready()
 
   local co = coroutine.running()
   local function probe_server_readiness()
-    -- This is synchronous but that's fine because the command we are running should immediately return
-    local res = vim.fn.system(cmd)
-    if res == "" then
-      timer:stop()
-      timer:close()
-      if co ~= nil and coroutine.status(co) == "suspended" then
-        coroutine.resume(co)
-      end
-    else
-      vim.defer_fn(probe_server_readiness, 2000)
+    if utils.is_windows then
+      -- `vim.fn.system` runs strings through cmd.exe on Windows, which doesn't group
+      -- single-quoted args, splitting `--remote-send`'s argument on whitespace. Use
+      -- plenary.job to invoke `nvim` directly instead (no shell), like the Windows
+      -- branch in DevpodProvider:_handle_provider_setup.
+      require("plenary.job")
+        :new({
+          command = "nvim",
+          args = remote_send_args,
+          on_exit = function(j, _)
+            vim.schedule(function()
+              local res = table.concat(j:result(), "\n") .. table.concat(j:stderr_result(), "\n")
+              if res == "" then
+                timer:stop()
+                timer:close()
+                if co ~= nil and coroutine.status(co) == "suspended" then
+                  coroutine.resume(co)
+                end
+              else
+                vim.defer_fn(probe_server_readiness, 2000)
+              end
+            end)
+          end,
+        })
+        :start()
       if co ~= nil and coroutine.status(co) == "running" then
         coroutine.yield(co)
+      end
+    else
+      -- This is synchronous but that's fine because the command we are running should immediately return
+      local res = vim.fn.system(
+        ("nvim --headless --server localhost:%s --remote-send ':lua vim.g.remote_neovim_host=true<CR>'"):format(
+          self._local_free_port
+        )
+      )
+      if res == "" then
+        timer:stop()
+        timer:close()
+        if co ~= nil and coroutine.status(co) == "suspended" then
+          coroutine.resume(co)
+        end
+      else
+        vim.defer_fn(probe_server_readiness, 2000)
+        if co ~= nil and coroutine.status(co) == "running" then
+          coroutine.yield(co)
+        end
       end
     end
   end

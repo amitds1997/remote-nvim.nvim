@@ -55,7 +55,8 @@ features.
 | Support level           | OS                         |
 | ----------------------- | -------------------------- |
 | ✅ **Supported**         | Linux, MacOS, FreeBSD [^2] |
-| 🟡 **Not supported yet** | Windows, WSL               |
+| 🟡 **Experimentally supported** | Windows                    |
+| 🟡 **Not supported yet** | WSL                        |
 
 ### Local machine 💻
 
@@ -580,7 +581,7 @@ This plugins provide some additional nice-to have features on top:
 - Can copy over your local Neovim configuration to remote
 - Allows easy re-connection to past sessions
 - Makes it easy to clean up remote machine changes once you are done
-- It launches Neovim server on the remote server and connects a UI to it locally. 
+- It launches Neovim server on the remote server and connects a UI to it locally.
 
 You can read more in [this Neovim discussion](https://github.com/amitds1997/remote-nvim.nvim/discussions/145)
 

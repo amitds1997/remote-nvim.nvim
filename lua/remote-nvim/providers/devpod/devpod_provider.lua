@@ -156,12 +156,39 @@ end
 
 function DevpodProvider:_handle_provider_setup()
   if self._devpod_provider then
-    self.local_provider:run_command(
-      ("%s provider list --output json"):format(remote_nvim.config.devpod.binary),
-      ("Checking if the %s provider is present"):format(self._devpod_provider)
-    )
-    local stdout = self.local_provider.executor:job_stdout()
-    local provider_list_output = vim.json.decode(vim.tbl_isempty(stdout) and "{}" or table.concat(stdout, "\n"))
+    local co = coroutine.running()
+    ---@type string[]
+    local stdout_lines = {}
+
+    if utils.is_windows then
+      require("plenary.job")
+        :new({
+          command = remote_nvim.config.devpod.binary,
+          args = { "provider", "list", "--output", "json" },
+          on_exit = function(j, _)
+            vim.schedule(function()
+              stdout_lines = j:result()
+              if co ~= nil then
+                coroutine.resume(co)
+              end
+            end)
+          end,
+        })
+        :start()
+    else
+      self.local_provider:run_command(
+        ("%s provider list --output json"):format(remote_nvim.config.devpod.binary),
+        ("Checking if the %s provider is present"):format(self._devpod_provider)
+      )
+      stdout_lines = self.local_provider.executor:job_stdout()
+    end
+
+    if co ~= nil then
+      coroutine.yield()
+    end
+
+    local provider_list_output =
+      vim.json.decode(vim.tbl_isempty(stdout_lines) and "{}" or table.concat(stdout_lines, "\n"))
 
     -- If the provider does not exist, let's create it
     if not vim.tbl_contains(vim.tbl_keys(provider_list_output), self._devpod_provider) then

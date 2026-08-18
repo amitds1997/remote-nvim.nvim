@@ -7,6 +7,7 @@ local Split = require("nui.split")
 local hl_groups = require("remote-nvim.colors").hl_groups
 ---@type remote-nvim.RemoteNeovim
 local remote_nvim = require("remote-nvim")
+local utils = require("remote-nvim.utils")
 
 ---@alias progress_view_node_type "run_node"|"section_node"|"command_node"|"stdout_node"
 ---@alias session_node_type "local_node"|"remote_node"|"config_node"|"root_node"|"info_node"
@@ -184,6 +185,8 @@ end
 
 ---Show the progress viewer
 function ProgressView:show()
+  self:_ensure_progress_view_buffer()
+
   -- Update layout because progressview internally holds the window ID relative to which
   -- it should create the split/popup in case of rel="win". If it no longer exists, it
   -- will throw an error. So, we update the layout to get the latest window ID.
@@ -274,6 +277,8 @@ end
 ---@param title string Title for the run
 ---@return NuiTree.Node run_node Created run node
 function ProgressView:start_run(title)
+  self:_ensure_progress_view_buffer()
+
   local run_node = self:add_progress_node({
     text = title,
     type = "run_node",
@@ -281,6 +286,39 @@ function ProgressView:start_run(title)
   self:_setup_session_info_pane()
 
   return run_node
+end
+
+---@private
+---On Windows, something outside the plugin (another buffer-cleanup plugin/autocmd,
+---or retrying a launch after a previous run failed) can delete the progress view's
+---scratch buffer without going through nui's `unmount` lifecycle, leaving
+---`self.progress_view` holding a stale bufnr that crashes the next tree render with "Invalid buffer id".
+---This has only been observed on Windows, so the recovery is scoped to it.
+function ProgressView:_ensure_progress_view_buffer()
+  local is_windows = utils.is_windows
+  if not is_windows then
+    return
+  end
+
+  if self.progress_view.bufnr == nil or not vim.api.nvim_buf_is_valid(self.progress_view.bufnr) then
+    self.progress_view:unmount()
+    -- `unmount` only clears `bufnr` if it thought it was mounted; force it so the
+    -- upcoming `mount` call always creates a fresh buffer instead of reusing the
+    -- stale (now invalid) id.
+    if self.progress_view.bufnr ~= nil and not vim.api.nvim_buf_is_valid(self.progress_view.bufnr) then
+      self.progress_view.bufnr = nil
+    end
+    self.progress_view:mount()
+
+    -- Rebind the tree to the freshly (re)created buffer and restore its top line/keymaps.
+    self.progress_view_pane_tree.bufnr = self.progress_view.bufnr
+    self:_set_top_line(self.progress_view.bufnr)
+    self.progress_view_tree_render_linenr = vim.api.nvim_buf_line_count(self.progress_view.bufnr) + 1
+    local keymaps = self:_get_progressview_keymaps()
+    local tree_keymaps = self:_get_tree_keymaps(self.progress_view_pane_tree, self.progress_view_tree_render_linenr)
+    keymaps = vim.list_extend(keymaps, tree_keymaps)
+    self:_set_buffer_keymaps(self.progress_view.bufnr, keymaps)
+  end
 end
 
 ---@private

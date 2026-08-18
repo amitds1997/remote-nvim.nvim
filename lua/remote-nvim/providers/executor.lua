@@ -6,6 +6,8 @@
 ---@field protected _job_stdout string[] Job output (if job is running)
 local Executor = require("remote-nvim.middleclass")("Executor")
 
+local utils = require("remote-nvim.utils")
+
 ---@class remote-nvim.provider.Executor.JobOpts.CompressionOpts
 ---@field enabled boolean Apply compression
 ---@field additional_opts? string[] Additional options to pass to the `tar` command. See `man tar` for possible options
@@ -76,8 +78,17 @@ function Executor:run_executor_job(command, job_opts)
 
   self:reset() -- Reset job internal state variables
   self._job_id = vim.fn.jobstart(command, {
-    pty = true,
+    -- Windows ConPTY can corrupt job I/O with its own escape sequences; skip pty there.
+    -- Job id stays a normal nvim job channel either way, so jobwait/jobstop/nvim_chan_send
+    -- are unaffected.
+    pty = not utils.is_windows,
     on_stdout = function(_, data_chunk)
+      self:process_stdout(data_chunk, job_opts.stdout_cb)
+    end,
+    -- Without a pty, stdout/stderr are separate streams (pty merges them into on_stdout).
+    -- SSH sends most diagnostics (prompts, host key checks, auth errors) to stderr, so
+    -- route it the same way or that output and prompt matching silently break.
+    on_stderr = function(_, data_chunk)
       self:process_stdout(data_chunk, job_opts.stdout_cb)
     end,
     on_exit = function(_, exit_code)
