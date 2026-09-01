@@ -1032,10 +1032,26 @@ function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_execu
   if exit_cb ~= nil then
     exit_cb = exit_cb(section_node)
   end
+
+  local node_stdout_cb = self:_get_stdout_fn_for_node(section_node)
+  local stdout_cb = function(stdout_chunk)
+    node_stdout_cb(stdout_chunk)
+
+    if remote_nvim.config.ssh_config.parse_osc52 then
+      local data = stdout_chunk:match("^%c%]%d*;c;([^\a]*)%c\\")
+      if data then
+        stdout_chunk = stdout_chunk:gsub("^%c%]%d*;c;([^\a]*)%c\\", "")
+        local text = vim.fn.systemlist("base64 --decode", data)
+        vim.fn.setreg("+", text)
+        vim.notify("Copied to clipboard via OSC52")
+      end
+    end
+  end
+
   executor:run_command(command, {
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
-    stdout_cb = self:_get_stdout_fn_for_node(section_node),
+    stdout_cb = stdout_cb,
   })
   self.logger.fmt_debug("[%s][%s] Running %s completed", self.provider_type, self.unique_host_id, command)
   if exit_cb == nil then

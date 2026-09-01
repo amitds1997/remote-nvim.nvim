@@ -38,6 +38,7 @@ local utils = require("remote-nvim.utils")
 ---@field scp_binary string Name of binary on runtime path for scp
 ---@field ssh_config_file_paths string[] Location of SSH configuration files that you want the plugin to consider
 ---@field ssh_prompts remote-nvim.config.PluginConfig.SSHConfig.SSHPrompt[] List of SSH prompts that should be considered for input
+---@field parse_osc52 boolean Should the plugin parse for OSC52 sequences and copy them to the local clipboard
 
 ---@class remote-nvim.config.RemoteConfig.LocalClientConfig
 ---@field callback function<string, remote-nvim.providers.WorkspaceConfig> Function that would be called upon to start a Neovim client
@@ -107,6 +108,7 @@ M.default_opts = {
     ssh_binary = "ssh",
     scp_binary = "scp",
     ssh_config_file_paths = { "$HOME/.ssh/config" },
+    parse_osc52 = true,
     ssh_prompts = {
       { -- Handle default password style on Linux/macOS
         match = "password:",
