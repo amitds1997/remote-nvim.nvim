@@ -21,6 +21,7 @@ force_installation=""
 install_method=""
 offline_mode=""
 arch_type=""
+install_policy="always"
 
 # Create a temporary directory to handle any remote nvim data location things
 temp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t 'neovim_download')
@@ -44,6 +45,7 @@ Options:
   -f       Force installation. Would overwrite any existing installation.
   -m       Installation method: binary, source, system
   -a       Architecture type of the machine
+  -p       Install policy: "relax" (only if not executable), "always" (default), "global" (install to .local/bin if not executable)
   -o       Offline mode. Assume release is already downloaded.
   -h       Display this help message and exit.
 EOM
@@ -156,6 +158,14 @@ function setup_neovim_macos() {
 
 # Function to install Neovim
 function install_neovim() {
+	# If install_policy is "relax", check if Neovim is already executable
+	if [[ $install_policy == "relax" && $install_method != "system" ]]; then
+		if command -v nvim &>/dev/null; then
+			info "Install policy is 'relax' and Neovim is already executable. Skipping installation..."
+			exit 0
+		fi
+	fi
+
 	# Check if the specified download directory exists
 	if [[ ! -d $remote_nvim_dir ]]; then
 		info "Remote neovim directory does not exist. Creating it now..."
@@ -163,6 +173,17 @@ function install_neovim() {
 	fi
 
 	nvim_download_dir="$remote_nvim_dir/nvim-downloads"
+
+	# For "global" policy, install to $HOME/.local/bin
+	if [[ $install_policy == "global" && $install_method != "system" ]]; then
+		if command -v nvim &>/dev/null; then
+			info "Install policy is 'global' and Neovim is already executable. Skipping installation..."
+			exit 0
+		fi
+		# Override install directory to $HOME/.local
+		nvim_download_dir="$HOME/.local"
+		remote_nvim_dir="$HOME/.local"
+	fi
 
 	# Check if the specified release is already downloaded
 	nvim_version_dir="$nvim_download_dir/$nvim_version"
@@ -217,7 +238,7 @@ function install_neovim() {
 }
 
 # Parse command-line options
-while getopts "v:d:h:a:m:fo" opt; do
+while getopts "v:d:h:a:m:p:fo" opt; do
 	case $opt in
 	v)
 		nvim_version="$OPTARG"
@@ -230,6 +251,9 @@ while getopts "v:d:h:a:m:fo" opt; do
 		;;
 	m)
 		install_method="$OPTARG"
+		;;
+	p)
+		install_policy="$OPTARG"
 		;;
 	f)
 		force_installation=true
@@ -256,6 +280,12 @@ done
 # Check if the required options are provided
 if [[ -z $nvim_version || -z $remote_nvim_dir || -z $install_method || -z $arch_type ]]; then
 	echo "Missing options. Use -h to see the usage."
+	exit 1
+fi
+
+# Validate install_policy
+if [[ $install_policy != "relax" && $install_policy != "always" && $install_policy != "global" ]]; then
+	echo "Invalid install policy: $install_policy. Must be 'relax', 'always', or 'global'."
 	exit 1
 fi
 

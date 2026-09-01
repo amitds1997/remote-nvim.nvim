@@ -13,6 +13,7 @@
 ---@field connection_options string? Connection options needed to connect to the remote host
 ---@field remote_neovim_home string? Path on remote host where remote-neovim installs/configures things
 ---@field neovim_install_method neovim_install_method? How was the remote Neovim installed in the workspace
+---@field remote_binary string? Full path to existing nvim binary on remote (detected by _check_remote_neovim_binary_path)
 ---@field config_copy boolean? Flag indicating if the config should be copied or not
 ---@field client_auto_start boolean? Flag indicating if the client should be auto started or not
 ---@field offline_mode boolean? Should we operate in offline mode
@@ -57,6 +58,7 @@
 ---@field private _remote_neovim_download_script_path  string Get Neovim download script path on the remote host
 ---@field private _remote_neovim_utils_script_path  string Get Neovim utils script path on the remote host
 ---@field private _remote_server_process_id  integer? Process ID of the remote server job
+---@field private _use_nvim_appname boolean Should use NVIM_APPNAME for execution
 ---@field protected _remote_working_dir string? Working directory on the remote server
 local Provider = require("remote-nvim.middleclass")("Provider")
 
@@ -116,6 +118,7 @@ function Provider:init(opts)
   self.progress_viewer = opts.progress_view
   self._cleanup_run_number = 1
   self._neovim_launch_number = 1
+  self._use_nvim_appname = true -- Default to using NVIM_APPNAME
 
   -- Remote configuration parameters
   opts.devpod_opts = opts.devpod_opts or {}
@@ -165,28 +168,78 @@ function Provider:_setup_workspace_variables()
   self._remote_os = self._host_config.os
   self._remote_arch = utils.get_release_arch_name(self._host_config.arch)
 
+  local skip_version_selection = false
   if self._host_config.neovim_version == nil then
-    local prompt_title
+    local install_policy = remote_nvim.config.remote.install_nvim_policy
 
-    if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
-      self._host_config.neovim_install_method = "binary"
-      prompt_title = "Choose Neovim version to install"
-    else
-      self._host_config.neovim_install_method = "source"
-      prompt_title = "Binary release not available. Choose Neovim version to install"
+    -- Prompt for install_nvim_policy during initial setup if policy is "prompt"
+    if install_policy == "prompt" then
+      local policy_choice = self:get_selection({
+        "Local: install to " .. self:_get_remote_neovim_home() .. "/nvim-downloads",
+        "System: use existing nvim if available",
+      }, {
+        prompt = "Choose Neovim installation location",
+        format_item = function(item)
+          return item
+        end,
+      })
+
+      if policy_choice:match("^Local:") then
+        install_policy = "relax"
+      else -- System
+        install_policy = "relax"
+      end
     end
-    self._remote_neovim_install_method = self._host_config.neovim_install_method
-    self._host_config.neovim_version = self:_get_remote_neovim_version_preference(prompt_title)
 
-    -- Set installation method to "system" if not found
-    if self._host_config.neovim_version == "system" then
-      self._host_config.neovim_install_method = "system"
+    -- For "relax" policy, check if Neovim is already available on remote
+    if install_policy == "relax" then
+      local remote_binary = self:_check_remote_neovim_binary_path()
+
+      if remote_binary then
+        self:run_command(("%s --version"):format(remote_binary), "Checking Neovim version on remote")
+        local nvim_remote_check_output_lines = self.executor:job_stdout()
+        for _, output_str in ipairs(nvim_remote_check_output_lines) do
+          if output_str:find("NVIM v.*") then
+            self._host_config.neovim_version = output_str:match("v.*"):gsub("^v", "")
+            break
+          end
+        end
+        self._host_config.neovim_install_method = "system"
+        self._host_config.remote_binary = remote_binary
+        self._config_provider:update_workspace_config(self.unique_host_id, {
+          neovim_install_method = self._host_config.neovim_install_method,
+          neovim_version = self._host_config.neovim_version,
+          remote_binary = remote_binary,
+        })
+        self._remote_neovim_version = self._host_config.neovim_version
+        self._remote_neovim_install_method = self._host_config.neovim_install_method
+        skip_version_selection = true
+      end
     end
 
-    self._config_provider:update_workspace_config(self.unique_host_id, {
-      neovim_install_method = self._host_config.neovim_install_method,
-      neovim_version = self._host_config.neovim_version,
-    })
+    if not skip_version_selection then
+      local prompt_title
+
+      if provider_utils.is_binary_release_available(self._host_config.os, self._host_config.arch) then
+        self._host_config.neovim_install_method = "binary"
+        prompt_title = "Choose Neovim version to install"
+      else
+        self._host_config.neovim_install_method = "source"
+        prompt_title = "Binary release not available. Choose Neovim version to install"
+      end
+      self._remote_neovim_install_method = self._host_config.neovim_install_method
+      self._host_config.neovim_version = self:_get_remote_neovim_version_preference(prompt_title)
+
+      -- Set installation method to "system" if not found
+      if self._host_config.neovim_version == "system" then
+        self._host_config.neovim_install_method = "system"
+      end
+
+      self._config_provider:update_workspace_config(self.unique_host_id, {
+        neovim_install_method = self._host_config.neovim_install_method,
+        neovim_version = self._host_config.neovim_version,
+      })
+    end
   end
   self._remote_neovim_version = self._host_config.neovim_version
   self._remote_neovim_install_method = self._host_config.neovim_install_method
@@ -421,10 +474,6 @@ function Provider:_get_remote_neovim_version_preference(prompt_title)
     local possible_choices = {}
     local version_map = {}
 
-    -- Check if system-wide Neovim is available, if yes, add it as an option
-    self:run_command("nvim --version || true", "Checking if Neovim is installed system-wide on remote")
-    local nvim_remote_check_output_lines = self.executor:job_stdout()
-
     if self.offline_mode and remote_nvim.config.offline_mode.no_github then
       assert(self._remote_os ~= nil, "OS should not be nil")
       assert(self._remote_neovim_install_method, "Install method should not be nil")
@@ -455,17 +504,6 @@ function Provider:_get_remote_neovim_version_preference(prompt_title)
         or provider_utils.is_greater_neovim_version(ver, require("remote-nvim.constants").MIN_NEOVIM_VERSION)
     end, possible_choices)
     table.sort(possible_choices, provider_utils.is_greater_neovim_version)
-
-    -- We add this now, because we do not want to mess with the sorting
-    -- TODO: Sorting should only sort, we should add stable and nightly manually.
-    local system_neovim_version
-    for _, output_str in ipairs(nvim_remote_check_output_lines) do
-      if output_str:find("NVIM v.*") then
-        table.insert(possible_choices, "system")
-        system_neovim_version = output_str
-        break
-      end
-    end
 
     self._remote_neovim_version = self:get_selection(possible_choices, {
       prompt = prompt_title,
@@ -499,30 +537,100 @@ end
 
 ---@private
 ---Get user preference about copying the local neovim config to remote
----@return boolean preference Should the config be copied over
+---Based on fix.md requirements
+---@return boolean should_upload Should the config be uploaded
+---@return string? upload_path Path to upload config to (nil if should not upload)
+---@return boolean use_nvim_appname Should use NVIM_APPNAME for execution
 function Provider:_get_neovim_config_upload_preference()
-  if self._host_config.config_copy == nil then
-    local choice = self:get_selection({ "Yes", "No", "Yes (always)", "No (never)" }, {
-      prompt = "Copy local Neovim configuration to remote host? ",
+  -- Backward compatibility: prioritize self._host_config.config_copy if it exists
+  if self._host_config.config_copy ~= nil then
+    local should_copy = self._host_config.config_copy
+    return should_copy, should_copy and self._remote_neovim_config_path or nil, should_copy
+  end
+
+  local upload_policy = remote_nvim.config.remote.upload_config_policy
+
+  -- Handle "never" policy - never upload
+  if upload_policy == "never" then
+    self._host_config.config_copy = false
+    return false, nil, false
+  end
+
+  -- Handle "prompt" policy - ask user
+  if upload_policy == "prompt" then
+    -- Ask user
+    local copy_choice = self:get_selection({
+      "Yes",
+      "No",
+      "Yes (always)",
+      "No (never)",
+    }, {
+      prompt = "Should we copy your local Neovim config to remote host?",
     })
 
-    -- Handle choices
-    if choice == "Yes (always)" then
+    if copy_choice == nil then
+      error("No choice selected")
+    end
+
+    if copy_choice == "Yes (always)" then
       self._host_config.config_copy = true
       self._config_provider:update_workspace_config(self.unique_host_id, {
-        config_copy = self._host_config.config_copy,
+        config_copy = true,
       })
-    elseif choice == "No (never)" then
+      return true, self._remote_neovim_config_path, true
+    elseif copy_choice == "No (never)" then
       self._host_config.config_copy = false
       self._config_provider:update_workspace_config(self.unique_host_id, {
-        config_copy = self._host_config.config_copy,
+        config_copy = false,
       })
-    else
-      self._host_config.config_copy = (choice == "Yes" and true) or false
+      return false, nil, false
+    elseif copy_choice == "Yes" then
+      self._host_config.config_copy = true
+      return true, self._remote_neovim_config_path, true
+    else -- "No"
+      self._host_config.config_copy = false
+      return false, nil, false
     end
   end
 
-  return self._host_config.config_copy
+  -- Determine remote global config path
+  local remote_global_config_path = "$HOME/.config/nvim"
+  if self._remote_is_windows then
+    remote_global_config_path = "$LOCALAPPDATA\\nvim"
+  end
+
+  -- Check if remote config already exists at $HOME/.config/nvim
+  local remote_config_exists = false
+  if upload_policy == "relax" then
+    self:run_command(
+      ("test -d %s && echo 'config_exists' || echo 'config_not_exists'"):format(remote_global_config_path),
+      "Checking remote Neovim config"
+    )
+    local config_check_output = self.executor:job_stdout()
+    for _, line in ipairs(config_check_output) do
+      if line:match("config_exists") then
+        remote_config_exists = true
+        break
+      end
+    end
+  end
+
+  -- Handle upload_config_policy based on fix.md requirements
+  if upload_policy == "relax" then
+    -- relax: If a remote $XDG_CONFIG_HOME/nvim exists, do not upload it (do not use NVIM_APPNAME to execute)
+    -- If it does not exist, upload it (use NVIM_APPNAME to execute)
+    if remote_config_exists then
+      self._host_config.config_copy = false
+      return false, nil, false -- Don't upload, don't use NVIM_APPNAME (use existing global config)
+    else
+      self._host_config.config_copy = true
+      return true, self._remote_neovim_config_path, true -- Upload to workspace-specific path, use NVIM_APPNAME
+    end
+  else -- "always"
+    -- always: Upload even if there is a remote $XDG_CONFIG_HOME/nvim (use NVIM_APPNAME to execute)
+    self._host_config.config_copy = true
+    return true, self._remote_neovim_config_path, true -- Always upload to workspace-specific path, use NVIM_APPNAME
+  end
 end
 
 ---Verify if the server is already running or not
@@ -533,8 +641,20 @@ end
 
 ---@private
 ---Get remote neovim binary path
+---Returns system nvim if install method is "system", otherwise returns path to installed binary
 ---@return string binary_path remote neovim binary path
 function Provider:_remote_neovim_binary_path()
+  -- If remote_binary is set in host_config, use it
+  if self._host_config.remote_binary then
+    return self._host_config.remote_binary
+  end
+
+  -- If using system Neovim (e.g., when install_policy is "relax" and nvim exists)
+  if self._remote_neovim_install_method == "system" then
+    return "nvim" -- Use system nvim on PATH
+  end
+
+  -- Otherwise use the installed binary path
   return utils.path_join(self._remote_is_windows, self:_remote_neovim_binary_dir(), "bin", "nvim")
 end
 
@@ -551,35 +671,101 @@ function Provider:_remote_neovim_binary_dir()
 end
 
 ---@private
+---Check for existing nvim binary on remote for "relax" install policy
+---@return string? binary_path Full path to existing nvim binary, or nil if not found
+function Provider:_check_remote_neovim_binary_path()
+  local install_policy = remote_nvim.config.remote.install_nvim_policy
+
+  -- Only search for existing binary when install_policy is "relax"
+  if install_policy ~= "relax" then
+    return nil
+  end
+
+  -- 1. Check if nvim is available in PATH using command -v / where
+  local exists_cmd
+  if self._remote_is_windows then
+    exists_cmd = "where nvim || true"
+  else
+    exists_cmd = "command -v nvim || true"
+  end
+
+  self:run_command(exists_cmd, "Checking if nvim exists in PATH")
+  local exists_output = self.executor:job_stdout()
+
+  for _, line in ipairs(exists_output) do
+    if line:find("nvim") then
+      return line
+    end
+  end
+
+  -- 2. Search in configured search_binary_pathes
+  local search_paths = remote_nvim.config.remote.search_binary_pathes
+  if search_paths and #search_paths > 0 then
+    for _, search_path in ipairs(search_paths) do
+      local find_cmd
+      if self._remote_is_windows then
+        -- Windows: use dir command to search for nvim.exe
+        find_cmd = string.format('dir /s /b "%s\\nvim.exe" 2>NUL', search_path)
+      else
+        -- Unix: use find command
+        find_cmd = string.format('find "%s" -type f -executable -name nvim 2>/dev/null', search_path)
+      end
+
+      self:run_command(find_cmd, "Searching for nvim in " .. search_path)
+      local find_output = self.executor:job_stdout()
+
+      for _, line in ipairs(find_output) do
+        if line:find("nvim") then
+          return line
+        end
+      end
+    end
+  end
+
+  return nil
+end
+
+---@private
 ---Setup remote
 function Provider:_setup_remote()
   if not self._setup_running then
     self._setup_running = true
 
-    -- Create necessary directories
-    local necessary_dirs = {
-      self._remote_scripts_path,
-      utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, remote_nvim.config.remote.app_name),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_cache_path, remote_nvim.config.remote.app_name),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_state_path, remote_nvim.config.remote.app_name),
-      utils.path_join(self._remote_is_windows, self._remote_xdg_data_path, remote_nvim.config.remote.app_name),
-      self:_remote_neovim_binary_dir(),
-    }
-    local mkdirs_cmds = {}
-    for _, dir in ipairs(necessary_dirs) do
-      table.insert(mkdirs_cmds, ("mkdir -p %s"):format(dir))
+    local install_policy = remote_nvim.config.remote.install_nvim_policy
+    local is_using_system_nvim = (self._remote_neovim_install_method == "system")
+
+    -- Skip directory creation and script upload for relax mode when using system nvim
+    local skip_setup = (install_policy == "relax") and is_using_system_nvim
+
+    if not skip_setup then
+      -- Create necessary directories
+      local necessary_dirs = {
+        self._remote_scripts_path,
+        utils.path_join(self._remote_is_windows, self._remote_xdg_config_path, remote_nvim.config.remote.app_name),
+        utils.path_join(self._remote_is_windows, self._remote_xdg_cache_path, remote_nvim.config.remote.app_name),
+        utils.path_join(self._remote_is_windows, self._remote_xdg_state_path, remote_nvim.config.remote.app_name),
+        utils.path_join(self._remote_is_windows, self._remote_xdg_data_path, remote_nvim.config.remote.app_name),
+        self:_remote_neovim_binary_dir(),
+      }
+      local mkdirs_cmds = {}
+      for _, dir in ipairs(necessary_dirs) do
+        table.insert(mkdirs_cmds, ("mkdir -p %s"):format(dir))
+      end
+      self:run_command(table.concat(mkdirs_cmds, " && "), "Creating custom neovim directories on remote")
+
+      -- Copy things required on remote
+      self:upload(
+        vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h"),
+        self._remote_neovim_home,
+        "Copying plugin scripts onto remote"
+      )
     end
-    self:run_command(table.concat(mkdirs_cmds, " && "), "Creating custom neovim directories on remote")
 
-    -- Copy things required on remote
-    self:upload(
-      vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h"),
-      self._remote_neovim_home,
-      "Copying plugin scripts onto remote"
-    )
-
-    ---If we have custom scripts specified, copy them over
-    if remote_nvim.default_opts.neovim_install_script_path ~= remote_nvim.config.neovim_install_script_path then
+    ---If we have custom scripts specified, copy them over (skip if using system nvim)
+    if
+      not skip_setup
+      and remote_nvim.default_opts.neovim_install_script_path ~= remote_nvim.config.neovim_install_script_path
+    then
       self:upload(
         remote_nvim.config.neovim_install_script_path,
         self._remote_scripts_path,
@@ -587,113 +773,123 @@ function Provider:_setup_remote()
       )
     end
 
-    local default_script_dir = vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h:p")
-    if not default_script_dir:match("/$") then
-      default_script_dir = default_script_dir .. "/"
-    end
-    -- We list all paths in our scripts since we want to `chmod +x` all of them
-    local all_scripts = vim.fs.find(function(name, _)
-      return name:match("%.sh$")
-    end, {
-      limit = math.huge,
-      type = "file",
-      path = default_script_dir,
-    })
-    local paths_to_chmod = {}
-    for _, path in ipairs(all_scripts) do
-      local filepath = vim.fn.fnamemodify(path, ":p")
-      local relative_path = filepath:gsub("^" .. vim.pesc(default_script_dir), "")
-      local remote_script_path = utils.path_join(utils.is_windows, self._remote_scripts_path, relative_path)
-      table.insert(paths_to_chmod, remote_script_path)
-    end
+    -- Only install Neovim if not using system nvim
+    if not is_using_system_nvim then
+      local default_script_dir = vim.fn.fnamemodify(remote_nvim.default_opts.neovim_install_script_path, ":h:p")
+      if not default_script_dir:match("/$") then
+        default_script_dir = default_script_dir .. "/"
+      end
+      -- We list all paths in our scripts since we want to `chmod +x` all of them
+      local all_scripts = vim.fs.find(function(name, _)
+        return name:match("%.sh$")
+      end, {
+        limit = math.huge,
+        type = "file",
+        path = default_script_dir,
+      })
+      local paths_to_chmod = {}
+      for _, path in ipairs(all_scripts) do
+        local filepath = vim.fn.fnamemodify(path, ":p")
+        local relative_path = filepath:gsub("^" .. vim.pesc(default_script_dir), "")
+        local remote_script_path = utils.path_join(utils.is_windows, self._remote_scripts_path, relative_path)
+        table.insert(paths_to_chmod, remote_script_path)
+      end
 
-    local install_cmd_lst = {}
-    for _, script_path in ipairs(paths_to_chmod) do
-      table.insert(install_cmd_lst, "chmod +x " .. script_path)
-    end
+      local install_cmd_lst = {}
+      for _, script_path in ipairs(paths_to_chmod) do
+        table.insert(install_cmd_lst, "chmod +x " .. script_path)
+      end
 
-    local install_cmd = ("bash %s -v %s -d %s -m %s -a %s"):format(
-      self._remote_neovim_install_script_path,
-      self._remote_neovim_version,
-      self._remote_neovim_home,
-      self._remote_neovim_install_method,
-      self._remote_arch
-    )
-    table.insert(install_cmd_lst, install_cmd)
+      local install_cmd = ("bash %s -v %s -d %s -m %s -a %s -p %s"):format(
+        self._remote_neovim_install_script_path,
+        self._remote_neovim_version,
+        self._remote_neovim_home,
+        self._remote_neovim_install_method,
+        self._remote_arch,
+        remote_nvim.config.remote.install_nvim_policy
+      )
+      table.insert(install_cmd_lst, install_cmd)
 
-    -- Set correct permissions and install Neovim
-    local install_neovim_cmd = table.concat(install_cmd_lst, " && ")
+      -- Set correct permissions and install Neovim
+      local install_neovim_cmd = table.concat(install_cmd_lst, " && ")
 
-    if self.offline_mode and self._remote_neovim_install_method ~= "system" then
-      -- We need to ensure that we download Neovim version locally and then push it to the remote
-      if not remote_nvim.config.offline_mode.no_github then
-        self:run_command(
-          ("bash %s -o %s -v %s -a %s -t %s -d %s"):format(
-            utils.path_join(utils.is_windows, utils.get_plugin_root(), "scripts", "neovim_download.sh"),
+      if self.offline_mode and self._remote_neovim_install_method ~= "system" then
+        -- We need to ensure that we download Neovim version locally and then push it to the remote
+        if not remote_nvim.config.offline_mode.no_github then
+          self:run_command(
+            ("bash %s -o %s -v %s -a %s -t %s -d %s"):format(
+              utils.path_join(utils.is_windows, utils.get_plugin_root(), "scripts", "neovim_download.sh"),
+              self._remote_os,
+              self._remote_neovim_version,
+              self._remote_arch,
+              self._remote_neovim_install_method,
+              remote_nvim.config.offline_mode.cache_dir
+            ),
+            "Downloading Neovim release locally",
+            nil,
+            nil,
+            true
+          )
+        end
+
+        local local_release_path = utils.path_join(
+          utils.is_windows,
+          remote_nvim.config.offline_mode.cache_dir,
+          provider_utils.get_offline_neovim_release_name(
             self._remote_os,
             self._remote_neovim_version,
             self._remote_arch,
-            self._remote_neovim_install_method,
-            remote_nvim.config.offline_mode.cache_dir
-          ),
-          "Downloading Neovim release locally",
-          nil,
-          nil,
-          true
+            self._remote_neovim_install_method
+          )
         )
+        local local_upload_paths = { local_release_path }
+
+        if self._remote_neovim_install_method == "binary" then
+          table.insert(local_upload_paths, ("%s.sha256sum"):format(local_release_path))
+        end
+        self:upload(
+          local_upload_paths,
+          utils.path_join(self._remote_is_windows, self:_remote_neovim_binary_dir()),
+          "Upload Neovim release from local to remote"
+        )
+
+        install_neovim_cmd = install_neovim_cmd .. " -o"
       end
 
-      local local_release_path = utils.path_join(
-        utils.is_windows,
-        remote_nvim.config.offline_mode.cache_dir,
-        provider_utils.get_offline_neovim_release_name(
-          self._remote_os,
-          self._remote_neovim_version,
-          self._remote_arch,
-          self._remote_neovim_install_method
-        )
-      )
-      local local_upload_paths = { local_release_path }
-
-      if self._remote_neovim_install_method == "binary" then
-        table.insert(local_upload_paths, ("%s.sha256sum"):format(local_release_path))
-      end
-      self:upload(
-        local_upload_paths,
-        utils.path_join(self._remote_is_windows, self:_remote_neovim_binary_dir()),
-        "Upload Neovim release from local to remote"
-      )
-
-      install_neovim_cmd = install_neovim_cmd .. " -o"
+      self:run_command(install_neovim_cmd, "Installing Neovim (if required)")
     end
 
-    self:run_command(install_neovim_cmd, "Installing Neovim (if required)")
-
     -- Upload user neovim config, if necessary
-    if self:_get_neovim_config_upload_preference() then
+    local should_upload, upload_path, use_nvim_appname = self:_get_neovim_config_upload_preference()
+    self._use_nvim_appname = use_nvim_appname
+
+    if should_upload then
       self:upload(
         self._local_path_to_remote_neovim_config,
-        self._remote_neovim_config_path,
+        upload_path,
         "Copying your Neovim configuration files onto remote",
         remote_nvim.config.remote.copy_dirs.config.compression
       )
     end
 
     -- If user has specified certain directories to copy over in the "state", "cache" or "data" directories, do it now
-    for key, local_paths in pairs(self._local_path_copy_dirs) do
-      if not vim.tbl_isempty(local_paths) then
-        local remote_upload_path = utils.path_join(
-          self._remote_is_windows,
-          self["_remote_xdg_" .. key .. "_path"],
-          remote_nvim.config.remote.app_name
-        )
+    -- Skip if using global config (use_nvim_appname == false)
+    if self._use_nvim_appname then
+      for key, local_paths in pairs(self._local_path_copy_dirs) do
+        if not vim.tbl_isempty(local_paths) then
+          local remote_upload_path = utils.path_join(
+            self._remote_is_windows,
+            self["_remote_xdg_" .. key .. "_path"],
+            remote_nvim.config.remote.app_name
+          )
 
-        self:upload(
-          local_paths,
-          remote_upload_path,
-          ("Copying over Neovim '%s' directories onto remote"):format(key),
-          remote_nvim.config.remote.copy_dirs[key].compression
-        )
+          self:upload(
+            local_paths,
+            remote_upload_path,
+            ("Copying over Neovim '%s' directories onto remote"):format(key),
+            remote_nvim.config.remote.copy_dirs[key].compression
+          )
+        end
       end
     end
 
@@ -707,10 +903,12 @@ end
 ---Launch remote neovim server
 function Provider:_launch_remote_neovim_server()
   if not self:is_remote_server_running() then
-    -- Find free port on remote
-    local free_port_on_remote_cmd = ("%s -l %s"):format(
+    -- Find free port on remote using inline Lua command (no file upload needed)
+    local inline_lua_cmd =
+      [[lua local uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop; local socket = uv.new_tcp(); socket:bind("127.0.0.1", 0); local result = socket:getsockname(socket); socket:close(); if result then print(result["port"]) end]]
+    local free_port_on_remote_cmd = ("%s --headless --clean -c '%s' +quit"):format(
       self:_remote_neovim_binary_path(),
-      utils.path_join(self._remote_is_windows, self._remote_scripts_path, "free_port_finder.lua")
+      inline_lua_cmd
     )
     self:run_command(free_port_on_remote_cmd, "Searching for free port on the remote machine")
     local remote_free_port_output = self.executor:job_stdout()
@@ -727,19 +925,35 @@ function Provider:_launch_remote_neovim_server()
 
     -- Launch Neovim server and port forward
     local port_forward_opts = ([[-t -L %s:localhost:%s]]):format(self._local_free_port, remote_free_port)
-    local remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s NVIM_APPNAME=%s %s --listen 0.0.0.0:%s --headless]]):format(
-      self._remote_xdg_config_path,
-      self._remote_xdg_data_path,
-      self._remote_xdg_state_path,
-      self._remote_xdg_cache_path,
-      remote_nvim.config.remote.app_name,
-      self:_remote_neovim_binary_path(),
-      remote_free_port
-    )
+
+    local remote_server_launch_cmd
+    if self._use_nvim_appname then
+      -- Use NVIM_APPNAME for workspace-specific configuration with workspace-specific XDG paths
+      remote_server_launch_cmd = ([[XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_STATE_HOME=%s XDG_CACHE_HOME=%s NVIM_APPNAME=%s %s --listen 0.0.0.0:%s --headless]]):format(
+        self._remote_xdg_config_path,
+        self._remote_xdg_data_path,
+        self._remote_xdg_state_path,
+        self._remote_xdg_cache_path,
+        remote_nvim.config.remote.app_name,
+        self:_remote_neovim_binary_path(),
+        remote_free_port
+      )
+    else
+      -- Use global configuration with system default XDG paths (don't set XDG env vars)
+      remote_server_launch_cmd = ([[%s --listen 0.0.0.0:%s --headless]]):format(
+        self:_remote_neovim_binary_path(),
+        remote_free_port
+      )
+    end
 
     -- If we have a specified working directory, we launch there
     if self._remote_working_dir then
       remote_server_launch_cmd = ("%s --cmd ':cd %s'"):format(remote_server_launch_cmd, self._remote_working_dir)
+    end
+
+    local launch_cmd_prefix = remote_nvim.config.remote.launch_cmd_prefix
+    if launch_cmd_prefix ~= nil then
+      remote_server_launch_cmd = ("%s %s"):format(launch_cmd_prefix, remote_server_launch_cmd)
     end
 
     self:_run_code_in_coroutine(function()
@@ -933,10 +1147,16 @@ end
 
 function Provider:_cleanup_remote_host()
   self:_setup_workspace_variables()
+
   local deletion_choices = {
     "Delete neovim workspace (Choose if multiple people use the same user account)",
-    "Delete remote neovim from remote host (Nuke it!)",
   }
+
+  -- Only offer to delete neovim if we installed it (not using system nvim)
+  local is_using_system_nvim = (self._remote_neovim_install_method == "system")
+  if not is_using_system_nvim then
+    table.insert(deletion_choices, "Delete remote neovim from remote host (Nuke it!)")
+  end
 
   local cleanup_choice = self:get_selection(deletion_choices, {
     prompt = "Choose what should be cleaned up?",
@@ -965,6 +1185,7 @@ function Provider:_cleanup_remote_host()
       exit_cb
     )
   elseif cleanup_choice == deletion_choices[2] then
+    -- This option only exists if not using system nvim
     self:run_command(
       ("rm -rf %s"):format(self._remote_neovim_home),
       "Delete remote neovim created directories from remote machine",

@@ -373,10 +373,13 @@ describe("Provider", function()
   end)
 
   describe("should handle config copy correctly", function()
-    local selection_stub
+    local selection_stub, remote_nvim_config_copy
 
     before_each(function()
       selection_stub = stub(provider, "get_selection")
+      remote_nvim_config_copy = vim.deepcopy(remote_nvim.config)
+      remote_nvim.config.remote.upload_config_policy = "prompt"
+      
       provider._config_provider:add_workspace_config(provider.unique_host_id, {
         provider = provider.provider_type,
         host = provider.host,
@@ -395,6 +398,7 @@ describe("Provider", function()
 
     after_each(function()
       provider._config_provider:remove_workspace_config(provider.unique_host_id)
+      remote_nvim.config = remote_nvim_config_copy
     end)
 
     it("when the value is already known", function()
@@ -402,18 +406,21 @@ describe("Provider", function()
         config_copy = true,
       })
       provider:_setup_workspace_variables()
-      assert.equals(true, provider:_get_neovim_config_upload_preference())
+      local should_upload, upload_path, use_nvim_appname = provider:_get_neovim_config_upload_preference()
+      assert.equals(true, should_upload)
 
       provider._config_provider:update_workspace_config(provider.unique_host_id, {
         config_copy = false,
       })
       provider:_setup_workspace_variables()
-      assert.equals(false, provider:_get_neovim_config_upload_preference())
+      should_upload, upload_path, use_nvim_appname = provider:_get_neovim_config_upload_preference()
+      assert.equals(false, should_upload)
     end)
 
     it("when the choice is 'Yes (always)'", function()
       selection_stub.returns("Yes (always)")
-      assert.equals(true, provider:_get_neovim_config_upload_preference())
+      local should_upload, upload_path, use_nvim_appname = provider:_get_neovim_config_upload_preference()
+      assert.equals(true, should_upload)
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
       assert.are.equal(true, wk_config["config_copy"])
@@ -421,7 +428,8 @@ describe("Provider", function()
 
     it("when the choice is 'No (never)'", function()
       selection_stub.returns("No (never)")
-      assert.equals(false, provider:_get_neovim_config_upload_preference())
+      local should_upload, upload_path, use_nvim_appname = provider:_get_neovim_config_upload_preference()
+      assert.equals(false, should_upload)
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
       assert.are.equal(false, wk_config["config_copy"])
@@ -429,7 +437,8 @@ describe("Provider", function()
 
     it("when the choice is 'Yes'", function()
       selection_stub.returns("Yes")
-      assert.equals(true, provider:_get_neovim_config_upload_preference())
+      local should_upload, upload_path, use_nvim_appname = provider:_get_neovim_config_upload_preference()
+      assert.equals(true, should_upload)
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
       assert.are.equal(nil, wk_config["config_copy"]) -- The value should not be stored
@@ -437,7 +446,8 @@ describe("Provider", function()
 
     it("when the choice is 'No'", function()
       selection_stub.returns("No")
-      assert.equals(false, provider:_get_neovim_config_upload_preference())
+      local should_upload, upload_path, use_nvim_appname = provider:_get_neovim_config_upload_preference()
+      assert.equals(false, should_upload)
 
       local wk_config = provider._config_provider:get_workspace_config(provider.unique_host_id)
       assert.are.equal(nil, wk_config["config_copy"]) -- The value should not be stored
@@ -636,7 +646,7 @@ describe("Provider", function()
         -- install neovim if needed
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -p always",
           match.is_string()
         )
 
@@ -695,7 +705,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -p always -o",
           match.is_string()
         )
       end)
@@ -719,7 +729,7 @@ describe("Provider", function()
 
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -o",
+          "chmod +x ~/.remote-nvim/scripts/neovim_download.sh && chmod +x ~/.remote-nvim/scripts/neovim_install.sh && chmod +x ~/.remote-nvim/scripts/utils/api.sh && chmod +x ~/.remote-nvim/scripts/utils/core.sh && chmod +x ~/.remote-nvim/scripts/utils/neovim.sh && bash ~/.remote-nvim/scripts/neovim_install.sh -v stable -d ~/.remote-nvim -m binary -a x86_64 -p always -o",
           match.is_string()
         )
       end)
@@ -824,7 +834,7 @@ describe("Provider", function()
         provider:_launch_remote_neovim_server()
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "~/.remote-nvim/nvim-downloads/stable/bin/nvim -l ~/.remote-nvim/scripts/free_port_finder.lua",
+          '~/.remote-nvim/nvim-downloads/stable/bin/nvim --headless --clean -c \'lua local uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop; local socket = uv.new_tcp(); socket:bind("127.0.0.1", 0); local result = socket:getsockname(socket); socket:close(); if result then print(result["port"]) end\' +quit',
           match.is_string()
         )
         assert.stub(local_free_port_stub).was.called()
@@ -842,7 +852,7 @@ describe("Provider", function()
         provider:_launch_remote_neovim_server()
         assert.stub(run_command_stub).was.called_with(
           match.is_ref(provider),
-          "~/.remote-nvim/nvim-downloads/stable/bin/nvim -l ~/.remote-nvim/scripts/free_port_finder.lua",
+          '~/.remote-nvim/nvim-downloads/stable/bin/nvim --headless --clean -c \'lua local uv = vim.fn.has("nvim-0.10") and vim.uv or vim.loop; local socket = uv.new_tcp(); socket:bind("127.0.0.1", 0); local result = socket:getsockname(socket); socket:close(); if result then print(result["port"]) end\' +quit',
           match.is_string()
         )
         assert.stub(local_free_port_stub).was.called()

@@ -72,9 +72,16 @@ local utils = require("remote-nvim.utils")
 ---@field state remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_STATE_HOME/nvim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("state")
 ---@field cache remote-nvim.config.PluginConfig.Remote.CopyDirs.FolderStructure Directory to copy over into remote XDG_CACHE_HOME/nvim. Default is nothing. If base is not specified, it is assumed to be :lua= vim.fn.stdpath("cache")
 
+---@alias install_nvim_policy "prompt"|"relax"|"always"
+---@alias upload_config_policy "never"|"prompt"|"relax"|"always"
+---@alias launch_cmd_prefix string launch command prefix for starting neovim on remote
+
 ---@class remote-nvim.config.PluginConfig.Remote
 ---@field copy_dirs remote-nvim.config.PluginConfig.Remote.CopyDirs Which directories should be copied over to the remote
 ---@field app_name string Neovim app name which should be used throughout
+---@field install_nvim_policy install_nvim_policy Policy for installing Neovim on remote ("prompt": ask user, "relax": only if not executable, "always": always install)
+---@field upload_config_policy upload_config_policy Policy for uploading config to remote ("never": never upload, "prompt": always ask user using config_copy variable, "relax": skip if exists and don't use NVIM_APPNAME, upload with NVIM_APPNAME if not exists, "always": always upload with NVIM_APPNAME)
+---@field search_binary_pathes string[] Additional paths to search for nvim binary when install_policy is "relax"
 
 ---@class remote-nvim.config.PluginConfig
 ---@field devpod remote-nvim.config.PluginConfig.DevpodConfig Devcontainer configuration
@@ -145,6 +152,10 @@ M.default_opts = {
   },
   remote = {
     app_name = "nvim",
+    install_nvim_policy = "always",
+    upload_config_policy = "always",
+    launch_cmd_prefix = nil,
+    search_binary_pathes = {},
     copy_dirs = {
       config = {
         ---@diagnostic disable-next-line:assign-type-mismatch

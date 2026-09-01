@@ -174,7 +174,7 @@ value.
         ssh_binary = "ssh", -- Binary to use for running SSH command
         scp_binary = "scp", -- Binary to use for running SSH copy commands
         ssh_config_file_paths = { "$HOME/.ssh/config" }, -- Which files should be considered to contain the ssh host configurations. NOTE: `Include` is respected in the provided files.
-    
+
         -- These are useful for password-based SSH authentication.
         -- It provides parsing pattern for the plugin to detect that an input is requested.
         -- Each element contains the following attributes:
@@ -199,7 +199,7 @@ value.
           -- There are other values here which can be checked in lua/remote-nvim/init.lua
         },
       },
-    
+
       -- Path to the script that would be copied to the remote and called to ensure that neovim gets installed.
       -- Default path is to the plugin's own ./scripts/neovim_install.sh file.
       neovim_install_script_path = utils.path_join(
@@ -208,15 +208,15 @@ value.
         "scripts",
         "neovim_install.sh"
       ),
-    
+
       -- Modify the UI for the plugin's progress viewer.
       -- type can be "split" or "popup". All options from https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/popup and https://github.com/MunifTanjim/nui.nvim/tree/main/lua/nui/split are supported.
       -- Note that some options like "border" are only available for "popup".
       progress_view = {
         type = "popup",
       },
-    
-    
+
+
       -- Offline mode configuration. For more details, see the "Offline mode" section below.
       offline_mode = {
         -- Should offline mode be enabled?
@@ -226,10 +226,14 @@ value.
         -- What path should be looked at to find locally available releases
         cache_dir = utils.path_join(utils.is_windows, vim.fn.stdpath("cache"), constants.PLUGIN_NAME, "version_cache"),
       },
-    
+
       -- Remote configuration
       remote = {
         app_name = "nvim", -- This directly maps to the value NVIM_APPNAME. If you use any other paths for configuration, also make sure to set this.
+        install_nvim_policy = "always", -- Controls if the plugin installs Neovim or reuses a system copy.
+        upload_config_policy = "always", -- Controls whether and when your local config is copied to remote.
+        launch_cmd_prefix = nil, -- Optional prefix used to wrap the remote `nvim` launch command.
+        search_binary_pathes = {}, -- Extra directories searched when `install_nvim_policy` is "relax".
         -- List of directories that should be copied over
         copy_dirs = {
           -- What to copy to remote's Neovim config directory
@@ -268,7 +272,7 @@ value.
           },
         },
       },
-    
+
       -- You can supply your own callback that should be called to create the local client. This is the default implementation.
       -- Two arguments are passed to the callback:
       -- port: Local port at which the remote server is available
@@ -281,7 +285,7 @@ value.
           end
         end)
       end,
-    
+
       -- Plugin log related configuration [PREFER NOT TO CHANGE THIS]
       log = {
         -- Where is the log file
@@ -293,7 +297,10 @@ value.
       },
     }
 <
-
+- `install_nvim_policy` controls how the plugin provisions Neovim on the remote host. The default `"always"` installs the `nvim` binary each time, `"relax"` first checks if the remote already has `nvim` on `PATH` or in `search_binary_pathes` before running the installer, and `"prompt"` shows a one-time choice between the plugin-managed binary and the remote system binary before falling back to the `"relax"` detection flow.
+- `upload_config_policy` controls whether your local Neovim configuration is copied to the remote workspace. `"always"` uploads the config into the workspace-specific directory while setting `NVIM_APPNAME`, `"relax"` reuses a pre-existing global config and only uploads when none exists, `"prompt"` asks you each time (with `Yes`, `No`, `Yes (always)` and `No (never)` responses), and `"never"` skips uploading altogether.
+- `search_binary_pathes` is consulted only when `install_nvim_policy` is set to `"relax"`. Provide a list of absolute directories (for example `{ "/usr/local/bin", "/opt/neovim/bin" }`) so the plugin can run `find` (Unix) or `dir` (Windows) inside each path to locate an existing `nvim` binary before deciding to install a new one.
+- `launch_cmd_prefix` lets you prefix the remote launch command (`nvim --listen … --headless`) with another command, which is useful when `nvim` must be executed through a wrapper such as `flatpak run --command` or when extra environment setup is required.
 
 DEMOS                                                      *remote-nvim-demos*
 
@@ -496,7 +503,7 @@ run this script from inside the cloned repo.
 
 >bash
     ./scripts/neovim_download.sh -v <version> -d <cache-dir> -o <os-type> -a <arch-type> -t <release-type>
-    
+
      <version> can be stable, nightly or any Neovim release provided like v0.9.4
      <cache-dir> is the path in which the Neovim release and it's checksum should be downloaded. This should be same as the cache_dir plugin configuration value else it won't be
      detected by the plugin. See configuration below.
