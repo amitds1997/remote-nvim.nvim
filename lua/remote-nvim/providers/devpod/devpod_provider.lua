@@ -158,7 +158,11 @@ function DevpodProvider:_handle_provider_setup()
   if self._devpod_provider then
     self.local_provider:run_command(
       ("%s provider list --output json"):format(remote_nvim.config.devpod.binary),
-      ("Checking if the %s provider is present"):format(self._devpod_provider)
+      ("Checking if the %s provider is present"):format(self._devpod_provider),
+      nil,
+      nil,
+      false,
+      false
     )
     local stdout = self.local_provider.executor:job_stdout()
     local provider_list_output = vim.json.decode(vim.tbl_isempty(stdout) and "{}" or table.concat(stdout, "\n"))

@@ -1016,7 +1016,8 @@ end
 ---@param extra_opts string? Extra options to pass to the underlying command
 ---@param exit_cb function? Exit callback to execute
 ---@param on_local_executor boolean? Should run this command on the local executor
-function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_executor)
+---@param pty boolean? Whether to use pty or not
+function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_executor, pty)
   self.logger.fmt_debug("[%s][%s] Running %s", self.provider_type, self.unique_host_id, command)
   on_local_executor = on_local_executor or false
   local executor = on_local_executor and self.local_executor or self.executor
@@ -1033,6 +1034,7 @@ function Provider:run_command(command, desc, extra_opts, exit_cb, on_local_execu
     exit_cb = exit_cb(section_node)
   end
   executor:run_command(command, {
+    pty = pty == nil or pty,
     additional_conn_opts = extra_opts,
     exit_cb = exit_cb,
     stdout_cb = self:_get_stdout_fn_for_node(section_node),
