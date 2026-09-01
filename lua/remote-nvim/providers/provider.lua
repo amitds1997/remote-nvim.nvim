@@ -139,7 +139,7 @@ end
 function Provider:_setup_workspace_variables()
   if vim.tbl_isempty(self._config_provider:get_workspace_config(self.unique_host_id)) then
     self.logger.debug("Did not find any existing configuration. Creating one now..")
-    self:run_command("echo 'Hello'", "Testing remote connection")
+    self:run_command('echo "Hello"', "Testing remote connection")
     self._config_provider:add_workspace_config(self.unique_host_id, {
       provider = self.provider_type,
       host = self.host,
